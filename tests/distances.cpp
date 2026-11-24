@@ -70,6 +70,12 @@ int main() {
     std::string repeated;
     for (int copy = 0; copy < 85; ++copy) repeated += "ACGT";
     check("ACNTGACGTNACG", repeated);
+    // One DP row isolates column indexing, including million-column inputs.
+    for (int length : {127, 128, 129, 254, 255, 256, 257, 65535, 1000000}) {
+        const std::string absent(length, 'A');
+        if (nvpd_omp("R", absent).distance != length)
+            throw std::runtime_error("wrong NvPD distance for absent symbol");
+    }
     if (sequential("GATTACA", "GCATGCU").distance != 4) return 1;
-    std::cout << "196 differential pairs, including traceback replay\n";
+    std::cout << "196 differential pairs with traceback replay and 9 NvPD column widths\n";
 }
