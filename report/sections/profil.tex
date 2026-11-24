@@ -30,6 +30,4 @@ La série forte utilise \(20\,000^2\) cases. La série faible conserve 4\,096 li
 \chart{cpu/echelle_cpu.png}{Les courbes donnent l'accélération forte et l'efficacité faible de NvPD selon le nombre de cœurs physiques de l'EPYC.}{fig:echellecpu}{bench/cpu/openmp/profile_cpu.sbatch}
 À taille fixe, huit cœurs prennent \(27{,}96\pm0{,}09\)\,ms contre \(31{,}28\pm0{,}17\)\,ms à seize sur la figure~\ref{fig:echellecpu}. Au dernier placement, les cœurs occupent deux groupes de cache et deux domaines NUMA.\footnote{La distance entre les cœurs et les contrôleurs mémoire dépend du domaine NUMA auquel chacun appartient.} Les synchronisations entre lignes et les accès mémoire interviennent dans le même temps mesuré.
 
-\synthese{Sur le carré fixe, le rapport des temps moyens à un et huit cœurs donne 73,8\,\% d'efficacité forte. Passer à seize cœurs étend le placement entre groupes de cache et allonge le temps mesuré.}
-
-\synthesesection{La vectorisation sur 32 octets regroupe huit entiers de score. Cette largeur appartient au noyau, tandis que le gain observé dépend également de la forme et du placement des threads.}
+\synthese{Sur le carré de 20\,000 bases de côté, huit cœurs atteignent 73,8\,\% d’efficacité forte. À seize cœurs, la répartition sur deux groupes de cache s’accompagne d’une hausse du temps moyen.}

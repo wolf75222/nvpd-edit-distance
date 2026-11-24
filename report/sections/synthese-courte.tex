@@ -5,7 +5,7 @@ Pour deux longueurs \(m,n\) et des coûts unitaires,
 \[
  |m-n|\le d(A,B)\le\max(m,n),\qquad W_{\mathrm{dense}}=mn.
 \]
-\synthesesection{Deux chaînes d'un million de bases définissent près de \(10^{12}\) cases. Les méthodes denses les visitent toutes, tandis que le nombre de fronts nécessaires dépend du score atteint.}
+\synthese{Deux chaînes d'un million de bases définissent près de \(10^{12}\) cases. Les méthodes denses les visitent toutes, tandis que le nombre de fronts nécessaires dépend du score atteint.}
 
 \section{Temps d'une paire et débit d'une collection}
 \subsection{Longueur et divergence}
@@ -18,13 +18,12 @@ La figure~\ref{fig:short-work} compare les régimes de calcul sur les mêmes jeu
 \subsection{Communication entre nœuds}
 Avec MPI, les rangs peuvent partager une paire en bandes verticales ou traiter des paires indépendantes. Sur une paire humaine de 131\,072 bases et deux nœuds, échanger le bord par paquets de 128 lignes ramène le temps de \(6{,}672\pm0{,}182\)\,s à \(0{,}117\pm0{,}001\)\,s. Sur un lot, les rangs conservent leurs scores jusqu'à la réduction finale. L'efficacité pour un travail fixe vaut \(E=T_{192}/(2T_{384})\). Les temps proviennent de cinq blocs avec un échauffement par configuration.
 \synthese{Pour 768 paires homologues du chromosome 21, NvPD atteint 80,8\,\% d'efficacité forte sur 384 cœurs par rapport à 192 cœurs. L'efficacité faible, corrigée du travail réel, vaut 80,9\,\%.}
-\synthesesection{À deux nœuds, la décomposition d'une paire nécessite encore des échanges intermédiaires. Un lot de 768 paires permet d'attribuer un travail complet à chacun des 384 cœurs.}
 
 \section{Assemblages humains}
 Deux versions de CHM13 diffèrent de 2\,587 éditions sur dix-huit chromosomes entiers, soit 2,644 milliards de bases de référence. Sur les deux entrées du chromosome~1, le score vaut 176. La lecture seule prend \(0{,}657\pm0{,}005\)\,s sur un cœur EPYC avec préallocation par l'index FASTA (neuf processus).
 \chart{comparison/bras_chromosome_biwfa.png}{Les temps de calcul et les pics résidents mesurés sur le bras long du chromosome humain dépendent du score et de la restitution du chemin.}{fig:short-chrom}{bench/human/algorithms/arm.py}
 La figure~\ref{fig:short-chrom} porte sur GRCh38 et CHM13, deux références distinctes. Les fenêtres de 8 à 32 millions de bases partagent la même borne gauche. BiWFA de Marco-Sola et ses coauteurs propage deux fronts opposés et reconstruit le chemin de part et d'autre de leur jonction optimale~\cite{biwfa}. Sa mémoire de travail est en \(O(d)\) en plus des entrées et du chemin rendu.
-\synthesesection{Sur l'intervalle de 32 millions de bases, les 266\,220 éditions demandent \(45{,}62\pm0{,}22\)\,s pour le score BiWFA et \(89{,}77\pm0{,}11\)\,s pour le chemin sur un cœur EPYC.}
+\synthese{Sur l'intervalle de 32 millions de bases, les 266\,220 éditions demandent \(45{,}62\pm0{,}22\)\,s pour le score BiWFA et \(89{,}77\pm0{,}11\)\,s pour le chemin sur un cœur EPYC.}
 
 \section{Conclusion}
 La distance guide le choix des fronts ou du calcul dense. Pour les 64 phages, une fois les scores calculés, l'erreur entre la distance d'édition \(d_{ij}\) et la longueur du chemin dans l'arbre \(t_{ij}\) mesure la perte associée à la reconstruction,
@@ -33,7 +32,7 @@ La distance guide le choix des fronts ou du calcul dense. Pour les 64 phages, un
  = \begin{cases}14{,}89\ \text{éditions} & \text{(UPGMA)},\\
                   3{,}56\ \text{éditions} & \text{(Neighbor-Joining)}.\end{cases}
 \]
-\synthesesection{Sur les 64 phages, NJ réduit l'erreur quadratique moyenne des chemins, mais son écart absolu maximal atteint 63,86 éditions. Une distance d'édition exacte peut donc être imparfaitement représentée par un arbre.}
+\synthese{Sur les 64 phages, NJ réduit l'erreur quadratique moyenne des chemins, mais son écart absolu maximal atteint 63,86 éditions. Une distance d'édition exacte peut donc être imparfaitement représentée par un arbre.}
 
 \FloatBarrier
 \begin{thebibliography}{4}

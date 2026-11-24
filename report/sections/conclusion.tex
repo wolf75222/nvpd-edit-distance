@@ -4,6 +4,4 @@ NvPD fait un travail proportionnel au produit des longueurs. Sur GH200, le calcu
 
 Pour choisir une méthode avant le calcul, une politique de répartition peut utiliser les longueurs, le type de sortie et une borne de distance. Sur les trois paires synthétiques de la figure~\ref{fig:bilan}, le classement de WFA2 et de NvPD sur GPU change entre 5 et 10\,\% d'éditions injectées. Ce point de croisement dépend du matériel et de la structure des différences. Dans une collection, une autre limite tient à l'interprétation des scores. Une matrice d'édition ne fixe pas une histoire évolutive. Les résidus entre scores et longueurs de branches quantifient la perte associée au passage à l'arbre (section~\ref{sec:bio}).
 
-\synthese{À quatre millions de bases, la restitution du chemin avec BiWFA occupe en moyenne 54,02\,Mio sur EPYC. Le même service avec WFA2 unidirectionnel atteint 627,02\,Mio sur cette paire.}
-
-\synthesesection{Avec 768 paires humaines réparties sur deux nœuds, l'efficacité forte atteint 80,8\,\% par rapport à un nœud complet. Sur une seule paire, c'est la fréquence des échanges entre rangs qui limite le gain du second nœud.}
+\synthese{Sur la paire humaine de quatre millions de bases, le pic résident moyen pour restituer le chemin sur EPYC atteint 54,02\,Mio avec BiWFA, contre 627,02\,Mio avec WFA2 unidirectionnel. Répartir 768 paires entre deux nœuds donne 80,8\,\% d’efficacité forte.}

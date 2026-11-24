@@ -83,6 +83,4 @@ Dans QuickEd avec contrôle du chemin, l'adaptateur rejoue le CIGAR et compare s
 \chart{comparison/quicked.png}{Scores et durées sur témoins contrôlés et entrées génomiques. Les 80 appels par méthode et par entrée sont répartis entre huit processus.}{fig:quicked}{bench/quicked/measure.py}
 La figure~\ref{fig:quicked} rapproche les témoins d'exactitude et le coût de la protection. Sur les paires de 20\,000 bases à 2, 5 et 10\,\%, les temps moyens avec contrôle du chemin sont respectivement \(2{,}375\pm0{,}008\), \(2{,}996\pm0{,}010\) et \(4{,}521\pm0{,}011\)\,ms. Les vérifications du coût et du chemin font partie du chronométrage.
 
-\synthese{Sur EPYC, le rejeu des 800 CIGAR consomme les deux chaînes et retrouve le score de référence. La reprise à bande élargie couvre aussi le cas où la première bande exclut le chemin optimal.}
-
-\synthesesection{Deux scores identiques peuvent résulter de parcours très différents. À 8\,000 bases, la trace par coupe utilise au plus 6\,940\,Kio sur les processus mesurés. Le choix entre score seul et restitution du chemin intervient dès l'interface.}
+\synthese{Sur EPYC, les 800 CIGAR vérifiés consomment les deux chaînes et retrouvent le coût de référence. Lorsque la bande initiale exclut le chemin optimal, QuickEd reprend la reconstruction dans une bande élargie.}
