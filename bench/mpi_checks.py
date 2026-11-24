@@ -45,10 +45,13 @@ def main():
             fasta.write_text("".join(f">r{i}\n{s}\n" for i,s in enumerate(seqs)))
             args = ["matrix","--input",str(fasta)]
             expected = invoke([a.oracle,*args,"--algorithm","edlib"])
+            omp_matrix = invoke([a.oracle, *args, "--algorithm", "nvpd-omp", "--threads", "4"])
+            if expected != omp_matrix:
+                raise ValueError("OpenMP matrix disagrees with edlib")
             actual = invoke([*launch,*args,"--threads","2"])
             if expected != actual:
                 raise ValueError("MPI matrix disagrees with edlib")
-    print(f"{len(pairs)} MPI pair checks against scalar and edlib, 3 MPI matrices against edlib")
+    print(f"{len(pairs)} MPI pair checks against scalar and edlib, 3 MPI and 3 OpenMP matrices against edlib")
 
 
 if __name__ == "__main__":

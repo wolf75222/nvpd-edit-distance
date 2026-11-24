@@ -120,26 +120,38 @@ template <typename Score>
 void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& records) {
     const auto n = records.size();
     std::vector<std::vector<int>> distances(n, std::vector<int>(n));
-    // Serial kernels parallelize over independent rows. OpenMP kernels own their team.
-    const bool across = o.threads > 1 &&
+    const auto team = static_cast<std::size_t>(o.threads);
+    const bool pair_parallel = o.algorithm == "nvpd-omp" && team > 1 && n * (n - 1) / 2 >= team;
+    const bool across = pair_parallel || (team > 1 &&
         (o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "seq" ||
-         o.algorithm == "banded" || o.algorithm == "banded-trim" || o.algorithm == "hirschberg");
+         o.algorithm == "banded" || o.algorithm == "banded-trim" || o.algorithm == "hirschberg"));
+    // Split long triangular rows into independent groups. This also exposes
+    // enough work when there are fewer rows than workers but enough pairs.
+    const std::size_t groups = pair_parallel ? std::min(team, n - 1) : 1;
     std::exception_ptr failure;
-    auto row = [&](std::size_t i) {
-        for (std::size_t j = i + 1; j < n; ++j)
+    auto row = [&](std::size_t i, std::size_t group) {
+        for (std::size_t j = i + 1 + group; j < n; j += groups)
             distances[j][i] = distances[i][j] = kernel(records[i].bases, records[j].bases, false).distance;
     };
     if (across) {
-#pragma omp parallel for schedule(dynamic, 1)
-        for (std::size_t i = 0; i < n; ++i) {
-            try { row(i); } catch (...) {
-#pragma omp critical
-                { if (!failure) failure = std::current_exception(); }
+        #pragma omp parallel
+        {
+            // This setting belongs to the current implicit task. Its NvPD call
+            // gets one SIMD worker, including when nested teams are enabled.
+            if (pair_parallel) omp_set_num_threads(1);
+            #pragma omp for collapse(2) schedule(dynamic, 1)
+            for (std::size_t i = 0; i < n; ++i) {
+                for (std::size_t group = 0; group < groups; ++group) {
+                    try { row(i, group); } catch (...) {
+                        #pragma omp critical
+                        { if (!failure) failure = std::current_exception(); }
+                    }
+                }
             }
         }
         if (failure) std::rethrow_exception(failure);
     } else {
-        for (std::size_t i = 0; i < n; ++i) row(i);
+        for (std::size_t i = 0; i < n; ++i) row(i, 0);
     }
     std::cout << "id";
     for (const auto& r : records) std::cout << '\t' << r.id;
