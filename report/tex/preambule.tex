@@ -32,9 +32,10 @@
 \renewcommand{\topfraction}{.9}\renewcommand{\bottomfraction}{.85}
 \renewcommand{\floatpagefraction}{.64}\renewcommand{\textfraction}{.09}
 \newcommand{\doctitle}[1]{\thispagestyle{firstpage}\begin{center}
- \makebox[33mm][c]{\raisebox{-.5\height}{\includegraphics[height=17mm]{assets/logos/urca.png}}}%
- \hspace{5mm}%
- \makebox[33mm][c]{\raisebox{\dimexpr-.5\height+1.4mm\relax}{\includegraphics[height=12.35mm]{assets/logos/chps.jpg}}}\par
+ % Trim the margins of the official images so their visible lower edges align.
+ \includegraphics[trim=28.8bp 27.8bp 28.8bp 28.4bp,clip,height=14.5mm]{assets/logos/urca.png}%
+ \hspace{10.5mm}%
+ \includegraphics[trim=26bp 1.45bp 26bp 1bp,clip,height=13.6mm]{assets/logos/chps.jpg}\par
  \vspace{4pt}%
  {\LARGE\bfseries Parallel Edit Distance for Genomic Sequences\par}
  \vspace{4pt}{\large #1\par}\vspace{4pt}
