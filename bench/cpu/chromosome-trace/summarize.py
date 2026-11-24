@@ -20,10 +20,11 @@ def check_inputs(folder):
         if digest != expected_hash[Path(name).stem]:
             raise ValueError(f"input checksum disagrees with source manifest: {name}")
     scores = {}
-    for file in (human/"chromosome-panel/trials.csv",human/"algorithms/838910/trials.csv"):
+    for file, method in ((human/"chromosome-panel/trials.csv","method"),
+                         (human/"algorithms/838910/trials.csv","algorithm")):
         with file.open() as stream:
             for row in csv.DictReader(stream):
-                if row["method"] not in ("edlib","wfa2"):
+                if row[method] not in ("edlib","wfa2"):
                     continue
                 if scores.setdefault(row["case"], row["distance"]) != row["distance"]:
                     raise ValueError(f"independent scores disagree for {row['case']}")
