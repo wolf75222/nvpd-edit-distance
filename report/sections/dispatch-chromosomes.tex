@@ -1,0 +1,17 @@
+\subsection{Calcul par fronts sur les révisions d’un haplotype}
+Les révisions v1.1 et v1.2 de HG002 permettent de mesurer l’effet de quelques éditions dispersées sur un chromosome entier~\cite{hg002}. Chaque comparaison porte sur deux versions du même haplotype. Les séquences du chromosome 1 comptent de 244 à 252 millions de bases. Sur le chromosome 21, l'assemblage maternel conserve 3\,671\,963 symboles N et le paternel 2\,300\,690. Ces lacunes d’assemblage restent dans le calcul, avec un coût nul pour N face à N. L’application des 67 entrées du VCF aux quatre séquences v1.1 restitue les quatre séquences v1.2.
+
+Dans les fragments de la figure~\ref{fig:split}, les longues plages identiques peuvent se parcourir directement. Pour un budget d’éditions \(s\) et une diagonale \(k=i-j\), le front \(F_s(k)\) mémorise le plus grand indice \(i\) atteint. La délétion, la substitution et l’insertion donnent les trois candidats~\cite{ukkonen,wfa},
+\[
+ x=\max\{F_{s-1}(k-1)+1,\;F_{s-1}(k)+1,\;F_{s-1}(k+1)\},
+ \qquad F_s(k)=x+\operatorname{LCP}(A_{x:},B_{x-k:}).
+\]
+Les transitions sortant du rectangle sont écartées. Le préfixe commun initialise \(F_0(0)\). Le premier front qui atteint \((m,n)\) donne la distance minimale. Pour le score seul, la commande \texttt{nvpd-sparse} conserve les coupes vérifiées et NvPD pour les petits rectangles. Dans les grands, elle explore jusqu’à 128 éditions par fragment avant de passer à BiWFA. Deux tableaux de 259 entiers occupent 2\,072 octets par travailleur. L’extension lit les deux séquences par blocs de 4\,096 puis de 64 octets.
+
+La figure~\ref{fig:hg002-dispatch} rapporte les temps au calcul WFA2 sur un cœur EPYC. Chaque bloc permute les configurations. Le temps d’un appel à chaud exclut la lecture des séquences. Pour le même solveur, le gain à \(p\) cœurs vaut \(S_p=T_1/T_p\) et l’efficacité vaut \(S_p/p\).
+\chart{comparison/chromosome_dispatch.pdf}{«~Fragments~» désigne \texttt{nvpd-split} et «~Front~» désigne \texttt{nvpd-sparse}, son découpage avec fronts bornés et repli BiWFA. Le nombre indique les cœurs physiques. Les extrémités des barres donnent les moyennes de cinq rapports appariés. Les traits épais indiquent un écart-type et les traits fins l’intervalle de Student à 95\,\%.}{fig:hg002-dispatch}{bench/cpu/chromosome-dispatch/measure.py}
+Sur le chromosome 1 maternel, le score vaut 54. À un cœur, le temps passe de \(157{,}05\pm0{,}47\) à \(28{,}19\pm0{,}06\)\,ms lorsque le découpage utilise le front borné. WFA2 prend \(87{,}18\pm0{,}80\)\,ms et edlib \(4{,}393\pm0{,}031\)\,s. Le pic résident moyen du processus descend de 834 à 477\,Mio entre les deux variantes du découpage, FASTA compris. Les compteurs en mode utilisateur relèvent 59,6 millions d’instructions contre 334,3 millions. Le nombre de défauts de lecture L1 passe de 38,89 à 11,03 millions, alors que leur part dans les lectures monte de 23,3 à 35,6\,\%.
+
+Sur le chromosome 21 paternel, les deux petits rectangles appellent déjà NvPD. Le rapport des temps avant et après l’ajout du front vaut \(1{,}000\) à un cœur (IC à 95\,\% de 0,947 à 1,053). Sur le chromosome 1 paternel, passer d’un à huit cœurs accélère le front d’un facteur \(1{,}192\pm0{,}005\), soit 14,9\,\% d’efficacité. Une partie du calcul reste séquentielle, dont la vérification des coupes et la reprise des fragments fusionnés.
+
+\synthese{À un cœur EPYC, le découpage avec front borné divise le temps de WFA2 par 3,03 à 4,05 sur ces quatre révisions de HG002. Leurs distances vont de 6 à 111 éditions pour des chromosomes de 44 à 252 millions de bases.}

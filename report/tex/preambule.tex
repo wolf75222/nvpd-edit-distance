@@ -48,9 +48,9 @@
 \hypersetup{pdftitle={Parallel Edit Distance for Genomic Sequences},pdfsubject={Alignement global sur ROMEO}}
 
 \makeatletter
-\newcommand{\fullcontents}{\section*{\contentsname}\begin{multicols}{2}
-  \small\setlength{\parskip}{0pt}\setlength{\columnsep}{7mm}\@starttoc{toc}
-\end{multicols}}
+\newcommand{\fullcontents}{\section*{\contentsname}\begingroup\setlength{\multicolsep}{5pt}\begin{multicols}{2}
+  \fontsize{9}{10}\selectfont\setlength{\parskip}{0pt}\setlength{\columnsep}{7mm}\@starttoc{toc}
+\end{multicols}\endgroup}
 \makeatother
 
 \newcommand{\synthese}[1]{\par\smallskip\begingroup\interlinepenalty=10000

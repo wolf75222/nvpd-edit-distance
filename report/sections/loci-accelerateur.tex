@@ -1,0 +1,10 @@
+\subsection{Distance globale entre loci candidats}\label{sec:loci-accelerateur}
+Le gain du noyau dense dépend de la distance entre les deux régions à comparer. La figure~\ref{fig:candidatsloci} conserve une fenêtre GRCh38 du chromosome~21 et change la fenêtre cible dans CHM13. Une cible couvre le locus homologue. L'autre provient d'une région située environ quatre millions de bases en amont dans CHM13. Ce second appariement représente un candidat inter-locus avant filtrage. Les coordonnées sont disponibles dans le \reposource{results/energy/gh200/839323/inputs.csv}.
+
+À longueur de requête fixée, le travail logique de NvPD vaut \(W_{\mathrm{dense}}=mn\). Pour un coût unitaire, WFA2 atteint au plus \(2s+1\) diagonales au score \(s\), soit \(\sum_{s=0}^{d}(2s+1)=(d+1)^2\) positions de front avant les extensions de correspondances~\cite{wfa}. Edlib traite les colonnes dans une bande à l'aide de vecteurs de bits~\cite{edlib,myers}. Pour la requête de 262\,144 bases, le changement de locus augmente le rectangle de 3,58\,\%. La distance passe de 478 à 138\,141, soit de 0,182 à 50,84\,\% de la longueur cible.
+
+\chart{gpu/candidats_chromosome.png}{Le temps couvre un calcul de score par processus, après lecture du FASTA. Les symboles donnent les moyennes de cinq processus pour chaque cas, les barres épaisses l'écart-type et les barres fines l'IC à 95\,\%. NvPD utilise un GH200. WFA2 et Edlib utilisent chacun un cœur Grace.}{fig:candidatsloci}{bench/gpu/energy/loci.py}
+
+Chaque appel CUDA initialise son contexte, construit l'index et rapatrie le score. Le code compacté utilise des tuiles de seize lignes. Les trois solveurs rendent le même score pour chaque paire. WFA2 calcule le score de la paire homologue en 0,390\,ms. La comparaison inter-locus demande 15,99\,s à WFA2, 3,76\,s à Edlib et 0,637\,s à NvPD. Ce classement concerne l'alignement global des fenêtres fournies.
+
+\synthese{À 262\,144 bases, le rapport du temps d'Edlib sur un cœur Grace au temps de NvPD sur GH200 vaut 5,94 (IC à 95\,\% de 5,30 à 6,57). Le rapport de temps de WFA2 à NvPD vaut 25,24, avec un intervalle de 22,48 à 28,01.}

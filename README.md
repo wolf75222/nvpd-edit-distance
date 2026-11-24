@@ -94,29 +94,63 @@ Le résumé de cette campagne donne le temps médian et l’accélération par r
 
 ## Aligner des chromosomes humains
 
-Pour reproduire la comparaison entre les assemblages CHM13 v1.0 et v1.1, télécharger les deux versions et préparer les 18 chromosomes du panel. Les entrées du chromosome 1 dépassent chacune 248 millions de bases.
+Les assemblages HG002 v1.1 et v1.2 fournissent quatre paires de chromosomes entiers, de 44 à 252 millions de bases. Le préparateur extrait chaque chromosome du FASTA publié et vérifie que le VCF de révision restitue la version suivante. Les commandes réunissent les deux versions du même haplotype avant de calculer son score.
+
+```sh
+python3 bench/cpu/chromosome-dispatch/prepare.py data/human/hg002
+for chrom in chr1_MATERNAL chr1_PATERNAL chr21_MATERNAL chr21_PATERNAL; do
+  cat "data/human/hg002/${chrom}.v1.1.fa" "data/human/hg002/${chrom}.v1.2.fa" > "build/${chrom}.fa"
+  build/editdist pair --algorithm nvpd-sparse --threads 8 --input "build/${chrom}.fa"
+done
+```
+
+Dans cet ordre, les scores valent 54, 111, 6 et 15. Sur un cœur EPYC 9654, `nvpd-sparse` traite ces révisions 3,03 à 4,05 fois plus vite que WFA2. Sur le chromosome 1 maternel, le score prend 28,19 ± 0,06 ms et le processus atteint 477 Mio de RSS en moyenne. Le chromosome 21 paternel contient 2 300 690 symboles N dans chaque version. [Données HG002](https://github.com/marbl/HG002) · [Cinq blocs par configuration](results/human/chromosome-dispatch/)
+
+Le panel CHM13 compare 18 chromosomes entre les révisions v1.0 et v1.1. Sur le chromosome 1, le CIGAR compte 176 éditions. Le calcul par fragments prend 11,81 ms à huit cœurs, contre 183,11 ms pour WFA2 sur un cœur. Le banc de pages mémoire distingue le coût d’un alignement isolé de celui d’une série qui réutilise les séquences. [CIGAR chromosomiques](results/trace/chromosomes/) · [Pages de 4 Kio et 2 Mio](results/profile/huge-pages/839316/)
 
 ```sh
 python3 scripts/datasets/chm13_panel.py --cache build/t2t-cache --out data/human/chm13-panel
-build/editdist pair --algorithm wfa2 --input data/human/chm13-panel/chr1.fa
 build/editdist pair --algorithm nvpd-split --threads 8 --trace --input data/human/chm13-panel/chr1.fa
 ```
 
-Le score attendu est 176. Le jeu GRCh38–CHM13 compare deux références humaines distinctes sur le chromosome 21. Le banc fournit notamment les temps et la mémoire nécessaires pour restituer un chemin de 32 millions de bases. [Chromosomes complets](results/human/chromosome-panel/README.md) · [Fronts bidirectionnels](results/human/algorithms/README.md) · [Kokkos sur EPYC et GH200](results/kokkos/human/README.md) · [MPI à 192 et 384 cœurs](results/mpi/human/README.md)
+## Comparer une cohorte de 1000 Genomes
 
-Sur un cœur EPYC, `nvpd-adaptive` ramène le temps de NvPD de 25,12 s à 97,65 ms sur la fenêtre de 250 000 bases. À un million de bases et 2 336 éditions, WFA2 reste plus rapide avec 7,07 ms contre 1,608 s. Sur le chromosome 1, `nvpd-split` vérifie six coupes et confie les deux fragments restants à BiWFA après élagage. Le CIGAR complet prend 11,81 ms en moyenne à huit cœurs, contre 183,11 ms pour WFA2 sur un cœur. Sur les chromosomes 18 et 20, deux fragments par paire utilisent le noyau NvPD. [Profils CPU](results/adaptive/README.md) · [CIGAR chromosomiques](results/trace/chromosomes/README.md) · [Mesures GH200](results/roofline/gpu/README.md)
+Le préparateur reconstruit les deux haplotypes de 512 individus de la phase 3 de 1000 Genomes dans une fenêtre de 32 768 bases du chromosome 21 (GRCh37). Les 1 024 séquences donnent 523 776 paires et 386 séquences distinctes. L’option `--unique` aligne les 74 305 paires distinctes et restitue la matrice dans l’ordre initial, avec les 1 024 identifiants. [Manifeste et protocole](results/human/packed-cohort/)
+
+```sh
+python3.12 -m venv build/phase3-env
+build/phase3-env/bin/python -m pip install pysam==0.24.1
+build/phase3-env/bin/python bench/cpu/packed-cohort/prepare.py data/human/phase3-window
+build/editdist matrix --algorithm packed-wfa --unique --threads 8 \
+  --input data/human/phase3-window/cohort.fa > build/phase3.tsv
+```
+
+Sur 64 cœurs EPYC, les fronts bidirectionnels à deux bits calculent les 523 776 scores en 56,31 ± 0,32 ms. Les mêmes fronts sur octets prennent 54,51 ± 0,03 ms, WFA2 prend 74,24 ± 0,26 ms et edlib 5,712 ± 0,002 s. Après regroupement, WFA2 prend 17,61 ± 0,12 ms et le front à deux bits 17,94 ± 0,33 ms, restitution des doublons comprise. Ces fronts parcourent les diagonales par coût croissant. NvPD calcule les lignes par indices de dernière occurrence. [Mesures à charge fixe](results/human/packed-cohort/trials-64.csv) · [Compteurs matériels](results/human/packed-pmu/counters.csv)
 
 ## Distribuer une matrice humaine
 
-Sur une allocation MPI, `--schedule` répartit les paires entre rangs. L’exemple suppose deux nœuds EPYC de 192 cœurs, le FASTA du panel humain et une compilation avec MPI et Kokkos/OpenMP.
+Pour comparer les ordonnanceurs, extraire 768 régions disjointes de 512 à 3 072 bases du chromosome 1 de CHM13 préparé ci-dessus. Le lanceur ROMEO réserve deux nœuds EPYC de 192 cœurs et compare les temps à un et deux nœuds. Il faut disposer des archives de dépendances dans `deps/` et renseigner le compte Slurm dans `ROMEO_PROJECT`. [Campagne et mesures](results/mpi/chromosome/)
 
 ```sh
-mpirun -n 48 --map-by ppr:24:node:PE=8 --bind-to core build/editdist-mpi matrix \
-  --input data/mpi-schedules/length.fa --threads 8 --schedule hilbert-weighted \
-  --workers kokkos --grain 4 > distances.tsv
+python3 bench/mpi/chromosome/cohort.py data/human/chm13-panel/chr1.fa data/human/mpi-chr1
+sbatch -A "$ROMEO_PROJECT" bench/mpi/chromosome/run.sbatch data/human/mpi-chr1
 ```
 
-Les autres politiques sont `static`, `cyclic`, `hilbert` et `steal`. L’option `--workers openmp` sélectionne une équipe OpenMP directe. À 384 cœurs, la pondération par cellules divise par 5,48 le temps du parcours de Hilbert sur les entrées triées par longueur. Son efficacité forte de 192 à 384 cœurs vaut 98,3 % (IC à 95 % de 95,7 à 100,9 %). Sur une autre allocation, le rapport des temps OpenMP/Kokkos atteint 0,998 pour cette politique (IC à 95 % de 0,969 à 1,027). [Construction du panel et mesures](results/mpi/schedules/README.md) · [Comparaison des travailleurs](results/mpi/workers/README.md)
+Dans une allocation de deux nœuds, les commandes suivantes placent 24 rangs Open MPI par nœud et huit travailleurs OpenMP par rang, soit 384 cœurs physiques. Elles exécutent successivement la répartition statique, le vol de travail et le parcours de Hilbert pondéré par le produit des longueurs. Avec `--length-bound 1`, une paire de rapport de longueurs au moins trois passe d’abord par un test de sous-séquence. Si le test réussit, la distance vaut la différence des longueurs.
+
+```sh
+cmake -S . -B build-mpi -DCMAKE_BUILD_TYPE=Release -DCHPS_MPI=ON
+cmake --build build-mpi --parallel 8 --target editdist-mpi
+for policy in static steal hilbert-weighted; do
+  mpirun -n 48 --map-by ppr:24:node:PE=8 --bind-to core build-mpi/editdist-mpi matrix \
+    --input data/human/mpi-chr1/chr1.fa --algorithm nvpd-indexed --threads 8 \
+    --workers openmp --schedule "$policy" --grain 4 --length-bound 1 > "build/${policy}.tsv"
+done
+```
+
+Sur cette matrice de 294 528 paires, le test de sous-séquence résout 39 679 paires. Avec WFA2, le temps à 384 cœurs passe de 1,2931 ± 0,0021 à 1,0742 ± 0,0053 s. Les options `--schedule hilbert` et `--schedule cyclic` donnent le parcours de Hilbert sans pondération et la distribution cyclique. Dans une compilation avec `-DCHPS_KOKKOS=ON` et Kokkos/OpenMP, `--workers kokkos` lance les travailleurs via Kokkos. [Comparaison des travailleurs](results/mpi/workers/)
+
+Avec le noyau indexé et le vol de tâches, le pool Kokkos traite les 294 528 paires en 2,015 s sur un nœud et 1,183 s sur deux, soit 85,2 % d’efficacité forte. Sur deux nœuds, le rapport de temps OpenMP/Kokkos vaut 1,0009. [Comparaison des pools](results/mpi/chromosome/workers/)
 
 ## Choisir une implémentation
 
@@ -125,7 +159,8 @@ Les autres politiques sont `static`, `cyclic`, `hilbert` et `steal`. L’option 
 | `seq`, `diagonal`, `nvpd-omp` | Programmation dynamique séquentielle, parcours par anti-diagonales OpenMP ou calcul NvPD par ligne. `--threads` fixe la taille de l’équipe OpenMP. |
 | `edlib`, `wfa2`, `biwfa` | Edlib de Šošić et Šikić utilise le parallélisme sur bits. WFA2 de Marco-Sola et coll. suit des fronts de coût croissant. BiWFA des mêmes auteurs les propage depuis les deux extrémités. Les deux parcours WFA acceptent `--trace`. |
 | `nvpd-adaptive` | Score seul. Une borne sur le nombre d’éditions limite les colonnes NvPD. La bande s’élargit jusqu’à couvrir un chemin optimal. |
-| `nvpd-split` | Score ou CIGAR global. Des fragments indépendants partagent les cœurs. Des mots uniques vérifient les coupes et les intervalles restants sont réalignés. |
+| `nvpd-split`, `nvpd-sparse` | Des coupes vérifiées répartissent les fragments entre cœurs. Pour le score, `nvpd-sparse` essaie un front borné à 128 éditions par grand fragment, puis passe à BiWFA. Les deux commandes reconstruisent aussi le CIGAR par le découpage initial. |
+| `packed-wfa` | Pour le score sur A, C, G et T, le front bidirectionnel compare 32 bases par mot de 64 bits. BiWFA prend le relais si la paire dépasse le budget de 96 éditions ou contient un autre symbole. |
 | `banded`, `banded-trim` | Le calcul élargit la bande jusqu’à couvrir la distance. `banded-trim` retire d’abord le préfixe et le suffixe identiques. |
 | `hirschberg` | Reconstruit le chemin en mémoire linéaire. `--trace` fonctionne aussi avec edlib et, jusqu’à 20 000 bases par séquence, avec `seq` et NvPD. |
 | `-DCHPS_CUDA=ON` | Active `nvpd-cuda` et `nvpd-cuda-local` avec un compilateur CUDA C++20. Ce dernier calcule le halo nécessaire à chaque bloc de colonnes. Sur GH200, ajouter `-DCMAKE_CUDA_ARCHITECTURES=90`. |
@@ -135,15 +170,22 @@ Les autres politiques sont `static`, `cyclic`, `hilbert` et `steal`. L’option 
 
 `build/editdist --help` affiche les modes et les options. A*PA2 de Groot Koerkamp associe un parcours en blocs SIMD à une heuristique de coût restant. QuickEd de Doblas et coll. estime une borne pour reconstruire l’alignement en bande par parallélisme sur bits. Si tous les chemins optimaux sortent de la bande, le meilleur alignement accessible peut coûter davantage. Une erreur distincte de lecture au bord d’un mot de bits affecte deux témoins sur EPYC. L’adaptateur protège ce bord, rejoue le chemin et élargit la recherche si son coût diffère de celui d’edlib. [Comparaison sur le chromosome 21](results/alternatives/human/README.md) · [Comparaison avec QuickEd d’origine](results/alternatives/README.md)
 
+## Profiler les tuiles CUDA
+
+Sur GH200, configurer la profondeur temporelle avec `CHPS_CUDA_TILE_ROWS` (de 1 à 32, valeur initiale 8). L’option `CHPS_CUDA_PACKED_MATCHES` active la mise en mémoire partagée de quatre décalages sur huit bits par colonne. Les décalages trop grands utilisent l’index entier.
+
+```sh
+cmake -S . -B build-gpu -DCMAKE_BUILD_TYPE=Release -DCHPS_CUDA=ON \
+  -DCMAKE_CUDA_ARCHITECTURES=90 -DCHPS_CUDA_TILE_ROWS=16 -DCHPS_CUDA_PACKED_MATCHES=ON
+cmake --build build-gpu --parallel 8 --target editdist
+build-gpu/editdist pair --algorithm nvpd-cuda-local --input build/paire.fa
+```
+
+Sur la fenêtre avec insertion de 524 288 bases de référence, à seize lignes par tuile, le compactage ramène le temps moyen de 1,878 à 1,461 s et l’énergie du GPU de 534,0 à 427,7 J par alignement. L’énergie provient du compteur cumulé du GPU. Le débit mémoire de la copie étalon et les octets calculés à partir des tuiles renseignent le modèle Roofline. [Relevés énergétiques et profils](results/energy/gh200/) · [Modèle de trafic](results/roofline/gpu/)
+
 ## Se repérer dans le dépôt
 
 Les noyaux et la ligne de commande se trouvent dans `src/`, les interfaces dans `include/chps/` et les tests dans `tests/`. Les outils de `scripts/` préparent les données et les arbres. Les bancs de `bench/` produisent les tables de `results/`. Le carnet dans `notebooks/` utilise les fonctions de tracé de `python/`. Les figures de `figures/` alimentent le rapport et sa synthèse courte, qui se compile depuis `report/rapport-court.tex` ou `report/tldr.tex`. [Sources](src/) · [Tests](tests/) · [Résultats](results/)
-
-La [comparaison des temps](figures/comparison/synthese.png) couvre douze paires synthétiques. Chaque case donne le rapport NvPD/bibliothèque, son écart-type et l’intervalle de confiance à 95 % à paire fixée. La [répartition entre rangs](figures/distributed/concentration_rangs.png) montre qui exécute les cellules lorsque les paires ont des tailles inégales.
-
-Sur le chromosome 20, le premier budget de NvPD s’épuise à la dixième ligne. La couleur repère les cellules que le second passage doit recalculer. Les deux autres cartes situent les paires coûteuses dans la matrice MPI et les révisions dans les chromosomes de CHM13. [Partitions de Hilbert](figures/distributed/carte_paires.pdf) · [Révisions de CHM13](figures/biology/paysage_chromosomique.pdf)
-
-[![Deux passages de NvPD sur une fenêtre du chromosome 20. Les cellules roses sont évaluées deux fois.](figures/cpu/geometrie_bande.png)](figures/cpu/geometrie_bande.pdf)
 
 Depuis la racine, les commandes suivantes régénèrent le carnet, les figures et les deux PDF avec Python 3.11 et Tectonic. La conversion du schéma TikZ en SVG utilise `pdftocairo` (Poppler).
 

@@ -5,7 +5,7 @@ Pour deux longueurs \(m,n\) et des coûts unitaires,
 \[
  |m-n|\le d(A,B)\le\max(m,n),\qquad W_{\mathrm{dense}}=mn.
 \]
-Dans la figure~\ref{fig:short-dep}, \(P_j=D_{i-1,j}\) est le score de la ligne précédente. Au lieu de lire la case gauche de la ligne courante, NvPD utilise la dernière colonne \(k\) où le symbole courant de la première chaîne apparaît dans le préfixe de la seconde.
+Dans la figure~\ref{fig:short-dep}, \(P_j=D_{i-1,j}\) est le score de la ligne précédente. L’indice \(k\) de la dernière correspondance dans la seconde chaîne permet à chaque colonne de lire uniquement la ligne précédente.
 \schema{dependances}{Pour les chaînes \texttt{A} et \texttt{AC}, la récurrence classique et NvPD donnent un coût final de un. Les flèches indiquent les scores lus pour la dernière case.}{fig:short-dep}{src/cpu/dp.cpp}
 \synthese{Deux séquences d'un million de bases imposent \(10^{12}\) mises à jour au calcul dense. Un parcours par fronts atteint le dernier préfixe au score \(d(A,B)\).}
 
@@ -20,20 +20,41 @@ Edlib de Šošić et Šikić code plusieurs différences de scores dans un mot b
 
 \synthese{Parmi les douze paires de la figure~\ref{fig:short-work}, seule celle de 1~Mnt à 10\,\% donne l'avantage à NvPD sur les deux bibliothèques. Le rapport moyen NvPD/WFA2 y vaut \(0{,}365\).}
 
+\subsection{Rendement des tuiles sur les régions humaines}
+Sur le chromosome~21, la figure~\ref{fig:short-loci} conserve la même requête de 262\,144 bases dans GRCh38 et change sa cible dans CHM13. La fenêtre homologue donne 478 éditions. Une cible située environ quatre millions de bases en amont en donne 138\,141 pour un rectangle de calcul plus grand de 3,58\,\%. WFA2 atteint le score homologue en 0,390\,ms sur un cœur Grace. Pour les loci distincts, NvPD compacté prend 0,637\,s sur le GH200, Edlib 3,762\,s et WFA2 15,993\,s sur un cœur Grace.
+\chart{gpu/candidats_chromosome.pdf}{Le temps moyen couvre un calcul de score par processus après lecture du FASTA, avec l’initialisation du contexte pour CUDA. Les barres épaisses donnent l’écart-type des cinq mesures, les traits fins l’IC à 95\,\%.}{fig:short-loci}{bench/gpu/energy/loci.py}
+
+Dans une tuile, plusieurs lignes se partagent les mêmes indices de dernière occurrence. Chaque colonne regroupe quatre écarts de dernière occurrence dans un mot de 32 bits. Un octet de valeur 255 renvoie à l’indice entier si le symbole est absent ou l’écart trop grand. Si un lot de \(K\) alignements consomme \(E\) joules sur le GPU, le rendement vaut \(\eta=Kmn/(10^9E)\) en GCUPS/W. Le compteur d’énergie couvre le GPU. Voir \reposource{results/energy/gh200/839317/packing.csv}. Sur une région colinéaire de 524\,288 bases, la fusion de lignes ramène le temps de Kokkos de \(2{,}520\pm0{,}034\) à \(1{,}345\pm0{,}018\)\,s.
+
+\synthese{Sur la fenêtre de 524\,288 bases qui contient une insertion, le compactage des indices à profondeur seize ramène l’énergie du GH200 de 534,0 à 427,7\,J par alignement. Le temps moyen passe de 1,878 à 1,461\,s.}
+
+\subsection{Score et chemin sur les chromosomes entiers}
+Sur deux révisions du même chromosome, des bases identiques peuvent séparer de plusieurs millions de positions les éditions à retrouver. Le score donne leur nombre minimal. Le CIGAR en indique les opérations et leurs positions.
+BiWFA de Marco-Sola et ses coauteurs propage deux fronts en sens inverse pour reconstruire un chemin en mémoire \(O(d+1)\)~\cite{biwfa}. Sur les chromosomes de CHM13, le solveur par fragments propose des coupes dans les régions identiques. La somme \(U\) des scores locaux majore \(d\). Une coupe est admissible si, de chaque côté, plus de \(U\) mots disjoints ont une occurrence unique dans la bande accessible de la cible. Le solveur réaligne les fragments adjacents si ce test échoue.
+La figure~\ref{fig:short-trace} mesure la reconstruction de ce chemin.
+\chart{comparison/trace_chromosomes.png}{Le temps et le pic de mémoire du CIGAR sont comparés sur le chromosome 1 de CHM13. Les accélérations sur quatre paires distinguent le changement de méthode du gain obtenu en ajoutant des cœurs.}{fig:short-trace}{bench/cpu/chromosome-trace/measure.py}
+Sur le chromosome~1 de CHM13, le CIGAR de 176 éditions prend \(11{,}81\pm1{,}23\)\,ms avec huit cœurs, contre \(183{,}11\pm5{,}14\)\,ms avec WFA2 sur un cœur. BiWFA traite les deux fragments qui contiennent encore des différences.
+
+Pour le score seul, un front borné conserve la position la plus avancée sur chaque diagonale. Il explore jusqu’à 128 éditions par fragment avant le repli sur BiWFA. La figure~\ref{fig:short-hg002} compare deux révisions des chromosomes~1 et 21 de HG002 pour chaque haplotype~\cite{hg002}. Ces quatre paires ont de 44 à 252 millions de bases et des distances de 6 à 111. Les symboles \texttt{N} sont conservés dans les lacunes d’assemblage.
+\chart{comparison/chromosome_dispatch.pdf}{Les accélérations rapportent le temps de WFA2 sur un cœur EPYC à celui du solveur par fragments, avec ou sans front borné. Les barres indiquent les moyennes de cinq rapports appariés, avec leur écart-type et leur IC à 95\,\%.}{fig:short-hg002}{bench/cpu/chromosome-dispatch/measure.py}
+
+\synthese{Sur le chromosome~1 maternel de HG002, le score de 54 éditions prend \(28{,}19\pm0{,}06\)\,ms sur un cœur EPYC avec le front borné, contre \(87{,}18\pm0{,}80\)\,ms pour WFA2. Le pic résident du processus descend de 834 à 477\,Mio entre les deux variantes par fragments.}
+
 \subsection{Ordonnancement entre nœuds}
 Pour une paire de longueurs \(m_i,m_j\), NvPD calcule \(m_i m_j\) cellules. La courbe de Hilbert ordonne les paires. Les coupes pondérées équilibrent la somme des produits de longueurs confiés à chaque rang MPI. La figure~\ref{fig:short-mpi} compare cette répartition au vol de tâches et aux autres découpages sur 128 fragments du chromosome 21.
 \chart{distributed/ordonnancement.png}{Les trois premiers panneaux mesurent les cinq politiques sur deux nœuds EPYC. Le dernier rapporte l'accélération obtenue de un à deux nœuds au doublement du nombre de cœurs.}{fig:short-mpi}{bench/mpi/schedules/measure.py}
-\synthese{Sur 8\,128 paires issues des fragments triés par longueur, le débit à 384 cœurs passe de \(107{,}2\pm0{,}4\) à \(587{,}4\pm11{,}4\)\,GCUPS avec les coupes pondérées. Leur efficacité forte de 192 à 384 cœurs vaut 98,3\,\%.}
+Sur ces 8\,128 paires triées par longueur, le débit à 384 cœurs passe de \(107{,}2\pm0{,}4\) à \(587{,}4\pm11{,}4\)\,GCUPS avec les coupes pondérées. L’efficacité forte \(T_{192}/(2T_{384})\) vaut 98,3\,\%.
 
-\subsection{Reconstruction du chemin sur les chromosomes}
-BiWFA de Marco-Sola et ses coauteurs propage deux fronts en sens inverse pour reconstruire un chemin en mémoire \(O(d+1)\)~\cite{biwfa}. Sur les chromosomes de CHM13, le solveur par fragments propose des coupes dans les régions identiques. La somme \(U\) des scores locaux majore \(d\). Une coupe est admissible si, de chaque côté, plus de \(U\) mots disjoints ont une occurrence unique dans la bande accessible de la cible. Le solveur réaligne les fragments adjacents si ce test échoue.
-\chart{comparison/trace_chromosomes.png}{Le temps et le pic de mémoire du CIGAR sont comparés sur le chromosome 1 de CHM13. Les accélérations sur quatre paires distinguent le changement de méthode du gain obtenu en ajoutant des cœurs.}{fig:short-trace}{bench/cpu/chromosome-trace/measure.py}
-\synthese{Sur le chromosome 1 de CHM13, le CIGAR de 176 éditions prend \(11{,}81\pm1{,}23\)\,ms avec huit cœurs et \(183{,}11\pm5{,}14\)\,ms avec WFA2 sur un cœur (figure~\ref{fig:short-trace}). BiWFA traite les deux fragments qui contiennent encore des différences.}
+Une seconde matrice réunit 768 loci disjoints du chromosome~1 de CHM13, de 512 à 3\,072 bases. Ses \(768\times767/2=294\,528\) scores permettent de comparer les solveurs sur les mêmes 384 cœurs. En ordre de Hilbert pondéré, partager l’index de chaque cible entre huit travailleurs ramène NvPD de 1,745 à 1,340\,s. Le vol de tâches avec index partagé prend 1,168\,s. Voir \reposource{bench/mpi/chromosome/measure.py}.
+
+Les séries répétées sur le chromosome 1 de CHM13 séparent le coût de copie du coût du score. Avec une seule requête, la copie en pages de 2\,Mio économise \(147\pm2\)\,ms. Pour 384 requêtes sur la même copie, les pages de 4\,Kio économisent \(146\pm36\)\,ms.\footnote{Voir les \reposource{results/profile/huge-pages/839316/reuse-summary.csv}.}
+
+\synthese{Sur les 294\,528 paires, l’efficacité forte de NvPD indexé en ordre de Hilbert pondéré vaut 75,0\,\% entre un et deux nœuds. Aux mêmes 384 cœurs, Edlib calcule la matrice en \(0{,}1680\pm0{,}0006\)\,s.}
 
 \section{Conclusion}
-Le gain de NvPD dépend du coût par paire et du partage des cellules entre cœurs. Le GPU peut aussi fusionner des lignes pour réduire les lancements. Sur une fenêtre colinéaire de 524\,288 bases du chromosome 21, cette fusion ramène le temps de Kokkos de \(2{,}520\pm0{,}034\) à \(1{,}345\pm0{,}018\)\,s.
+Dans une région phasée du chromosome~21, les 1\,024 haplotypes de 512 personnes donnent 523\,776 paires. Sur 64 cœurs EPYC, les fronts bidirectionnels prennent 54,51\,ms en octets et 56,31\,ms en deux bits, encodage compris. WFA2 prend 74,24\,ms. Regrouper les 386 séquences distinctes ramène ces deux derniers temps à 17,94 et 17,61\,ms.\footnote{Voir les \reposource{results/human/packed-cohort/trials-64.csv}.}
 
-La cohorte de 64 accessions du SARS-CoV-2 donne 2\,016 distances. Sur 32 cœurs EPYC, subdiviser les rangées ramène Edlib de 1,645 à 0,343\,s pour la matrice. Dans le noyau hybride NvPD/BiWFA, le filtre de composition ramène le calcul de 584 à 448\,ms. Le répartiteur de WFA-GPU d'Aguado-Puig et coll.~\cite{wfagpuaffine} confie au GPU les 15 paires contenant uniquement A, C, G et T. Les 2\,001 autres sont alignées sur CPU. Voir \reposource{results/phylogeny/sars-romeo/README.md}.
+Sur les chromosomes, les expériences distinguent le calcul dense entre loci éloignés du parcours par fronts entre versions d’un assemblage. Pour la phylogénie, les 64 accessions du SARS-CoV-2 fournissent 2\,016 distances. Sur 32 cœurs EPYC, subdiviser les rangées ramène Edlib de 1,645 à 0,343\,s pour la matrice. Dans le noyau hybride NvPD/BiWFA, le filtre de composition ramène le calcul de 584 à 448\,ms. Le répartiteur de WFA-GPU d'Aguado-Puig et coll.~\cite{wfagpuaffine} confie au GPU les 15 paires contenant uniquement A, C, G et T. Les 2\,001 autres sont alignées sur CPU. Voir \reposource{results/phylogeny/sars-romeo/README.md}.
 
 Les deux arbres utilisent le coût littéral \(c(x,y)=\mathbf{1}_{x\ne y}\), y compris pour \texttt{N}. Restreindre le chemin à \(|i-j|\le w\) peut déplacer des branches (figure~\ref{fig:short-rf}). Le RF normalisé \(R=|S_1\triangle S_2|/(|S_1|+|S_2|)\) porte sur les clades internes d'UPGMA ou les bipartitions internes de Neighbor-Joining~\cite{robinson}.
 \chart{biology/sensibilite_arbres.png}{La demi-largeur de bande détermine le nombre de distances disponibles et l'écart topologique sur le panel viral et huit collections synthétiques.}{fig:short-rf}{scripts/phylogeny/band_sensitivity.py}
@@ -46,6 +67,7 @@ Les deux arbres utilisent le coût littéral \(c(x,y)=\mathbf{1}_{x\ne y}\), y c
 \bibitem{edlib} M. Šošić et M. Šikić. \href{https://doi.org/10.1093/bioinformatics/btw753}{\emph{Edlib: a C/C++ library for fast, exact sequence alignment using edit distance.}} Bioinformatics 33 (2017).
 \bibitem{wfa} S. Marco-Sola et coll. \href{https://doi.org/10.1093/bioinformatics/btaa777}{\emph{Fast gap-affine pairwise alignment using the wavefront algorithm.}} Bioinformatics 37 (2021).
 \bibitem{biwfa} S. Marco-Sola et coll. \href{https://doi.org/10.1093/bioinformatics/btad074}{\emph{Optimal gap-affine alignment in \(O(s)\) space.}} Bioinformatics 39 (2023).
+\bibitem{hg002} N. F. Hansen et coll. \href{https://doi.org/10.1016/j.cell.2026.06.016}{\emph{A complete diploid human genome benchmark for personalized genomics.}} Cell (2026).
 \bibitem{robinson} D. F. Robinson et L. R. Foulds. \href{https://doi.org/10.1016/0025-5564(81)90043-2}{\emph{Comparison of phylogenetic trees.}} Mathematical Biosciences 53 (1981).
 \bibitem{wfagpuaffine} Q. Aguado-Puig et coll. \href{https://doi.org/10.1093/bioinformatics/btad701}{\emph{WFA-GPU: gap-affine pairwise read-alignment using GPUs.}} Bioinformatics 39 (2023).
 \end{thebibliography}\endgroup

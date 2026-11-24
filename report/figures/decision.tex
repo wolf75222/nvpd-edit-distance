@@ -12,17 +12,17 @@
 \draw[branch] (1.5,2.1) -- (1.5,-2.1);
 \foreach \id in {score,trace,batch}{\draw[next] (1.5,0 |- \id.west) -- (\id.west);}
 \node[option] (band) at (5.15,2.57)
-  {\textbf{NvPD en bande}\\Élargir tant que le score restreint dépasse le budget \(k\).};
+  {\textbf{Révisions d’un haplotype}\\Étendre un front borné sur chaque fragment vérifié.};
 \node[option] (wave) at (5.15,1.63)
-  {\textbf{Calcul par fronts}\\Étendre les fronts de WFA2 jusqu’à la case terminale.};
+  {\textbf{Loci distants}\\Comparer le tuilage dense au score bit-parallèle.};
 \node[option] (cut) at (5.15,.47)
   {\textbf{Coupe vérifiée}\\Tracer les fragments séparément, puis concaténer les chemins.};
 \node[option] (whole) at (5.15,-.47)
   {\textbf{Coupe rejetée}\\Réunir les fragments adjacents et appliquer NvPD ou BiWFA.};
 \node[option] (length) at (5.15,-1.63)
-  {\textbf{Entrées triées par longueur}\\Partager le parcours de Hilbert selon le poids \(m_i m_j\).};
+  {\textbf{Haplotypes répétés}\\Regrouper les chaînes identiques avant le calcul.};
 \node[option] (locus) at (5.15,-2.57)
-  {\textbf{Entrées groupées par locus}\\Distribuer les paires du panel dense dans l'ordre cyclique.};
+  {\textbf{Loci distincts}\\Répartir les paires entre les rangs et réutiliser les index.};
 \foreach \id/\upper/\lower in {score/band/wave,trace/cut/whole,batch/length/locus}{
   \draw[branch] (\id.east) -- (4.77,0 |- \id.east);
   \draw[branch] (4.77,0 |- \upper.west) -- (4.77,0 |- \lower.west);
