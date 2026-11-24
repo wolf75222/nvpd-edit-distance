@@ -1,10 +1,10 @@
-\begin{tikzpicture}[font=\footnotesize\sffamily,
+\begin{tikzpicture}[font=\footnotesize\rmfamily,
  module/.style={draw=black!65,rounded corners=1pt,text width=2.65cm,minimum height=9mm,
  align=center,inner sep=2pt}, flow/.style={-{Latex[length=1.6mm]},line width=.5pt}]
 \node[module] (f) at (0,0) {FASTA\par validation};
 \node[module,fill=black!5] (p) at (3.6,0) {paire ou triangle\par supérieur};
 \node[module] (n) at (7.4,1.05) {DP et NvPD\par CPU, GPU, Kokkos};
-\node[module] (l) at (7.4,0) {bande, edlib,\par WFA2, QuickEd};
+\node[module] (l) at (7.4,0) {calcul en bande,\par edlib et WFA2};
 \node[module] (m) at (7.4,-1.05) {MPI\par bandes ou paires};
 \node[module,fill=black!5] (o) at (11.2,0) {coût ou matrice\par JSON / TSV};
 \draw[flow] (f)--(p);

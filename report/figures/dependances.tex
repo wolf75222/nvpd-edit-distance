@@ -1,22 +1,22 @@
 \begin{tikzpicture}[
  cell/.style={draw,rounded corners=1pt,minimum width=11mm,minimum height=6mm,inner sep=1pt},
  cible/.style={cell,fill=black!12,line width=.7pt}, link/.style={-{Latex[length=1.6mm]},line width=.55pt},
- lab/.style={font=\footnotesize\sffamily}, font=\small]
+ lab/.style={font=\footnotesize\rmfamily}, font=\small]
 \begin{scope}
-  \node[lab,anchor=west] at (-.55,1.75) {\textbf{(a)} Récurrence classique};
-  \node[cell] (nw) at (0,.95) {\(P_{j-1}\)};
-  \node[cell] (n)  at (2,.95) {\(P_j\)};
-  \node[cell] (w)  at (0,-.3) {\(D_{i,j-1}\)};
-  \node[cible] (v)   at (2,-.3) {\(D_{ij}\)};
+  \node[lab,anchor=west] at (-.55,1.75) {\textbf{a)} Récurrence classique};
+  \node[cell] (nw) at (0,.95) {\(P_{1}=1\)};
+  \node[cell] (n)  at (2,.95) {\(P_2=2\)};
+  \node[cell] (w)  at (0,-.3) {\(D_{1,1}=0\)};
+  \node[cible] (v)   at (2,-.3) {\(D_{1,2}=1\)};
   \draw[link] (nw.south east)--(v.north west);
   \draw[link] (n)--(v); \draw[link] (w)--(v);
 \end{scope}
-\begin{scope}[xshift=6.1cm]
-  \node[lab,anchor=west] at (-.55,1.75) {\textbf{(b)} NvPD, cas \(0<k<j\)};
-  \node[cell] (src) at (0,.95) {\(P_{k-1}\)};
-  \node[cell] (sub) at (2,.95) {\(P_{j-1}\)};
-  \node[cell] (del) at (4,.95) {\(P_j\)};
-  \node[cible]  (dst) at (2,-.45) {\(D_{ij}\)};
+\begin{scope}[xshift=6.5cm]
+  \node[lab,anchor=west] at (-.55,1.75) {\textbf{b)} NvPD, cas \(0<k<j\)};
+  \node[cell] (src) at (0,.95) {\(P_0=0\)};
+  \node[cell] (sub) at (2,.95) {\(P_{1}=1\)};
+  \node[cell] (del) at (4,.95) {\(P_2=2\)};
+  \node[cible]  (dst) at (2,-.45) {\(D_{1,2}=1\)};
   \draw[link] (src.south) -- node[midway,below left,inner sep=1pt] {\scriptsize \(+j-k\)} (dst.west);
   \draw[link] (sub)-- node[right,inner sep=2pt] {\scriptsize \(+1\)} (dst);
   \draw[link] (del.south) -- node[midway,below right,inner sep=1pt] {\scriptsize \(+1\)} (dst.east);

@@ -1,148 +1,22 @@
-% Depuis la racine : python3 report/update_tables.py
-% Puis, dans report/ : tectonic rapport.tex
 \documentclass[10pt,a4paper]{article}
-\usepackage[numbers,sort&compress]{natbib}
-\usepackage[english,french]{babel}
-\usepackage{popsnotes}
-\usepackage{algpseudocode}
-\algrenewcommand\algorithmicwhile{\textbf{tant que}}
-\algrenewcommand\algorithmicfor{\textbf{pour}}
-\algrenewcommand\algorithmicforall{\textbf{pour chaque}}
-\algrenewcommand\algorithmicdo{\textbf{faire}}
-\algrenewcommand\algorithmicend{\textbf{fin}}
-\algrenewcommand\algorithmicreturn{\textbf{renvoyer}}
-\algrenewcommand\algorithmicloop{\textbf{boucle}}
-\algrenewcommand\algorithmicif{\textbf{si}}
-\algrenewcommand\algorithmicthen{\textbf{alors}}
-\geometry{left=24mm,right=24mm,top=18mm,bottom=19mm,headsep=4mm}
-\setlength{\headwidth}{\textwidth}
-\addto\captionsfrench{\renewcommand{\tablename}{Tableau}}
-\newcommand{\DocTitle}{Calcul parallèle de la distance d'édition}
-\newcommand{\DocSubtitle}{Master CHPS \enspace$\cdot$\enspace Université de Reims Champagne-Ardenne}
-\newcommand{\DocAuthor}{CHPS1001 \enspace$\cdot$\enspace Projet de bioinformatique}
-\newcommand{\DocDate}{24 novembre 2026}
-\newcommand{\DocHeader}{CHPS1001 \quad Distance d'édition sur ROMEO}
-\newcommand{\DocAbstract}{Sur ROMEO, la reformulation SIMD de NvPD divise le temps à un cœur par 2,32 sur une matrice de \(20\,000^2\) cases. Huit cœurs donnent une accélération supplémentaire de 5,88. Sur deux nœuds de 192 cœurs, répartir les 2\,016 paires de 64 génomes de phage ramène le temps de 162,4 à 114,6\,ms. Distribuer une seule paire ralentit le calcul. Sur deux fenêtres homologues du chromosome humain 21, les distances de 5\,599 et 12\,482 éditions concordent entre NvPD sur GH200, edlib et WFA2-lib.}
-\input{measurements}
-
+\input{preambule}
 \begin{document}
-\makedocumentheader
-
-\section{Comment NvPD supprime la dépendance à gauche}
-Soient deux séquences \(A\) et \(B\) de longueurs \(m\) et \(n\). La distance de Levenshtein \(D_{ij}\) est le nombre minimal d'insertions, de suppressions et de substitutions nécessaires pour transformer \(A_{1:i}\) en \(B_{1:j}\). Chaque opération coûte un. Les bords valent \(D_{0j}=j\) et \(D_{i0}=i\). Dans le calcul classique, chaque case lit ses voisines du haut, de gauche et de la diagonale. Les cases d'une même anti-diagonale \(i+j\) sont donc indépendantes.
-
-Pour NvPD, Sadiq et coll.~\cite{sadiq} repèrent la dernière occurrence de \(A_i\) dans \(B_{1:j}\). Soit \(k\) sa position, ou \(0\) si ce symbole est absent. En posant \(P_j=D_{i-1,j}\) et \(u=1+\min(P_{j-1},P_j)\), on obtient
-\[
-  D_{ij} =
-  \begin{cases}
-    P_{j-1} & k=j,\\
-    u       & k=0,\\
-    \min\bigl(u,\,P_{k-1}+j-k\bigr) & 0<k<j.
-  \end{cases}
-\]
-Le dernier terme fait correspondre \(A_i\) à \(B_k\), puis insère les \(j-k\) lettres restantes. Par exemple, pour passer de \texttt{A} à \texttt{AC}, cette voie coûte une insertion. Les deux autres voies coûtent chacune au moins deux opérations. Tous les termes de la formule se lisent dans la ligne précédente.
-
-\begin{figure}[H]\centering
-\input{figures/dependances}
-\caption{Valeurs lues pour calculer une case. \(P\) désigne la ligne précédente. En (a), une flèche horizontale relie deux cases de la ligne courante. En (b), les trois flèches partent de \(P\). La table des dernières occurrences fournit \(k\).}
-\end{figure}
-
-\subsection{Forme vectorisable}
-Pour \(j\geq1\), le noyau OpenMP peut remplacer les trois cas par une même expression,
-\[
-D_{ij}=\min\!\left(1+\min(P_{j-1},P_j),\ P_{\max(0,k-1)}+j-k\right).
-\]
-Si \(k=0\), le second terme vaut \(i-1+j\geq\max(i,j)\), une borne supérieure de la distance. Si \(k=j\), il redonne le coût diagonal d'une correspondance. Le calcul du bord \(D_{i0}=i\) reste séparé. Plusieurs colonnes peuvent alors exécuter les mêmes instructions SIMD.
-
-\newpage
+\thispagestyle{firstpage}
+\begin{center}
+{\Large\bfseries Parallel Edit Distance for Genomic Sequences\par}
+\vspace{4pt}\hrule\vspace{8pt}
+Master CHPS \quad Université de Reims Champagne-Ardenne\par
+CHPS1001 \quad 24 novembre 2026
+\end{center}
+\noindent\textbf{Résumé.} La distance d'édition globale compte les opérations qui transforment une séquence entière en une autre. NvPD répartit les colonnes d'une même ligne entre cœurs ou fils GPU. Pour une collection, les paires indépendantes offrent un second niveau de parallélisme. Les mesures sur EPYC et GH200 relient le temps de calcul aux synchronisations et à la divergence des séquences. Les applications portent sur des assemblages humains et des arbres de distance.
+{\small\setlength{\parskip}{0pt}\tableofcontents}
 \input{algorithmes}
-\newpage
-\section{Organisation du calcul et de la mémoire}
-Dans la révision initiale, la version séquentielle de coût seul conserve deux lignes. La version OpenMP classique fait tourner trois anti-diagonales. Pour NvPD, une table conserve les positions \(k\) pour chaque symbole distinct de \(A\) et chaque préfixe de \(B\). Les fils OpenMP se partagent les colonnes par blocs contigus et se synchronisent en fin de ligne. Sur le GPU, chaque case occupe un fil CUDA. Les noyaux successifs, un par ligne, partagent un même flux. Le CPU construit la table des positions et la copie une fois sur le GPU.
-
-Avec \(q\) symboles et des entiers de quatre octets, le coût seul de NvPD requiert \(4(q+2)(n+1)\) octets pour les deux lignes et l'index. La séquence la plus courte détermine ici le nombre de lignes. Pour reconstruire l'alignement, les versions séquentielle et NvPD conservent toute la matrice, jusqu'à 20\,000 bases par séquence. À cette limite, la matrice seule occupe 1,49\,Gio. En CUDA, la remontée du chemin optimal s'effectue sur CPU après copie de la matrice. Au-delà de cette limite, seule la requête de coût est acceptée.
-
-\begin{figure}[H]\centering
-\input{figures/execution}
-\caption{Exécution de NvPD ligne par ligne, illustrée par quatre plages de colonnes. En OpenMP, une barrière sépare les lignes. Dans la première version CUDA, l'ordre des lancements dans un même flux assure cette dépendance.}
-\end{figure}
-
-\subsection{Tuile CUDA et portée des dépendances}
-Soit \(R\) le plus grand décalage vers la gauche lu dans la ligne précédente, en comptant la diagonale. Pour \(k>0\), la lecture de \(P_{k-1}\) donne un décalage \(j-k+1\). Une sortie après \(h\) lignes peut donc dépendre de \(hR\) colonnes à sa gauche. La version tuilée recalcule ce bord dans chaque bloc et alterne deux bandes en mémoire partagée. Les blocs peuvent achever plusieurs lignes avant le prochain lancement global. Un bloc complet de largeur \(b\) calcule au plus \(hb+Rh(h-1)/2\) cases pour produire ses \(b\) dernières valeurs.
-\begin{figure}[H]\centering
-\input{figures/tuile}
-\caption{Colonnes nécessaires à une tuile de trois lignes lorsque \(R=2\). Les cases de la ligne d'entrée sont lues en mémoire globale. Chaque étape réduit de deux colonnes le domaine à recalculer. Le schéma prend quatre colonnes de sortie pour rester lisible.}
-\end{figure}
-
-\section{Paires synthétiques et contrôles}
-Le générateur tire uniformément des références de 5\,000, 20\,000, 100\,000 et 1\,000\,000 bases sur \(\{A,C,G,T\}\). Pour chaque longueur, il produit cinq paires à chacun des taux de 2, 5 et 10\,\%, soit 60 paires. La graine maîtresse vaut 2026. Chaque paire reçoit sa propre graine. Le générateur choisit des positions distinctes, puis tire pour chacune une substitution, une insertion ou une suppression avec la même probabilité. Le taux désigne les opérations appliquées. Plusieurs opérations peuvent admettre un alignement de coût inférieur.
-
-Les premiers tests comparent les méthodes à la programmation dynamique séquentielle sur 192 paires courtes, y compris des chaînes vides et des symboles ambigus. Ils rejouent le chemin reconstruit et vérifient son coût. Sur une paire de 20\,000 et 19\,928 bases, les chemins séquentiel et NvPD OpenMP donnent aussi le score d'edlib (980). Le lecteur FASTA convertit les lettres en majuscules et les compare littéralement. Ainsi, \texttt{N} contre \texttt{N} coûte zéro, \texttt{N} contre \texttt{A} coûte un.
-
-\newpage
-\input{fronts}
-\newpage
-\section{Campagne de référence sur ROMEO}
-Ces mesures portent sur la révision \texttt{f08b4f6}. Le chronomètre couvre le calcul de distance après lecture du FASTA. Il inclut les allocations, l'index de NvPD, l'initialisation à froid de CUDA et les transferts. Chaque essai utilise un processus neuf. La référence et les bibliothèques tournent sur un cœur CPU. OpenMP utilise jusqu'à huit cœurs x86. CUDA cible un GPU Grace Hopper (SM90). Les exécutables CPU utilisent GCC~11.5 en mode \texttt{Release}, avec l'architecture cible par défaut. Plusieurs travaux Slurm partagent le nœud CPU sur des cœurs distincts. Pour une méthode dense, le débit vaut \(mn/(10^9T)\) GCUPS, avec \(T\) en secondes.
-
-\begin{table}[H]\centering
-\caption{Passage d'un à huit fils sur une même paire de 20\,000 bases de référence, à 5\,\% d'erreur. Les temps sont les médianes de trois lancements. Chaque accélération \(S_p=T_1/T_p\) utilise le temps à un fil de la même méthode.}
-\small
-\begin{tabular}{r rr rr r}\toprule
- & \multicolumn{2}{c}{Anti-diagonales} & \multicolumn{3}{c}{NvPD OpenMP}\\
-\cmidrule(lr){2-3}\cmidrule(lr){4-6}
-Fils \(p\) & Temps (ms) & \(S_p\) & Temps (ms) & \(S_p\) & \(100S_p/p\) (\%)\\\midrule
-\ScalingRows
-\bottomrule\end{tabular}
-\end{table}
-
-Sur cette paire, la référence séquentielle prend \RefMs{}\,ms et NvPD sur GPU \PilotGPU{}\,ms. À huit fils, NvPD devance les anti-diagonales à 20\,000 bases. À un million, les anti-diagonales sont plus rapides aux trois taux mesurés (tableau 2). L'origine de l'efficacité supérieure à 100\,\% reste à mesurer.
-
-\begin{table}[H]\centering
-\caption{Coût seul à un million de bases. Chaque colonne de temps donne la médiane des temps par paire en secondes, suivie du nombre de paires mesurées. Le débit dense porte sur le taux de 5\,\%. Les pics de mémoire portent sur les trois taux.}
-\small
-\begin{tabular}{@{}l rrr rrr@{}}\toprule
-& \multicolumn{3}{c}{Temps (s) et effectif} & \multicolumn{1}{c}{Débit} & \multicolumn{2}{c}{Mémoire (Mio)}\\
-\cmidrule(lr){2-4}\cmidrule(lr){6-7}
-Méthode & 2\,\% & 5\,\% & 10\,\% & GCUPS & RSS & GPU\\\midrule
-\LongRows
-\bottomrule\end{tabular}
-\end{table}
-
-Le RSS couvre tout le processus hôte, y compris le contexte CUDA. La mémoire GPU compte les tampons explicitement alloués. Un tiret indique une valeur absente ou inapplicable. Pour edlib (méthode bit-parallèle~\cite{edlib}) et WFA2-lib (fronts d'onde~\cite{wfa}), le nombre de cases de la matrice complète ne mesure pas le travail effectué. edlib et WFA2-lib s'accordent avec NvPD sur GPU pour les 60 paires synthétiques. Leur temps dépend de la distance obtenue. NvPD parcourt les \(mn\) cases pour chaque paire, quel que soit son taux d'erreur.\LongSpeed
-
-\section{Matrice de distances et arbres}
-NvPD sur GPU, edlib et WFA2-lib retrouvent la même matrice pour les 64 génomes complets du bactériophage \(\phi\)X174 (5\,339 à 5\,388 bases, 2\,016 paires). Sur huit cœurs x86, avec un lancement par bibliothèque, les temps totaux sont \PhageEdlib{}\,ms pour edlib et \PhageWfa{}\,ms pour WFA2-lib. Dans une autre allocation, NvPD sur un GH200 avec quatre cœurs hôtes ARM prend \PhageGpu{}\,s pour la même matrice. Ces temps incluent la lecture et l'écriture. Les distances vont de 0 à 134 éditions, avec une médiane de 55. Les accessions \texttt{HM753660.1} et \texttt{HM753661.1} ont une distance nulle.
-
-Le fichier \path{results/ncbi/sars_metadata.tsv} recense la référence SARS-CoV-2 et neuf accessions pour chacune des sept lignées Pango demandées. Les distances et les arbres de cette campagne portent sur \(\phi\)X174. Le regroupement des lignées Pango reste à vérifier.
-
-\newpage
+\input{divergence}
 \input{profil}
-
-\newpage
+\input{fronts}
 \input{distribue}
-\newpage
 \input{chromosome}
-\newpage
-\begin{thebibliography}{16}
-\bibitem{sadiq} M. U. Sadiq et coll. \href{https://doi.org/10.1007/s10586-019-02962-w}{\emph{NvPD: novel parallel edit distance algorithm, correctness, and performance evaluation.}} Cluster Computing \textbf{23}, 879--894 (2020).
-\bibitem{edlib} M. Šošić et M. Šikić. \href{https://doi.org/10.1093/bioinformatics/btw753}{\emph{Edlib: a C/C++ library for fast, exact sequence alignment using edit distance.}} Bioinformatics \textbf{33}, 1394--1395 (2017).
-\bibitem{wfa} S. Marco-Sola et coll. \href{https://doi.org/10.1093/bioinformatics/btaa777}{\emph{Fast gap-affine pairwise alignment using the wavefront algorithm.}} Bioinformatics \textbf{37}, 456--463 (2021).
-\bibitem{wfagpu} Q. Aguado-Puig et coll. \href{https://doi.org/10.1109/ACCESS.2022.3182714}{\emph{Accelerating Edit-Distance Sequence Alignment on GPU Using the Wavefront Algorithm.}} IEEE Access \textbf{10}, 63782--63796 (2022).
-\bibitem{amdahl} G. M. Amdahl. \href{https://doi.org/10.1145/1465482.1465560}{\emph{Validity of the Single Processor Approach to Achieving Large Scale Computing Capabilities.}} AFIPS, 483--485 (1967).
-\bibitem{gustafson} J. L. Gustafson. \href{https://doi.org/10.1145/42411.42415}{\emph{Reevaluating Amdahl's Law.}} Communications of the ACM \textbf{31}, 532--533 (1988).
-\bibitem{nj} N. Saitou et M. Nei. \href{https://doi.org/10.1093/oxfordjournals.molbev.a040454}{\emph{The neighbor-joining method: a new method for reconstructing phylogenetic trees.}} Molecular Biology and Evolution \textbf{4}, 406--425 (1987).
-\bibitem{ukkonen} E. Ukkonen. \href{https://doi.org/10.1016/S0019-9958(85)80046-2}{\emph{Algorithms for approximate string matching.}} Information and Control \textbf{64}, 100--118 (1985).
-\bibitem{myers} G. Myers. \href{https://doi.org/10.1145/316542.316550}{\emph{A fast bit-vector algorithm for approximate string matching based on dynamic programming.}} Journal of the ACM \textbf{46}, 395--415 (1999).
-\bibitem{quicked} M. Doblas et coll. \href{https://doi.org/10.1093/bioinformatics/btaf112}{\emph{QuickEd: high-performance exact sequence alignment based on bound-and-align.}} Bioinformatics \textbf{41}, btaf112 (2025).
-\bibitem{astar} R. Groot Koerkamp. \href{https://doi.org/10.4230/LIPIcs.WABI.2024.17}{\emph{A*PA2: Up to 19× Faster Exact Global Alignment.}} WABI, LIPIcs \textbf{312}, article 17 (2024).
-\bibitem{sassy} R. Beeloo et R. Groot Koerkamp. \href{https://doi.org/10.1093/bioinformatics/btag244}{\emph{Sassy: fuzzy searching DNA sequences using SIMD.}} Bioinformatics \textbf{42}, btag244 (2026).
-\bibitem{kokkos} H. C. Edwards, C. R. Trott et D. Sunderland. \href{https://doi.org/10.1016/j.jpdc.2014.07.003}{\emph{Kokkos: Enabling manycore performance portability through polymorphic memory access patterns.}} Journal of Parallel and Distributed Computing \textbf{74}, 3202--3216 (2014).
-\bibitem{t2t} S. Nurk et coll. \href{https://doi.org/10.1126/science.abj6987}{\emph{The complete sequence of a human genome.}} Science \textbf{376}, 44--53 (2022).
-\end{thebibliography}
-\newpage
-\section{Arbres des 64 accessions de \texorpdfstring{\(\phi\)X174}{phiX174}}
-UPGMA utilise les moyennes des distances entre membres de deux groupes et place toutes les feuilles à la même hauteur. Le \emph{Neighbor-Joining} de Saitou et Nei~\cite{nj} livre un arbre non enraciné. Les étiquettes donnent les accessions NCBI. Les branches horizontales en trait plein donnent des longueurs estimées en unités de distance d'édition. Un trait pointillé relie la feuille à son étiquette. Chaque panneau a sa propre échelle. Dans l'arbre du \emph{Neighbor-Joining}, la position de la racine graphique est arbitraire.
-\par\vspace{3mm}
-\begin{center}\input{figures/arbres}\end{center}
+\input{synthese}
+\clearpage
+\input{references}
 \end{document}

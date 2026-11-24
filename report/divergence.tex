@@ -1,0 +1,18 @@
+\chapitre{Effet de la divergence à grande longueur}
+Le générateur applique des éditions à une chaîne de référence et conserve la graine de chaque paire. Le taux injecté compte les opérations du générateur. La distance \(d\) minimise le coût parmi tous les chemins et peut être inférieure à ce nombre. Au score \(s\), WFA conserve la plus grande colonne \(F_s(k)\) atteinte sur la diagonale \(k=j-i\). Prolonger une correspondance ne consomme aucun point de score~\cite{wfa}.
+\methode{3}{Front d'édition à coûts unitaires.}
+\begin{algorithmic}[1]
+\State Étendre le préfixe commun sur \(k=0\) au score nul
+\While{le point \((m,n)\) reste hors du front}
+\State Augmenter \(s\) de un et examiner les diagonales admissibles \(|k|\le s\)
+\State Pour chaque diagonale, retenir le plus avancé des prédécesseurs admissibles pour une insertion, une délétion ou une substitution
+\State Étendre les lettres égales depuis ce point et mémoriser la colonne terminale
+\EndWhile
+\State \Return \(s\)
+\end{algorithmic}
+Pour les prédécesseurs intérieurs, les trois colonnes candidates valent \(F_{s-1}(k-1)+1\), \(F_{s-1}(k+1)\) et \(F_{s-1}(k)+1\). Chaque mouvement reste dans le rectangle des préfixes. Au plus \(2s+1\) diagonales sont actives au score \(s\), soit \(O((d+1)^2)\) entrées de front jusqu'au score final, auxquelles s'ajoutent les comparaisons des lettres égales.
+\chart{01_temps_distance.png}{Les temps sur les paires synthétiques de la campagne initiale sont rapportés à la longueur et au taux d'éditions injectées.}{fig:temps}{bench/run.py}
+À longueur fixée, NvPD parcourt toujours \(mn\) cases. La figure~\ref{fig:temps} montre que le temps de WFA2 augmente avec la divergence. Le débit dense \(mn/(10^9 T)\) compte des milliards de cases utiles par seconde pour NvPD, hors recalcul des halos. Pour un front, le même quotient est un débit équivalent.
+Sur les cinq paires de chaque taux à un million de bases, le temps médian de WFA2 passe de 0,61 à 11,64\,s entre 2 et 10\,\% d'éditions injectées. Sur les mêmes groupes, edlib passe de 1,71 à 6,03\,s.
+\synthese{Multiplier par cinq le taux injecté multiplie ici le temps médian de WFA2 par environ dix-neuf.}{La comparaison des deux décompositions denses conserve le même nombre de cases utiles par entrée.}
+\input{million}

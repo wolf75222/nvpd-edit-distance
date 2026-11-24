@@ -1,0 +1,35 @@
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[english,french]{babel}
+\usepackage{popsnotes}
+\selectcolormodel{natural}
+\usepackage{algpseudocode}
+\algrenewcommand\algorithmicwhile{\textbf{tant que}}
+\algrenewcommand\algorithmicfor{\textbf{pour}}
+\algrenewcommand\algorithmicforall{\textbf{pour chaque}}
+\algrenewcommand\algorithmicdo{\textbf{faire}}
+\algrenewcommand\algorithmicend{\textbf{fin}}
+\algrenewcommand\algorithmicreturn{\textbf{renvoyer}}
+\algrenewcommand\algorithmicloop{\textbf{boucle}}
+\algrenewcommand\algorithmicif{\textbf{si}}
+\algrenewcommand\algorithmicthen{\textbf{alors}}
+\geometry{left=23mm,right=23mm,top=20mm,bottom=20mm,headsep=4mm}
+\setlength{\headwidth}{\textwidth}
+\setcounter{secnumdepth}{-1}
+\setcounter{tocdepth}{1}
+\addto\captionsfrench{\renewcommand{\contentsname}{Sommaire}\renewcommand{\figurename}{Figure}}
+\titleformat{\section}{\normalfont\rmfamily\bfseries\Large\color{black}}{}{0pt}{}[\vspace{2pt}\titlerule]
+\titleformat{\subsection}{\normalfont\rmfamily\bfseries\large\color{black}}{}{0pt}{}[\titlerule]
+\newcommand{\DocHeader}{Distance d'édition sur ROMEO}
+\newcommand{\reposource}[1]{\href{https://github.com/wolf75222/nvpd-edit-distance/blob/main/#1}{\nolinkurl{#1}}}
+\newcommand{\sourcefig}[1]{\par\vspace{1pt}{\raggedright\footnotesize Code\,: \reposource{#1}\par}}
+\newcommand{\chart}[4]{\begin{figure}[H]\centering
+  \includegraphics[width=.93\linewidth,height=.35\textheight,keepaspectratio]{../figures/#1}
+  \caption{#2}\label{#3}\sourcefig{#4}\end{figure}}
+\newcommand{\schema}[4]{\begin{figure}[H]\centering
+  \input{figures/#1}\caption{#2}\label{#3}\sourcefig{#4}\end{figure}}
+\newcommand{\synthese}[2]{\par\medskip\noindent\textbf{\underline{Synthèse.}}\ #1\newline #2\par}
+\newcommand{\methode}[2]{\par\smallskip\noindent\textbf{Algorithme #1.} \emph{#2}\par}
+\newcommand{\chapitre}[1]{\clearpage\section{#1}}
+\captionsetup{font=small,labelfont=bf,labelsep=period,skip=3pt}
+\setlength{\intextsep}{6pt plus 1pt minus 1pt}
+\hypersetup{pdftitle={Parallel Edit Distance for Genomic Sequences},pdfsubject={Alignement global sur ROMEO}}

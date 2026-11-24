@@ -1,0 +1,10 @@
+\chapitre{Régimes de calcul selon la charge}
+Le choix de la décomposition dépend du travail par paire et du nombre de paires disponibles. Pour NvPD synchronisé à chaque ligne, sur une paire de \(m\) lignes et \(n\) colonnes réparties entre \(p\) unités, un modèle de durée sépare le calcul des synchronisations,
+\[
+ T_{\rm dense}\simeq \frac{mn}{p\,v_p}+m\,\tau_p,
+ \qquad W_{\rm bande}=O(\max(m,n)(d+1)).
+\]
+Le débit local \(v_p\) comprend les effets de la mémoire et \(\tau_p\) désigne le coût moyen d'une synchronisation. Le premier terme suppose des colonnes équilibrées. La seconde expression borne le travail d'une bande doublée jusqu'à couvrir la distance \(d\). Pour des paires indépendantes, la somme des travaux individuels remplace \(mn\) et une réduction termine le lot.
+\chart{17_synthese.png}{La comparaison associe le coût des méthodes sur une paire à la variation du débit quand les deux nœuds se partagent un lot de taille fixe.}{fig:bilan}{notebooks/profil_nvpd.ipynb}
+Pour les paires d'un million de bases de la figure~\ref{fig:bilan}, le rapport des durées NvPD sur GH200 et WFA2 sur CPU passe de 8,74 à 0,48 entre les taux de 2 et 10\,\%. À taille de lot fixe, chaque fil MPI traite toute sa paire sans collectif par ligne.
+\synthese{À deux nœuds, le débit atteint 17\,586 paires de phage par seconde et 3\,820 paires synthétiques par seconde.}{Une faible distance réduit le travail du front. Sur un lot, la longueur des paires détermine aussi le débit.}

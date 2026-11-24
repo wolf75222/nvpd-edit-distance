@@ -1,0 +1,7 @@
+\chapitre{Comparaison des décompositions OpenMP à grande largeur}
+Le nombre de synchronisations et la largeur des étapes distinguent les deux décompositions. Pour une matrice de \(m\times n\) cases, les anti-diagonales ont \(m+n-1\) niveaux intérieurs de largeur variable. NvPD traite \(m\) lignes de largeur \(n\) et lit un prédécesseur indirect dans l'index des occurrences.
+
+La comparaison OpenMP reprend les quinze entrées d'un million de bases avec l'exécutable de la campagne initiale, antérieure à la vectorisation. Chaque version emploie huit cœurs. À chaque vague, trois processus par nœud traitent les trois taux sur des cœurs distincts. Les nœuds échangent les algorithmes entre deux vagues. Les cinq valeurs d'un taux correspondent à cinq paires différentes.
+\chart{13_openmp_un_million.png}{Les durées OpenMP sur quinze entrées et le gain SIMD sur trois de ces entrées proviennent de deux campagnes distinctes à huit cœurs par processus.}{fig:million}{bench/complete_1m.sbatch}
+Sur le panneau a) de la figure~\ref{fig:million}, les médianes des anti-diagonales vont de 190,04 à 190,29\,s selon le taux. Les médianes de NvPD vont de 309,96 à 310,91\,s. Les trente scores concordent avec les deux bibliothèques.
+\synthese{À 5\,\% d'éditions injectées, la version initiale de NvPD prend 1,63 fois le temps des anti-diagonales.}{Le panneau b) isole l'effet de la vectorisation de sa boucle de colonnes.}

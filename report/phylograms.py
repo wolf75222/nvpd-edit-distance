@@ -43,7 +43,12 @@ def phylograms(cohort):
         for label, depth, y in tips:
             name = label.replace("_", r"\_")
             drawing.append(fr"\draw[densely dotted,black!36] ({x(depth):.3f},{y:.3f}) -- ({offset + 55},{y:.3f});")
-            drawing.append(fr"\node[anchor=west,inner sep=0pt,font=\sffamily\fontsize{{7}}{{7}}\selectfont] at ({offset + 56},{y:.3f}) {{{name}}};")
+            drawing.append(fr"\node[anchor=west,inner sep=0pt,font=\rmfamily\fontsize{{7}}{{7}}\selectfont] at ({offset + 56},{y:.3f}) {{{name}}};")
         drawing.append(fr"\draw[line width=.6pt] ({offset},210) -- ++({10*scale:.3f},0) node[midway,below=2pt,font=\scriptsize] {{10 éditions}};")
     drawing.append(r"\end{tikzpicture}")
     return "\n".join(drawing) + "\n"
+
+if __name__ == "__main__":
+    directory = Path(__file__).resolve().parent
+    cohort = directory.parent / "results" / "romeo" / "cohort-837261"
+    (directory / "figures" / "arbres.tex").write_text(phylograms(cohort), encoding="utf-8")

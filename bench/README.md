@@ -53,3 +53,9 @@ COHORT_FASTA=data/cohort.fa COHORT_GROUPS=data/groups.tsv \
 | Portabilité CPU/GPU | [Kokkos](kokkos.md) | [Comparaison aux versions natives](../results/kokkos/) |
 | Chromosome 21 | [Script Slurm](human.sbatch) | [Fenêtres et contrôle entier](../results/human/) |
 | Méthodes en bande et bibliothèques | [Comparaison locale](alternatives.py) | [Temps et empreintes](../results/alternatives/) |
+| Fronts sur GH200 | [eWFA-GPU](ewfa.sbatch) | [Validation des scores et des traces](../results/ewfa/) |
+| Localité sur GH200 | [Secteurs par warp](gpu_sectors.cu) | [Demandes de secteurs par case](../results/locality/) |
+| Passage à l'échelle faible sur deux nœuds | [Paires et lots MPI](mpi_weak.py) | [Essais à charge par cœur constante](../results/mpi/weak/) |
+| Quinze paires à un million | [Deux versions OpenMP](complete_1m.sbatch) | [Temps des quinze entrées](../results/romeo/completion-1m/) |
+| Chromosomes entiers | [Limites de temps et d'espace](whole_chromosomes.py) | [Mesures et bornes](../results/human/whole/) |
+| Trace sur processeur | [Matrice et Hirschberg](traceback.py) | [Temps et RSS](../results/traceback/) |

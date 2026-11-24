@@ -1,30 +1,27 @@
-\section{Kokkos et calcul distribué}
-Kokkos~\cite{kokkos} décrit un espace mémoire et un espace d'exécution. Le code utilise un tableau \texttt{View} pour la dernière occurrence et un second pour la DP. Un \texttt{parallel\_for} traite une ligne. Une même instance de l'espace d'exécution ordonne les lancements, puis une synchronisation finale précède le rapatriement du score. Le même code cible OpenMP sur EPYC et CUDA sur Hopper. La version native OpenMP garde une région parallèle autour des lignes. La version native CUDA peut aussi fusionner huit lignes par lancement. Un port de la récurrence n'assure donc pas les mêmes coûts de synchronisation.
-\input{kokkos-mesures}
-
-\subsection{Deux nœuds complets}
-Pour une paire, le rang \(r\) possède une bande verticale de colonnes. La dernière occurrence locale appartient à cette bande. Si elle manque, la position précédente du symbole dans les bandes de gauche est connue dès l'initialisation. Pour chaque ligne, chaque rang diffuse deux entiers, son bord droit et la valeur précédant sa dernière occurrence locale du symbole courant. Si cette occurrence est la première colonne du rang, son prédécesseur provient du bord droit du voisin. Un \texttt{Allgather} rassemble ces valeurs sur tous les rangs.
-\begin{center}\begin{minipage}{.94\linewidth}
-\textbf{Algorithme 5.} \textit{NvPD distribué par colonnes.} Les rangs exécutent les mêmes itérations.
+\chapitre{Décomposition du travail sur deux nœuds}
+Le calcul distribué compare le coût d'un échange par ligne à celui d'une réduction en fin de lot. Pour une seule paire, chaque rang possède une bande verticale. Au début de la ligne \(i\), il connaît le rang et la colonne de la dernière occurrence antérieure de \(A_i\). Le bord droit de la ligne \(i-1\) permet aussi de traiter le cas où cette occurrence se trouve en première colonne d'une bande.
+\methode{5}{Échange des prédécesseurs par ligne.}
 \begin{algorithmic}[1]
-\State Partager \(B\) en intervalles contigus, construire l'index local et repérer les occurrences antérieures
-\For{chaque symbole \(c=A_i\)}
-\State Rassembler les bords et prédécesseurs de tous les rangs pour la ligne \(i-1\)
-\State Calculer en parallèle chaque colonne locale avec la récurrence de l'algorithme 1
-\State Échanger les deux lignes locales
+\State Découper les colonnes en intervalles et indexer les dernières occurrences par symbole
+\For{chaque ligne \(i\)}
+\State Rassembler par \texttt{MPI\_Allgather} le bord droit et le score précédant la dernière occurrence locale de chaque rang
+\State Calculer la bande locale par l'algorithme 1, puis échanger les lignes de scores
 \EndFor
-\State Communiquer la dernière case de la dernière bande
+\State Diffuser le score terminal depuis le rang qui le possède
 \end{algorithmic}
-\end{minipage}\end{center}
-Pour une matrice, le rang distribue des paires indépendantes à ses fils. Chaque fil traite sa paire sans collectif par ligne. Une réduction finale réunit le triangle supérieur. La figure ci-dessous distingue les points de communication.
-\begin{figure}[H]\centering\input{figures/mpi}
-\caption{Deux stratégies MPI. Dans la paire distribuée (a), toutes les bandes échangent des bords à chaque ligne. Dans le lot indépendant (b), chaque distance reste locale jusqu'à la réduction finale.}
-\end{figure}
-\begin{table}[H]\centering
-\caption{Même réservation exclusive, 24 rangs de huit fils par nœud. Les 192 puis 384 cœurs physiques distincts ont été observés. Médiane de trois maxima des temps de rang après échauffement, hors lecture du FASTA. L'efficacité à deux nœuds vaut \(S/2\).}
-\small\begin{tabular}{lrrrr}\toprule
-Charge & 1 nœud (s) & 2 nœuds (s) & \(S\) & Efficacité (\%)\\\midrule
-\MpiRows
-\bottomrule
-\end{tabular}\end{table}
-Les collectifs répétés rendent la paire plus lente sur deux nœuds aux deux formes essayées. Les 2\,016 paires de chaque matrice fournissent assez de calcul indépendant pour réduire le temps total.
+\schema{mpi}{Les rangs échangent deux scores par ligne pour une paire, tandis qu'une seule réduction rassemble les scores d'un lot.}{fig:comm}{src/mpi.cpp}
+Pour \(r\) rangs, chaque rang reçoit \(2r\) entiers par ligne. Dans le lot de la figure~\ref{fig:comm}, le rang \(q\) prend les paires d'indices \(q,q+r,\ldots\). Chaque fil traite une paire en SIMD. Le temps mesuré est le maximum des temps de rang, hors lecture du FASTA.
+\chart{10_echelle_mpi.png}{À charge fixe, le passage de vingt-quatre à quarante-huit rangs de huit fils change le temps d'une paire et celui d'une matrice.}{fig:mpifort}{bench/mpi.sbatch}
+La figure~\ref{fig:mpifort} donne une médiane sur trois répétitions après échauffement. Sur la paire de 20\,000 lignes, le temps passe de 91,1 à 990,3\,ms. Le lot synthétique de 2\,016 paires passe de 764,3 à 527,8\,ms.
+\synthese{Sur le lot synthétique, doubler les ressources donne un gain de 1,45 et une efficacité forte de 72,4\,\%.}{L'expérience suivante double aussi le travail pour mesurer le débit à charge par cœur constante.}
+
+\chapitre{Efficacité à charge par cœur constante}
+L'expérience faible compare deux nœuds complets à un nœud complet, avec huit fils par rang. Soit \(W\) le nombre de cases traitées sur le premier nœud. En doublant le travail, l'efficacité faible et le gain de débit valent
+\[
+ E_{\rm f}=\frac{T_{192}(W)}{T_{384}(2W)},\qquad
+ \frac{2W/T_{384}(2W)}{W/T_{192}(W)}=2E_{\rm f}.
+\]
+Pour une paire, 1\,024 lignes sont conservées et la largeur vaut 256 ou 4\,096 colonnes par cœur. Pour le lot, les séquences comptent 8\,192 bases. Les 85 puis 120 séquences donnent respectivement \(85\times84/2=3\,570\) et \(120\times119/2=7\,140\) paires. Le travail total double dans les trois cas. Dans le lot, le nombre de cases par cœur est une moyenne sur les travailleurs.
+\chart{15_mpi_faible.png}{Cinq répétitions sur chaque configuration donnent les temps médians et l'efficacité faible des deux décompositions MPI.}{fig:mpifaible}{bench/mpi_weak.py}
+Sur la figure~\ref{fig:mpifaible}, le passage à deux nœuds porte la durée du lot de 686,6 à 893,1\,ms. Sur une paire, l'efficacité passe de 9,9 à 26,8\,\% lorsque le travail local par ligne est multiplié par seize. Le nombre de collectifs reste fixé à 1\,024.
+\synthese{Pour les paires indépendantes, le débit augmente d'un facteur 1,54 et l'efficacité faible atteint 76,9\,\%.}{Les fenêtres humaines mettent en jeu des écarts répartis de façon irrégulière le long d'une paire.}

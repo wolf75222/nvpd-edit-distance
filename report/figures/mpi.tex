@@ -1,13 +1,13 @@
-\begin{tikzpicture}[font=\footnotesize\sffamily, align=center,
+\begin{tikzpicture}[font=\footnotesize\rmfamily, align=center,
  boite/.style={draw=black!65,rounded corners=1pt,minimum height=5mm,minimum width=21mm},
  lien/.style={-{Latex[length=1.4mm]},line width=.45pt}]
-\foreach \x/\t in {0/{(a) Une paire},7.1/{(b) Lot de paires}}{
-  \node[anchor=west,font=\footnotesize\bfseries\sffamily] at (\x,1.21) {\t};}
+\foreach \x/\t in {0/{a) Une paire},7.1/{b) Lot de paires}}{
+  \node[anchor=west,font=\footnotesize\bfseries\rmfamily] at (\x,1.21) {\t};}
 \node[boite] (a) at (1.15,.45) {bande 0};
 \node[boite] (b) at (4,.45) {bande 1};
 \draw[lien] (a.east) -- (b.west);
 \draw[lien] ([yshift=-1.2mm]b.west) -- ([yshift=-1.2mm]a.east);
-\node[font=\scriptsize\sffamily] at (2.58,-.18) {échange à chaque ligne};
+\node[font=\scriptsize\rmfamily] at (2.58,-.18) {échange à chaque ligne};
 \node[boite] (c) at (8.25,.45) {lot 0};
 \node[boite] (d) at (11.10,.45) {lot 1};
 \node[boite,fill=black!5] (r) at (9.675,-.54) {réduction};
