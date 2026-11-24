@@ -1,5 +1,8 @@
 #include "chps/baselines.hpp"
 #include "chps/banded.hpp"
+#ifdef CHPS_CUDA
+#include "chps/cuda.hpp"
+#endif
 #ifdef CHPS_KOKKOS
 #include "chps/kokkos.hpp"
 #include <optional>
@@ -110,7 +113,8 @@ void run_pair(const Options& o, Kernel kernel, const std::vector<Record>& record
     std::cout << "}\n";
 }
 
-void run_matrix(const Options& o, Kernel kernel, const std::vector<Record>& records) {
+template <typename Score>
+void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& records) {
     const auto n = records.size();
     std::vector<std::vector<int>> distances(n, std::vector<int>(n));
     // Serial kernels parallelize over independent rows. OpenMP kernels own their team.
@@ -159,8 +163,16 @@ int main(int argc, char** argv) {
         std::optional<chps::KokkosSession> session;
         if (o.algorithm == "nvpd-kokkos") session.emplace(o.threads);
 #endif
-        if (o.mode == "pair") run_pair(o, kernel, records);
-        else run_matrix(o, kernel, records);
+        if (o.mode == "pair") {
+            run_pair(o, kernel, records);
+#ifdef CHPS_CUDA
+        } else if (o.algorithm == "nvpd-cuda") {
+            chps::CudaWorkspace workspace;
+            run_matrix(o, [&](View a, View b, bool trace) { return workspace.distance(a, b, trace); }, records);
+#endif
+        } else {
+            run_matrix(o, kernel, records);
+        }
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "editdist: " << e.what() << '\n';

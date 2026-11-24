@@ -47,10 +47,9 @@ if [[ $mode == compare || $mode == counters || $mode == holdout ]]; then
     if [[ -n ${GPU_CANDIDATE_REV:-} ]]; then
         source_root="$build/source"
         mkdir "$source_root"
-        cp -R CMakeLists.txt src include tests "$source_root/"
+        git archive "$GPU_CANDIDATE_REV" CMakeLists.txt src include tests | tar -x -C "$source_root"
         ln -s "$PWD/bench" "$source_root/bench"
         if [[ -d deps ]]; then ln -s "$PWD/deps" "$source_root/deps"; fi
-        git show "$GPU_CANDIDATE_REV:src/cuda.cu" > "$source_root/src/cuda.cu"
     fi
     sources+=("$source_root/src/cuda.cu")
     cmake -S "$source_root" -B "$build/cmake" -DCMAKE_BUILD_TYPE=Release -DCHPS_CUDA=ON \

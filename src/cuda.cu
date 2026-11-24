@@ -1,5 +1,6 @@
 #include <cuda_runtime.h>
 
+#include "chps/cuda.hpp"
 #include "dp_internal.hpp"
 
 #include <algorithm>
@@ -12,17 +13,6 @@ void check(cudaError_t status, const char* action) {
     if (status != cudaSuccess)
         throw std::runtime_error(std::string(action) + ": " + cudaGetErrorString(status));
 }
-
-struct DeviceInts {
-    int* data = nullptr;
-    const std::size_t bytes;
-    explicit DeviceInts(std::size_t count) : bytes(count * sizeof(int)) {
-        check(cudaMalloc(&data, bytes), "cudaMalloc");
-    }
-    ~DeviceInts() { cudaFree(data); }
-    DeviceInts(const DeviceInts&) = delete;
-    DeviceInts& operator=(const DeviceInts&) = delete;
-};
 
 __global__ void first_row(int* row, int n) {
     const int j = blockIdx.x * blockDim.x + threadIdx.x;
@@ -83,18 +73,38 @@ __global__ void row_tile(const int* input, int* output, const int* indices,
 
 } // namespace
 
-Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {
+void CudaWorkspace::Buffer::resize(std::size_t count) {
+    const auto requested_bytes = count * sizeof(int);
+    if (bytes == requested_bytes) return;
+    if (data) {
+        check(cudaFree(data), "release previous CUDA buffer");
+        data = nullptr;
+        bytes = 0;
+    }
+    int* replacement = nullptr;
+    check(cudaMalloc(&replacement, requested_bytes), "allocate CUDA buffer");
+    data = replacement;
+    bytes = requested_bytes;
+}
+
+CudaWorkspace::Buffer::~Buffer() {
+    if (data) cudaFree(data);
+}
+
+Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trace) {
     detail::validate(a, b, trace);
     if (a.empty() || b.empty()) return detail::empty_result(a, b, trace);
     if (!trace && a.size() > b.size()) std::swap(a, b);
     const int m = static_cast<int>(a.size()), n = static_cast<int>(b.size());
     const std::size_t stride = b.size() + 1;
     const detail::MatchIndex matches(a, b);
-    DeviceInts indices(matches.entries.size());
+    auto& indices = indices_;
+    indices.resize(matches.entries.size());
     check(cudaMemcpy(indices.data, matches.entries.data(), indices.bytes,
                      cudaMemcpyHostToDevice), "copy match index");
     const std::size_t table_size = (trace ? a.size() + 1 : 2) * stride;
-    DeviceInts table(table_size);
+    auto& table = table_;
+    table.resize(table_size);
     constexpr int threads = 256;
     const int blocks = static_cast<int>((stride + threads - 1) / threads);
     first_row<<<blocks, threads>>>(table.data, n);
@@ -142,6 +152,11 @@ Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {
     int cost;
     check(cudaMemcpy(&cost, prev + n, sizeof(cost), cudaMemcpyDeviceToHost), "copy distance");
     return {cost, "", device_bytes};
+}
+
+Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {
+    CudaWorkspace workspace;
+    return workspace.distance(a, b, trace);
 }
 
 } // namespace chps
