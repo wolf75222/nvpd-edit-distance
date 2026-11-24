@@ -1,7 +1,7 @@
 \section{Introduction}
-Transformer une séquence entière en une autre demande au minimum \(d\) substitutions, insertions ou délétions. La programmation dynamique classique explore un rectangle de \(mn\) cases pour deux longueurs \(m,n\). NvPD, proposé par Sadiq et ses coauteurs, conserve ce travail mais rend les colonnes d'une ligne indépendantes~\cite{sadiq}. Sur les nœuds EPYC et GH200 de ROMEO, les essais comparent ce parcours dense aux algorithmes dont le travail dépend de la distance.
+La distance globale compte les éditions nécessaires pour transformer une chaîne entière en une autre. NvPD, proposé par Sadiq et ses coauteurs, calcule les colonnes de chaque ligne en parallèle~\cite{sadiq}. Les essais comparent son travail dense sur EPYC et GH200 aux méthodes qui dépendent du score.
 
-Pour des coûts unitaires, l'écart de longueur borne le score et le produit des longueurs donne le travail dense,
+Pour deux longueurs \(m,n\) et des coûts unitaires,
 \[
  |m-n|\le d(A,B)\le\max(m,n),\qquad W_{\mathrm{dense}}=mn.
 \]
@@ -9,27 +9,25 @@ Pour des coûts unitaires, l'écart de longueur borne le score et le produit des
 
 \section{Temps d'une paire et débit d'une collection}
 \subsection{Longueur et divergence}
-Edlib, de Šošić et Šikić, code plusieurs différences de scores dans un mot binaire~\cite{edlib}. WFA2-lib, développée par Marco-Sola et ses collaborateurs, conserve sur chaque diagonale la position la plus avancée pour un coût donné~\cite{wfa}. Une faible distance limite le nombre de fronts nécessaires. Pour NvPD, deux chaînes d'un million de bases demandent près de mille milliards de cases, même si elles diffèrent peu.
+Edlib de Šošić et Šikić code plusieurs différences de scores dans un mot binaire~\cite{edlib}. WFA2 de Marco-Sola et ses coauteurs garde la position la plus avancée sur chaque diagonale à coût fixé~\cite{wfa}. Sur GH200, Kokkos calcule deux lignes de NvPD par lancement. Pour une fenêtre humaine de 524\,288 bases, cette fusion ramène le temps de \(2{,}520\pm0{,}034\) à \(1{,}345\pm0{,}018\)\,s (cinq processus après échauffement).
 \chart{comparison/synthese.png}{Le temps d'une paire est comparé au débit d'un lot de taille fixe. Les barres d'incertitude de chaque panneau portent sur ses unités expérimentales.}{fig:short-work}{notebooks/profil_nvpd.ipynb}
 La figure~\ref{fig:short-work} compare les régimes de calcul sur les mêmes jeux de paires. Sur une paire à 2\,\%, cinq blocs chauds donnent \(3{,}570\pm0{,}009\)\,s avec NvPD sur GH200 et \(0{,}767\pm0{,}006\)\,s avec WFA2 sur Grace. À 10\,\%, les mêmes méthodes prennent \(3{,}591\pm0{,}011\) et \(9{,}835\pm0{,}023\)\,s.
 
 \synthese{Les trois taux injectés, 2, 5 et 10\,\%, laissent l'aire du rectangle presque constante. Ils modifient pourtant assez le temps de WFA2 pour inverser son classement face au calcul dense sur GH200.}
 
 \subsection{Communication entre nœuds}
-Avec MPI, l'interface de communication normalisée par le MPI Forum, les rangs peuvent soit partager une paire en bandes verticales, soit traiter des paires indépendantes. La première version échange les prédécesseurs à chaque ligne. Sur le carré à deux nœuds, envoyer le bord au voisin par paquets de 32 lignes ramène le temps moyen de 997 à 13,1\,ms. Sur un lot, les rangs conservent leurs scores jusqu'à la réduction finale. Pour les 2\,016 paires synthétiques du panneau b) de la figure~\ref{fig:short-work}, un puis deux nœuds donnent \(768{,}17\pm3{,}62\) et \(528{,}33\pm0{,}93\)\,ms (moyenne et écart-type de sept blocs indépendants après deux échauffements). Le nombre de paires disponibles détermine si cette seconde organisation peut occuper tous les cœurs.
-
-\synthese{Sur le lot de 2\,016 paires, doubler les ressources donne une efficacité forte proche de 73\,\%. Sur les deux paires synthétiques, le pipeline évite les collectifs synchrones de la version initiale.}
-
-\synthesesection{La répartition entre 192 puis 384 cœurs profite au lot, dont une seule réduction rassemble les distances. Le nombre de paires indépendantes détermine ainsi le parallélisme disponible au-delà d'un nœud.}
+Avec MPI, les rangs peuvent partager une paire en bandes verticales ou traiter des paires indépendantes. Sur une paire humaine de 131\,072 bases et deux nœuds, échanger le bord par paquets de 128 lignes ramène le temps de \(6{,}672\pm0{,}182\)\,s à \(0{,}117\pm0{,}001\)\,s. Sur un lot, les rangs conservent leurs scores jusqu'à la réduction finale. L'efficacité pour un travail fixe vaut \(E=T_{192}/(2T_{384})\). Les temps proviennent de cinq blocs avec un échauffement par configuration.
+\synthese{Pour 768 paires homologues du chromosome 21, NvPD atteint 80,8\,\% d'efficacité forte sur 384 cœurs par rapport à 192 cœurs. L'efficacité faible, corrigée du travail réel, vaut 80,9\,\%.}
+\synthesesection{À deux nœuds, la décomposition d'une paire nécessite encore des échanges intermédiaires. Un lot de 768 paires permet d'attribuer un travail complet à chacun des 384 cœurs.}
 
 \section{Assemblages humains}
-La figure~\ref{fig:short-chrom} compare deux révisions du chromosome 20 de CHM13 et deux références distinctes pour le chromosome 21. Sur le chromosome 20, les deux bibliothèques donnent la distance exacte 30 sur plus de 66 millions de bases. Sur un chemin optimal du chromosome 20, les 30 éditions encadrent un bloc identique de 66\,209\,720 bases. Sur le chromosome 21, la limite de 120\,s interrompt les calculs comparés. L'histogramme des bases donne une borne inférieure de 6\,621\,364 éditions. Le coût d'un chemin réalisable donne la borne supérieure de 16\,015\,052.
-\chart{biology/chromosomes_entiers.png}{Temps mesurés sur deux versions du chromosome 20 et bornes de la distance entre les deux chromosomes 21.}{fig:short-chrom}{bench/human/whole_chromosomes.py}
-
-\synthesesection{Les deux références complètes du chromosome 21 présentent au moins 6,62 millions d'éditions. Ce résultat est une borne du score. Les appels arrêtés à 120 s fournissent une observation censurée du temps.}
+Deux versions de CHM13 diffèrent de 2\,587 éditions sur dix-huit chromosomes entiers, soit 2,644 milliards de bases de référence. Sur les deux entrées du chromosome~1, le score vaut 176. La lecture seule prend \(0{,}657\pm0{,}005\)\,s sur un cœur EPYC avec préallocation par l'index FASTA (neuf processus).
+\chart{comparison/bras_chromosome_biwfa.png}{Les temps de calcul et les pics résidents mesurés sur le bras long du chromosome humain dépendent du score et de la restitution du chemin.}{fig:short-chrom}{bench/human/algorithms/arm.py}
+La figure~\ref{fig:short-chrom} porte sur GRCh38 et CHM13, deux références distinctes. Les fenêtres de 8 à 32 millions de bases partagent la même borne gauche. BiWFA de Marco-Sola et ses coauteurs propage deux fronts opposés et reconstruit le chemin de part et d'autre de leur jonction optimale~\cite{biwfa}. Sa mémoire de travail est en \(O(d)\) en plus des entrées et du chemin rendu.
+\synthesesection{Sur l'intervalle de 32 millions de bases, les 266\,220 éditions demandent \(45{,}62\pm0{,}22\)\,s pour le score BiWFA et \(89{,}77\pm0{,}11\)\,s pour le chemin sur un cœur EPYC.}
 
 \section{Conclusion}
-Une chaîne longue peut rester accessible à un front d'édition si les deux assemblages sont proches. La divergence, les extrémités ambiguës et la nécessité de restituer un chemin modifient la comparaison. Sur une collection, distribuer les paires réduit aussi la fréquence des synchronisations. Les 2\,016 scores de chaque cohorte permettent ensuite de tester un arbre sans confondre le nombre d'éditions entre deux chaînes et la longueur du chemin reconstruit entre leurs feuilles. Pour les 64 phages, l'écart entre la distance \(d_{ij}\) et la longueur du chemin \(t_{ij}\) mesure l'ajustement de la classification moyenne de Sokal et Michener (UPGMA) et du Neighbor-Joining de Saitou et Nei,
+La distance guide le choix des fronts ou du calcul dense. Pour les 64 phages, une fois les scores calculés, l'erreur entre la distance d'édition \(d_{ij}\) et la longueur du chemin dans l'arbre \(t_{ij}\) mesure la perte associée à la reconstruction,
 \[
  \sqrt{\frac{1}{2\,016}\sum_{i<j}(d_{ij}-t_{ij})^2}
  = \begin{cases}14{,}89\ \text{éditions} & \text{(UPGMA)},\\
@@ -38,8 +36,9 @@ Une chaîne longue peut rester accessible à un front d'édition si les deux ass
 \synthesesection{Sur les 64 phages, NJ réduit l'erreur quadratique moyenne des chemins, mais son écart absolu maximal atteint 63,86 éditions. Une distance d'édition exacte peut donc être imparfaitement représentée par un arbre.}
 
 \FloatBarrier
-\begin{thebibliography}{3}
+\begin{thebibliography}{4}
 \bibitem{sadiq} M. U. Sadiq et coll. \href{https://doi.org/10.1007/s10586-019-02962-w}{\emph{NvPD: novel parallel edit distance algorithm, correctness, and performance evaluation.}} Cluster Computing 23 (2020).
 \bibitem{edlib} M. Šošić et M. Šikić. \href{https://doi.org/10.1093/bioinformatics/btw753}{\emph{Edlib: a C/C++ library for fast, exact sequence alignment using edit distance.}} Bioinformatics 33 (2017).
 \bibitem{wfa} S. Marco-Sola et coll. \href{https://doi.org/10.1093/bioinformatics/btaa777}{\emph{Fast gap-affine pairwise alignment using the wavefront algorithm.}} Bioinformatics 37 (2021).
+\bibitem{biwfa} S. Marco-Sola et coll. \href{https://doi.org/10.1093/bioinformatics/btad074}{\emph{Optimal gap-affine alignment in \(O(s)\) space.}} Bioinformatics 39 (2023).
 \end{thebibliography}

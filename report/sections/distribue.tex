@@ -1,5 +1,5 @@
 \subsection{Décomposition du travail sur deux nœuds}
-Le calcul distribué compare le coût d'un échange par ligne à celui d'une réduction en fin de lot. Pour une seule paire, chaque rang possède une bande verticale. Au début de la ligne \(i\), il connaît le rang et la colonne de la dernière occurrence antérieure de \(A_i\). Le bord droit de la ligne \(i-1\) permet aussi de traiter le cas où cette occurrence se trouve en première colonne d'une bande.
+Le calcul distribué compare le coût d'un échange par ligne à celui d'une réduction en fin de lot. Dans le premier parcours d’une paire, chaque rang possède une bande verticale. Au début de la ligne \(i\), il connaît le rang et la colonne de la dernière occurrence antérieure de \(A_i\). Le bord droit de la ligne \(i-1\) permet aussi de traiter le cas où cette occurrence se trouve en première colonne d'une bande.
 L'algorithme~\ref{alg:mpi} décrit les deux scalaires dont chaque rang a besoin pour poursuivre sa bande locale.
 \begin{algorithm}[!htbp]
 \caption{Décomposition MPI d'une paire par bandes de colonnes}\label{alg:mpi}
@@ -14,8 +14,8 @@ L'algorithme~\ref{alg:mpi} décrit les deux scalaires dont chaque rang a besoin 
 \State Broadcast the terminal score from its owning rank
 \end{algorithmic}
 \end{algorithm}
-\schema{mpi}{Les rangs échangent deux scores par ligne pour une paire, tandis qu'une seule réduction rassemble les scores d'un lot.}{fig:comm}{src/mpi/mpi.cpp}
-Pour \(r\) rangs, chaque rang reçoit \(2r\) entiers par ligne. Dans le lot de la figure~\ref{fig:comm}, le rang \(q\) prend les paires d'indices \(q,q+r,\ldots\). Chaque fil traite une paire en SIMD. Le temps mesuré est le maximum des temps de rang, hors lecture du FASTA.
+\schema{mpi}{Le parcours collectif échange deux scores par rang à chaque ligne. Une réduction rassemble les scores du lot.}{fig:comm}{src/mpi/mpi.cpp}
+Avec le collectif et \(r\) rangs, chacun reçoit \(2r\) entiers par ligne. Dans le lot de la figure~\ref{fig:comm}, le rang \(q\) prend les paires d'indices \(q,q+r,\ldots\). Chaque fil traite une paire en SIMD. Le temps mesuré est le maximum des temps de rang, hors lecture du FASTA.
 \chart{distributed/echelle_mpi.png}{À charge fixe, le passage de vingt-quatre à quarante-huit rangs de huit fils change le temps d'une paire et celui d'une matrice.}{fig:mpifort}{bench/mpi/scaling.py}
 La figure~\ref{fig:mpifort} donne la moyenne de sept blocs indépendants après deux échauffements. L’ordre des essais est randomisé. Chaque configuration réserve un ou deux nœuds entiers, soit 192 ou 384 cœurs. Sur la paire de 20\,000 lignes, le temps passe de \(91{,}49\pm0{,}78\) à \(997{,}1\pm12{,}5\)\,ms. Le temps du lot synthétique de 2\,016 paires passe de \(768{,}17\pm3{,}62\) à \(528{,}33\pm0{,}93\)\,ms.
 
@@ -49,4 +49,5 @@ Sur la figure~\ref{fig:mpifaible}, le passage à deux nœuds porte la durée du 
 
 \synthese{Pour le lot indépendant, l'efficacité faible atteint \(77{,}67\pm0{,}76\)\,\%. Sur la paire large, l'IC à 95\,\% s'étend de 19,33 à 41,80\,\%. La dispersion sur un nœud limite la précision du rapport.}
 
+\input{sections/mpi-humain}
 \synthesesection{Doubler le nombre de cœurs, de 192 à 384, augmente le débit d'un lot dont les scores peuvent être rassemblés à la fin. Sur une paire, le pipeline de voisinage réduit le temps observé face aux collectifs de la version initiale.}

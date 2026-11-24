@@ -20,3 +20,5 @@ Le téléchargement requiert la commande `datasets`. La construction des arbres 
 ## Chromosome humain 21
 
 `python3 scripts/datasets/human_reference.py` prépare deux fenêtres homologues de GRCh38 et CHM13 ainsi qu’un contrôle sur tout le chromosome 21 de CHM13. Le script vérifie les empreintes des références et du fichier de correspondance. Les FASTA sont régénérés dans `data/human/`. [Coordonnées, distances et temps](../results/human/)
+
+Le générateur `scripts/datasets/chm13_panel.py` extrait les 18 chromosomes entiers retenus dans CHM13 v1.0 et v1.1. Le manifeste donne les longueurs et l’empreinte des deux séquences réunies dans chaque FASTA. [Protocole et sources du panel](../results/human/chromosome-panel/README.md)

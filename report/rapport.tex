@@ -3,7 +3,7 @@
 \begin{document}
 \doctitle{Calcul parallèle et phylogénies de distance}
 \begin{abstract}
-La distance d'édition globale compte les opérations nécessaires pour transformer une chaîne entière en une autre. Deux parcours denses, par anti-diagonales et par colonnes, servent de points de comparaison aux méthodes dont le travail dépend de la distance. Les mesures sur EPYC et GH200 distinguent le coût des synchronisations, des accès mémoire et des lancements. Les assemblages humains et les matrices de 64 génomes mettent ces mesures à l'épreuve sur des données déposées.
+La distance d'édition globale compte les opérations nécessaires pour transformer une chaîne entière en une autre. Deux parcours denses, par anti-diagonales et par colonnes, servent de points de comparaison aux méthodes dont le travail dépend de la distance. Les essais sur EPYC et GH200 comparent les synchronisations par ligne à la répartition de paires entières. Deux versions du même génome humain diffèrent de 2\,587 éditions sur dix-huit chromosomes. Entre deux références humaines distinctes, un seul intervalle de 32 millions de bases atteint 266\,220 éditions. Cette différence détermine le choix de l’algorithme et la mémoire nécessaire à la restitution du chemin.
 \end{abstract}
 \fullcontents
 \input{sections/introduction}

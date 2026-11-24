@@ -66,3 +66,7 @@ COHORT_FASTA=data/cohort.fa COHORT_GROUPS=data/groups.tsv \
 | Temps après échauffement et mémoire sur ROMEO | [Pilote par configuration](repeated/measure.py) | [Répétitions, écarts-types et intervalles](../results/repeated/README.md) |
 | Coût des communications MPI | [Mesure sur deux nœuds](mpi/repeated.sbatch) | [Profil des appels collectifs](../results/mpi/collectives/) et [pipeline par blocs](../results/mpi/pipeline/) |
 | Alignement QuickEd | [Témoins et entrées de comparaison](quicked/cases.py) | [Mesures avec et sans contrôle du chemin](../results/alternatives/romeo/838762/) |
+| Révisions de 18 chromosomes entiers | [Décodage et alignement](human/chromosome-panel/) | [Scores, allocations et compteurs](../results/human/chromosome-panel/README.md) |
+| Chemin optimal entre deux références humaines | [BiWFA et WFA2](human/algorithms/) | [Temps et mémoire des fronts](../results/human/algorithms/README.md) |
+| Deux régions de chromosome sur EPYC et GH200 | [Politiques Kokkos](kokkos/human/) | [Temps, mémoire et lancements](../results/kokkos/human/README.md) |
+| Distribution de paires homologues | [MPI sur deux nœuds](mpi/human/) | [Efficacité forte et faible](../results/mpi/human/README.md) |

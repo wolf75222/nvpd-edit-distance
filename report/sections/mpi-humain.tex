@@ -1,0 +1,14 @@
+\subsection{Répartition de fenêtres homologues entre nœuds}\label{sec:mpihumain}
+Sur le chromosome 21, un locus de GRCh38 est comparé à son homologue dans CHM13. La chaîne de correspondance UCSC fournit les deux bornes. Les 41 bases autour de chaque borne sont identiques dans les deux assemblages. Les 768 fenêtres occupent des intervalles disjoints de 16\,384 bases dans GRCh38. Les insertions et les délétions donnent des longueurs de 5\,297 à 19\,840 bases dans CHM13. Les distances vont de 0 à 11\,107 éditions. Edlib et WFA2 ont retrouvé chaque score.
+
+La commande \texttt{pairs} distribue les comparaisons entre loci homologues. Pour le test d'échelle faible, le lot de 384 reprend une fenêtre sur deux de la même grille chromosomique. Si \(m_i,n_i\) sont les longueurs au locus \(i\), le travail effectif du lot \(L\) et l'efficacité en débit par cœur s'écrivent
+\[
+ W(L)=\sum_{i\in L}m_i n_i,\qquad
+ E_{\mathrm{weak}}=\frac{W(L_2)}{2W(L_1)}\frac{T_{192}(L_1)}{T_{384}(L_2)}.
+\]
+Le rapport \(W(L_2)/W(L_1)\) vaut 1,9982. Pour chaque configuration, chacun des cinq blocs lance ses propres rangs et chronomètre le deuxième appel après un échauffement complet. Le chronomètre commence après la diffusion du FASTA et retient le temps du rang le plus lent.
+
+\chart{distributed/echelle_mpi_humain.png}{Le partage d'une paire entre rangs est comparé à celui d'un lot de loci homologues. Les rapports de temps sont appariés sur cinq blocs.}{fig:mpihumain}{bench/mpi/human/measure.py}
+Dans le panneau a) de la figure~\ref{fig:mpihumain}, les paquets de 128 lignes alignent la paire de 131\,072 bases en \(159{,}52\pm3{,}91\)\,ms sur un nœud puis \(116{,}89\pm1{,}44\)\,ms sur deux. Avec l'échange collectif par ligne, cette dernière durée atteint \(6{,}672\pm0{,}182\)\,s. Dans les panneaux b) et c), la distribution du lot complet porte le débit de \(316{,}5\pm9{,}4\) à \(511{,}6\pm29{,}4\)\,GCUPS. Son efficacité forte vaut 80,84\,\% et son efficacité faible corrigée du travail 80,89\,\%. Chaque rang conserve le FASTA complet. Le plus grand pic RSS parmi les rangs passe de \(44{,}96\pm1{,}00\) à \(45{,}12\pm0{,}28\)\,Mio pour les 768 paires.
+
+\synthese{Sur la longue paire, les paquets de 128 lignes accélèrent le calcul d'un facteur 57,09 à deux nœuds face au collectif. Le passage d'un à deux nœuds avec ces mêmes paquets apporte un facteur de 1,365.}

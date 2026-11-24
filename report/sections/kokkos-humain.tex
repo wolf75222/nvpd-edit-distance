@@ -1,0 +1,20 @@
+\subsection{Équipe persistante et fusion de lignes sur chromosomes}\label{sec:kokkoshumain}
+Le parcours Kokkos de la figure~\ref{fig:kokkos} soumet une mise à jour par ligne. Sur l'EPYC, une équipe peut rester active pendant tout l'alignement. Chaque fil garde un intervalle contigu de colonnes. Une barrière rend les scores visibles avant de passer à la ligne suivante. Le parcours par ligne reste disponible lorsque le nombre de fils dépasse la taille d'équipe autorisée.
+
+Sur GPU, le mode score peut fusionner deux lignes en un seul lancement. Soit \(U_x(P)\) la ligne obtenue en appliquant la récurrence NvPD à la lettre \(x\) et à la ligne précédente \(P\). Pour deux lettres successives de \(A\),
+\[
+ D_{i+1,\cdot}=U_{A_{i+1}}\!\left(U_{A_i}(D_{i-1,\cdot})\right),\qquad
+ N_{\mathrm{updates}}=\left\lceil\frac{m}{2}\right\rceil .
+\]
+Chaque colonne finale recalcule au plus trois scores de la ligne intermédiaire, même si ces colonnes sont très éloignées. Une dernière ligne isolée conserve sa mise à jour simple. Le mode trace sur GPU stocke chaque ligne pour la remontée et garde le parcours par ligne.
+
+\chart{distributed/kokkos_humain.png}{L'accélération est le rapport du temps natif au temps Kokkos sur la même cible. Le troisième panneau compare le RSS et les tableaux de travail des deux cibles.}{fig:kokkoshumain}{bench/kokkos/human/measure.py}
+Les comparaisons portent sur deux régions de GRCh38 et CHM13. À 16\,384 bases de référence, la région colinéaire coûte 14 éditions. L'autre comprend une insertion de 9\,540 bases dans CHM13 et coûte 9\,568 éditions. Chacune des 66 configurations emploie cinq processus indépendants. Chaque processus calcule deux fois le score de la même paire et chronomètre le second appel. Dans les dix fenêtres, la portée de l'index des dernières occurrences varie de 86 à 1\,813 colonnes. Le noyau CUDA natif utilise donc son parcours par ligne. La fusion Kokkos recalcule ses prédécesseurs à leur adresse et accepte ces portées.
+
+Dans le panneau a) de la figure~\ref{fig:kokkoshumain}, sur huit cœurs EPYC, la fenêtre colinéaire de 65\,536 bases prend \(1{,}0801\pm0{,}0050\)\,s avec Kokkos par ligne. L'équipe persistante ramène ce temps à \(0{,}6520\pm0{,}0004\)\,s. Le noyau OpenMP natif prend \(0{,}2841\pm0{,}0012\)\,s. Dans le panneau b), sur la fenêtre colinéaire de 524\,288 bases, CUDA natif prend \(1{,}990\pm0{,}035\)\,s. Kokkos par ligne donne \(2{,}520\pm0{,}034\)\,s et la fusion \(1{,}345\pm0{,}018\)\,s. Sur la fenêtre de même longueur avec insertion, la fusion donne \(1{,}376\pm0{,}014\)\,s.
+
+Sur la fenêtre colinéaire de 65\,536 bases, une capture Nsight Systems compte 65\,537 lancements pour le parcours par ligne et 32\,769 avec la fusion, initialisation comprise. Les temps GPU cumulés de cette capture unique valent 95,83 et 64,06\,ms. Dans les deux cas, quatre transferts déplacent 1\,049\,300 octets.
+
+Le panneau c) donne le pic RSS, la taille des tableaux hôtes et, sur GH200, les octets réservés sur le GPU pour les noyaux natif et Kokkos retenu. Sur la fenêtre de 65\,536 bases avec insertion, chacune des trois implémentations atteint un pic RSS de 180\,Mio dans ses cinq processus et réserve 1\,802\,376 octets sur le GPU. L'appel courant de Kokkos emploie l'équipe persistante sur l'hôte lorsque sa taille est admise, et les lignes fusionnées sur le GPU pour le score seul.
+
+\synthese{La fusion GPU accélère le parcours Kokkos par ligne d'un facteur de 1,71 à 1,87 sur les entrées mesurées. Ces fenêtres ont toutes des prédécesseurs trop éloignés pour que le noyau CUDA natif utilise ses tuiles.}

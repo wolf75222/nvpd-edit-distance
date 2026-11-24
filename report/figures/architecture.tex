@@ -1,12 +1,12 @@
 \begin{tikzpicture}[font=\footnotesize\rmfamily,
  module/.style={fill=powderBlue!25,draw=powderBlue!55!black,rounded corners=1pt,text width=2.65cm,minimum height=9mm,
  align=center,inner sep=2pt}, flow/.style={-{Latex[length=1.6mm]},line width=.5pt}]
-\node[module] (f) at (0,0) {FASTA\par validation};
-\node[module,fill=powderTeal!42] (p) at (3.6,0) {paire ou triangle\par supérieur};
+\node[module] (f) at (0,0) {FASTA\par index FAI optionnel};
+\node[module,fill=powderTeal!42] (p) at (3.6,0) {paire, lot ou matrice};
 \node[module] (n) at (7.4,1.05) {DP et NvPD\par CPU, GPU, Kokkos};
-\node[module] (l) at (7.4,0) {calcul en bande,\par edlib et WFA2};
+\node[module] (l) at (7.4,0) {bande, edlib, WFA2\par et BiWFA};
 \node[module] (m) at (7.4,-1.05) {MPI\par bandes ou paires};
-\node[module,fill=powderTeal!42] (o) at (11.2,0) {coût ou matrice\par JSON / TSV};
+\node[module,fill=powderTeal!42] (o) at (11.2,0) {score, chemin\par ou matrice};
 \draw[flow] (f)--(p);
 \draw (p.east)--(5.55,0);
 \foreach \dest in {n,l,m}{\draw[flow] (5.55,0) |- (\dest.west);}

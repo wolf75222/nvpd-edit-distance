@@ -1,0 +1,15 @@
+\begin{tikzpicture}[font=\small, x=.82cm, y=.76cm,
+ base/.style={font=\ttfamily\small,draw=powderBlue!70!black,fill=powderBlue!19,
+ minimum width=6.5mm,minimum height=5.1mm,inner sep=1pt},
+ dir/.style={-{Latex[length=1.7mm]},line width=.55pt}]
+\node[anchor=east] at (.36,0) {\(A\)};
+\node[anchor=east] at (.36,-.85) {\(B\)};
+\foreach \x/\a/\b/\shade in {1/G/G/powderBlue!19,2/A/A/powderBlue!19,3/T/C/powderRose!45,4/T/T/powderBlue!19,5/A/A/powderBlue!19,6/C/C/powderBlue!19,7/-/C/powderTeal!40,8/A/A/powderBlue!19}{
+  \node[base,fill=\shade] at (\x,0) {\a};
+  \node[base,fill=\shade] at (\x,-.85) {\b};
+}
+\draw[dir] (.64,.70)--(4.20,.70) node[midway,above=1pt]{\footnotesize front direct};
+\draw[dir] (8.36,.70)--(4.80,.70) node[midway,above=1pt]{\footnotesize front inverse};
+\draw[densely dotted] (4.5,.76)--(4.5,-1.35);
+\node[below] at (4.5,-1.35) {\footnotesize jonction \((4,4)\)};
+\end{tikzpicture}

@@ -48,6 +48,13 @@ Les deux commandes écrivent un objet JSON avec `"distance":1`. La seconde ajout
 
 Le mode `pair` attend deux entrées FASTA. Le premier mot de chaque en-tête sert d’identifiant et doit être unique dans le fichier. Le programme ignore la casse et compare les symboles IUPAC littéralement. Ainsi, `N` contre `N` coûte zéro et `N` contre `A` coûte un.
 
+Sur un fichier à lignes de largeur régulière, `samtools faidx` crée un index des longueurs. Pour cet exemple optionnel, installer `samtools` avec APT ou Homebrew. L’option `--fai` utilise cet index pour réserver les chaînes avant lecture.
+
+```sh
+samtools faidx build/paire.fa
+build/editdist pair --algorithm biwfa --trace --input build/paire.fa --fai build/paire.fa.fai
+```
+
 ## Construire une matrice et deux arbres
 
 Ajouter une troisième séquence au lot, puis construire les arbres UPGMA et Neighbor-Joining à partir de la même matrice.
@@ -79,19 +86,31 @@ Sans option, le générateur écrit 60 paires dans `data/synthetic/`. Il combine
 
 Le résumé de cette campagne donne le temps médian et l’accélération par rapport au séquentiel sur la même paire. Pour une méthode dense, le débit en GCUPS vaut $mn/(10^9 T)$, avec $T$ en secondes. Les mesures répétées du rapport utilisent des processus préchauffés et publient les moyennes, les écarts-types et les intervalles de confiance. [Soumission Slurm sur ROMEO](bench/README.md) · [Mesures répétées](results/repeated/README.md)
 
+## Aligner des chromosomes humains
+
+Pour reproduire la comparaison entre les assemblages CHM13 v1.0 et v1.1, télécharger les deux versions et préparer les 18 chromosomes du panel. Les entrées du chromosome 1 dépassent chacune 248 millions de bases.
+
+```sh
+python3 scripts/datasets/chm13_panel.py --cache build/t2t-cache --out data/human/chm13-panel
+build/editdist pair --algorithm wfa2 --input data/human/chm13-panel/chr1.fa
+```
+
+Le score attendu est 176. Le jeu GRCh38–CHM13 compare deux références humaines distinctes sur le chromosome 21. Le banc fournit notamment les temps et la mémoire nécessaires pour restituer un chemin de 32 millions de bases. [Chromosomes complets](results/human/chromosome-panel/README.md) · [Fronts bidirectionnels](results/human/algorithms/README.md) · [Kokkos sur EPYC et GH200](results/kokkos/human/README.md) · [MPI à 192 et 384 cœurs](results/mpi/human/README.md)
+
 ## Choisir une implémentation
 
 | Méthode ou option CMake | Utilisation |
 | --- | --- |
 | `seq`, `diagonal`, `nvpd-omp` | Programmation dynamique séquentielle, parcours par anti-diagonales OpenMP ou calcul NvPD par ligne. `--threads` fixe la taille de l’équipe OpenMP. |
-| `edlib`, `wfa2`, `banded`, `banded-trim` | Alignement bit-parallèle, fronts d’onde ou programmation dynamique en bande. `banded-trim` retire d’abord le préfixe et le suffixe identiques. |
+| `edlib`, `wfa2`, `biwfa` | Edlib de Šošić et Šikić utilise le parallélisme sur bits. WFA2 de Marco-Sola et coll. suit des fronts de coût croissant. BiWFA des mêmes auteurs les propage depuis les deux extrémités. Les deux parcours WFA acceptent `--trace`. |
+| `banded`, `banded-trim` | Le calcul élargit la bande jusqu’à couvrir la distance. `banded-trim` retire d’abord le préfixe et le suffixe identiques. |
 | `hirschberg` | Reconstruit le chemin en mémoire linéaire. `--trace` fonctionne aussi avec edlib et, jusqu’à 20 000 bases par séquence, avec `seq` et NvPD. |
 | `-DCHPS_CUDA=ON` | Active `nvpd-cuda` avec un compilateur CUDA C++20. Sur GH200, ajouter `-DCMAKE_CUDA_ARCHITECTURES=90`. |
-| `-DCHPS_KOKKOS=ON` | Active `nvpd-kokkos` avec une installation de Kokkos 4 ou ultérieure. |
-| `-DCHPS_MPI=ON` | Construit l’exécutable distribué `editdist-mpi` avec MPI pour C++. |
+| `-DCHPS_KOKKOS=ON` | Active `nvpd-kokkos` avec Kokkos ≥ 4. Le mode score garde une équipe sur CPU et fusionne deux lignes sur GPU. |
+| `-DCHPS_MPI=ON` | Construit `editdist-mpi`. Le mode `pair` distribue une paire et le mode `pairs` distribue les paires successives du FASTA. |
 | `-DCHPS_QUICKED=ON` | Construit `editdist-quicked`, avec contrôle du score par edlib. |
 
-`build/editdist --help` affiche les modes et les options. Les bancs de comparaison évaluent aussi A*PA2. [Comparaisons avec les bibliothèques](results/alternatives/README.md)
+`build/editdist --help` affiche les modes et les options. A*PA2 de Groot Koerkamp associe un parcours en blocs SIMD à une heuristique de coût restant. Le banc EPYC le compare à BiWFA et à QuickEd de Doblas et coll., qui utilise un alignement en bande. [Comparaison sur le chromosome 21](results/alternatives/human/README.md) · [Étude du traceback de QuickEd](results/alternatives/README.md)
 
 ## Se repérer dans le dépôt
 
