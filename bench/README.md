@@ -63,3 +63,6 @@ COHORT_FASTA=data/cohort.fa COHORT_GROUPS=data/groups.tsv \
 | Quinze paires à un million | [Deux versions OpenMP](cpu/openmp/million/complete_1m.sbatch) | [Temps des quinze entrées](../results/romeo/completion-1m/) |
 | Chromosomes entiers | [Limites de temps et d'espace](human/whole_chromosomes.py) | [Mesures et bornes](../results/human/whole/) |
 | Trace sur processeur | [Matrice et Hirschberg](cpu/traceback/traceback.py) | [Temps et RSS](../results/traceback/) |
+| Temps après échauffement et mémoire sur ROMEO | [Pilote par configuration](repeated/measure.py) | [Répétitions, écarts-types et intervalles](../results/repeated/README.md) |
+| Coût des communications MPI | [Mesure sur deux nœuds](mpi/repeated.sbatch) | [Profil des appels collectifs](../results/mpi/collectives/) et [pipeline par blocs](../results/mpi/pipeline/) |
+| Alignement QuickEd | [Témoins et entrées de comparaison](quicked/cases.py) | [Mesures avec et sans contrôle du chemin](../results/alternatives/romeo/838762/) |

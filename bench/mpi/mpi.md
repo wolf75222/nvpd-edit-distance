@@ -20,6 +20,8 @@ For row character *c*, the previous occurrence in a target prefix can lie severa
 
 This schedule visits all *mn* cells and performs one collective per row. A rank owns at most `ceil(n / ranks)` score columns. All ranks hold a copy of both input sequences. Adding nodes reduces the number of local columns and introduces inter-node communication on every row.
 
+With `--pipeline-rows H`, each rank computes a packet of up to *H* rows and sends its right boundary to its neighbor. The receiver uses these scores as the left boundary of its stripe. This mode returns the same global score and avoids the per-row collective. The two-node comparison includes packet heights 8 and 32. [Recurrence, validation and measurements](../../results/mpi/pipeline/README.md)
+
 ## Many pairs
 
 For a cohort, the ranks distribute the upper triangular pairs in round-robin order. Within a rank each OpenMP worker takes a complete pair and evaluates the SIMD NvPD recurrence. A single MPI reduction assembles the exact distances on rank zero. The output diagonal is zero. This mode measures throughput across independent pairs.
