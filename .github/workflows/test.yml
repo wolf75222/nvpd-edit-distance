@@ -8,7 +8,14 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq libopenmpi-dev openmpi-bin
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCHPS_MPI=ON -DCHPS_QUICKED=ON
+      - name: Build the Kokkos OpenMP backend
+        run: |
+          git clone --quiet --depth 1 --branch 4.5.01 https://github.com/kokkos/kokkos "$RUNNER_TEMP/kokkos"
+          test "$(git -C "$RUNNER_TEMP/kokkos" rev-parse HEAD)" = 175257a51ff29a0059ec48bcd233ee096b2c0438
+          cmake -S "$RUNNER_TEMP/kokkos" -B "$RUNNER_TEMP/kokkos-build" -DCMAKE_BUILD_TYPE=Release \
+            -DKokkos_ENABLE_OPENMP=ON -DCMAKE_CXX_STANDARD=20 -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/install"
+          cmake --build "$RUNNER_TEMP/kokkos-build" --parallel 2 --target install
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCHPS_MPI=ON -DCHPS_QUICKED=ON -DCHPS_KOKKOS=ON -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/install"
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
       - run: python3 bench/mpi_checks.py --binary build/editdist-mpi --oracle build/editdist --launcher 'mpiexec --oversubscribe -n 4'
