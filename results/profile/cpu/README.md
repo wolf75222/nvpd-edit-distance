@@ -1,6 +1,6 @@
 # CPU measurements on ROMEO
 
-Run the three Slurm commands in [the CPU profiling protocol](../../../bench/profile_cpu.md) from the repository root to reproduce these experiments. The compiler was GCC 11.5.0 with `-std=c++20 -O3 -g -march=native -fopenmp -fno-omit-frame-pointer`. The jobs placed OpenMP workers on physical cores with close affinity, active wait and dynamic teams disabled.
+Run the three Slurm commands in [the CPU profiling protocol](../../../bench/cpu/openmp/profile_cpu.md) from the repository root to reproduce these experiments. The compiler was GCC 11.5.0 with `-std=c++20 -O3 -g -march=native -fopenmp -fno-omit-frame-pointer`. The jobs placed OpenMP workers on physical cores with close affinity, active wait and dynamic teams disabled.
 
 | File | Records | Contents |
 | --- | ---: | --- |

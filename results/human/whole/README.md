@@ -9,8 +9,8 @@ Sur le chromosome 20, un chemin optimal de CP068258.1 vers CP068258.2 contient 1
 Le job 838443 a réservé un cœur EPYC. Chaque processus dispose de 120 s et de 4 Gio d'espace d'adressage. Les [mesures](838443/trials.csv) distinguent le temps de l'appel et celui du processus. Une interruption laisse le score vide. Les [bornes du chromosome 21](bounds.csv) utilisent les effectifs par lettre et le chemin global qui suit les blocs de la chaîne UCSC hg38ToHs1 numéro 23.
 
 ```sh
-python3 scripts/human_reference.py --whole-assemblies --cache build/refs --manifest results/human/whole/manifest.tsv
-python3 bench/chromosome_bounds.py data/human/chr21-assemblies.fa build/refs/hg38ToHs1.over.chain.gz build/chr21-bounds.csv
+python3 scripts/datasets/human_reference.py --whole-assemblies --cache build/refs --manifest results/human/whole/manifest.tsv
+python3 bench/human/chromosome_bounds.py data/human/chr21-assemblies.fa build/refs/hg38ToHs1.over.chain.gz build/chr21-bounds.csv
 python3 bench/human/assembly_edits.py build/editdist data/human/chr20-assemblies.fa build/chr20-edits.tsv
-sbatch --account="$ROMEO_PROJECT" bench/whole_chromosomes.sbatch
+sbatch --account="$ROMEO_PROJECT" bench/human/whole_chromosomes.sbatch
 ```

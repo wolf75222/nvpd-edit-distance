@@ -1,6 +1,6 @@
 # Kokkos measurements on ROMEO
 
-The Kokkos backend runs the NvPD cost recurrence as one range kernel per score row. The native CPU comparison uses the selected OpenMP SIMD kernel. The native GPU comparison uses the selected CUDA implementation with its tile optimization. The harness builds both compared backends in the same executable and tests the normal CLI separately. See the [build and benchmark procedure](../../bench/kokkos.md).
+The Kokkos backend runs the NvPD cost recurrence as one range kernel per score row. The native CPU comparison uses the selected OpenMP SIMD kernel. The native GPU comparison uses the selected CUDA implementation with its tile optimization. The harness builds both compared backends in the same executable and tests the normal CLI separately. See the [build and benchmark procedure](../../bench/kokkos/kokkos.md).
 
 `timings.csv` contains independent process trials for reproducible 5% synthetic inputs. Each trial warms the backend once, then records one complete cost-only call. All measured distances match edlib. `peak_rss_kib` is the process high-water mark. `device_bytes` counts the explicit score and index arrays on the accelerator. The CPU runs report zero device bytes.
 
@@ -12,6 +12,6 @@ The single cold CLI run in `human.json` compared 2,000,000 and 2,001,263 bases. 
 
 The first accelerator build in 838220 encountered a CUDA 13 API incompatibility in Kokkos 4.5.01. Job 838227 built the library with CUDA 12.6.3, then passed edlib to nvcc_wrapper and hit an incompatible min/max definition. The final build used the Kokkos CMake launcher to route only dependent targets to nvcc_wrapper.
 
-`builds.csv` records the launcher and step script digests used by each historical job. The public `bench/kokkos.sbatch` is the portable equivalent of `recovery.sbatch`. It takes site-local paths through environment variables. `sources.sha256` identifies the CPU and GPU kernels used in the timings.
+`builds.csv` records the launcher and step script digests used by each historical job. The public `bench/kokkos/kokkos.sbatch` is the portable equivalent of `recovery.sbatch`. It takes site-local paths through environment variables. `sources.sha256` identifies the CPU and GPU kernels used in the timings.
 
 The native CUDA source in this comparison corresponds to commit `3f1840ff498bd68240cbf806def414ff32c1e331`, before the reusable matrix workspace. The isolated pair benchmark retains the same allocation scope.

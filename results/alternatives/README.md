@@ -12,7 +12,7 @@ L’article distingue l’estimation rapide de la borne et la reconstruction de 
 
 Sur M1, les deux témoins à 512 bases donnent une borne 128, égale à leur distance. Au passage entre deux blocs de 64 colonnes, la routine de traceback consulte un prédécesseur dont l’indice relatif à la colonne suivante vaut −1. Le test d’origine décale alors un bit d’un nombre négatif de positions (comportement indéfini en C). Le premier passage se situe en (511,447) ou (255,191) en coordonnées (colonne,ligne) indexées dès zéro. Les scores amont sont 954 et 450. Les deux gardes interdisent de tester un bit extérieur aux mots stockés et rétablissent le coût 128 sur les deux entrées. Sur EPYC natif, l’estimateur donne 130 pour ces mêmes entrées et la reconstruction rend 128. Deux autres séquences à motifs répétés, de longueurs 256 et 768, y révèlent les erreurs amont 506 au lieu de 128 et 760 au lieu de 256. Chacune des 80 répétitions reproduit ces scores. Le résultat corrigé est exact aux 800 appels de la campagne. [Trace M1](diagnosis/trace-m1.csv) · [Justesse M1](diagnosis/correctness-m1.csv) · [Trace EPYC](romeo/838762/trace.csv) · [Correctif C appliqué par CMake](../../cmake/patches/quicked-trace-band.cmake)
 
-Le programme certifié rejoue tous les mouvements, les égalités et les substitutions du CIGAR, vérifie les deux longueurs consommées et compare le coût à la distance globale edlib. En cas d’échec, il appelle explicitement le mode Hirschberg avec une borne de coût exprimée en pourcentage. Le premier pourcentage est arrondi vers le haut à partir de la distance certifiée, puis double jusqu’à 100 % si nécessaire. Si toutes les reprises échouent, le JSON identifie la distance de secours par `source=edlib-fallback`. Dans les dix cas chronométrés, le premier chemin corrigé a suffi. Un test distinct force la première bande à 1 % sur deux séquences de 1 152 bases. Il produit d’abord 896, puis le bon score 384 en une reprise à 34 % sur M1. [Adaptateur de production](../../src/quicked_adapter.c) · [Test de reprise](../../tests/quicked_widen.c)
+Le programme certifié rejoue tous les mouvements, les égalités et les substitutions du CIGAR, vérifie les deux longueurs consommées et compare le coût à la distance globale edlib. En cas d’échec, il appelle explicitement le mode Hirschberg avec une borne de coût exprimée en pourcentage. Le premier pourcentage est arrondi vers le haut à partir de la distance certifiée, puis double jusqu’à 100 % si nécessaire. Si toutes les reprises échouent, le JSON identifie la distance de secours par `source=edlib-fallback`. Dans les dix cas chronométrés, le premier chemin corrigé a suffi. Un test distinct force la première bande à 1 % sur deux séquences de 1 152 bases. Il produit d’abord 896, puis le bon score 384 en une reprise à 34 % sur M1. [Adaptateur de production](../../src/libraries/quicked/quicked_adapter.c) · [Test de reprise](../../tests/quicked_widen.c)
 
 Une expérience indépendante force la DP classique à rester dans `|i−j|≤r`. Sur les témoins de 512 bases, les coûts restreints sont 133 et 129 à r=63, puis 128 sur les deux entrées à r=64. Elle illustre l’effet mathématique d’une bande trop étroite. L’instrumentation de la voie amont sur M1 localise l’autre cause, au bord du tableau de bits. [Valeurs par rayon](diagnosis/fixed-band.csv) · [Calcul indépendant](../../bench/quicked/fixed_band.py)
 
@@ -21,22 +21,22 @@ Une expérience indépendante force la DP classique à rester dans `|i−j|≤r`
 Depuis la racine du projet, préparer les données et l’archive A*PA2. Python 3, Git, CMake ≥3.22, un compilateur C/C++20 et OpenMP sont requis. Le téléchargement des références humaines et de la chaîne UCSC est vérifié par le générateur.
 
 ```sh
-python3 scripts/synthetic.py
-python3 scripts/human_reference.py
-python3 bench/quicked/cases.py inputs/quicked
+python3 scripts/datasets/synthetic.py
+python3 scripts/datasets/human_reference.py
+python3 bench/quicked/cases.py data/controls/quicked
 mkdir -p deps build
 git clone https://github.com/RagnarGrootKoerkamp/astar-pairwise-aligner build/quicked-astar
 git -C build/quicked-astar archive --format=tar.gz \
     -o "$PWD/deps/astar-src.tar.gz" bf2e14e0cbc3a9a03600dcda0641d7f89e401e63
 ```
 
-Sur ROMEO, soumettre depuis le clone contenant `inputs/quicked/` et `deps/astar-src.tar.gz`. CMake vérifie les archives SHA-256 de QuickEd, edlib et WFA2. Il les télécharge quand elles sont absentes de `deps/`. Le job vérifie la révision intégrée dans l’archive Git A*PA, l’empreinte du Cargo.lock (`ab826558…7e12c`) et celle du manifeste Rust nightly du 21 mai 2026 (`6c7ed921…ec5ab`). Rustup contrôle les composants du manifeste et Cargo compile avec `--locked`. Le cache de téléchargement Cargo peut être fourni facultativement sous `deps/cargo-cache.tar.gz` avec `registry/cache`, `registry/index` et `git/db`. Le cache n’altère pas les versions. Les outils et la compilation Rust utilisent un dossier projet temporaire supprimé en fin de job. L’accès HTTPS au registre et à static.rust-lang.org est nécessaire pour les composants manquants. Le répertoire de sortie est `results/alternatives/romeo/$SLURM_JOB_ID`. [Script Slurm](../../bench/quicked/run.sbatch) · [Compilateur Rust mesuré](romeo/838762/rust-version.txt)
+Sur ROMEO, soumettre depuis le clone contenant `data/controls/quicked/` et `deps/astar-src.tar.gz`. CMake vérifie les archives SHA-256 de QuickEd, edlib et WFA2. Il les télécharge quand elles sont absentes de `deps/`. Le job vérifie la révision intégrée dans l’archive Git A*PA, l’empreinte du Cargo.lock (`ab826558…7e12c`) et celle du manifeste Rust nightly du 21 mai 2026 (`6c7ed921…ec5ab`). Rustup contrôle les composants du manifeste et Cargo compile avec `--locked`. Le cache de téléchargement Cargo peut être fourni facultativement sous `deps/cargo-cache.tar.gz` avec `registry/cache`, `registry/index` et `git/db`. Le cache n’altère pas les versions. Les outils et la compilation Rust utilisent un dossier projet temporaire supprimé en fin de job. L’accès HTTPS au registre et à static.rust-lang.org est nécessaire pour les composants manquants. Le répertoire de sortie est `results/alternatives/romeo/$SLURM_JOB_ID`. [Script Slurm](../../bench/quicked/run.sbatch) · [Compilateur Rust mesuré](romeo/838762/rust-version.txt)
 
 ```sh
 sbatch -A r260105 -p instant bench/quicked/run.sbatch
 ```
 
-Pour refaire les diagnostics sans Slurm, utiliser un répertoire CMake compilé avec `CHPS_QUICKED=ON`, les cibles `measure-quicked`, `measure-quicked-stock` et `measure-quicked-native`, puis lancer `bench/quicked/diagnose.py BUILD inputs/quicked trace.csv`, `bench/quicked/check_witnesses.py BUILD inputs/quicked MACHINE correctness.csv` et `bench/quicked/fixed_band.py inputs/quicked fixed-band.csv` avec Python. Pour l’instrumentation, choisir les mêmes compilateurs C et C++ que CMake avec `--cc` et `--cxx`.
+Pour refaire les diagnostics sans Slurm, utiliser un répertoire CMake compilé avec `CHPS_QUICKED=ON`, les cibles `measure-quicked`, `measure-quicked-stock` et `measure-quicked-native`, puis lancer `bench/quicked/diagnose.py BUILD data/controls/quicked trace.csv`, `bench/quicked/check_witnesses.py BUILD data/controls/quicked MACHINE correctness.csv` et `bench/quicked/fixed_band.py data/controls/quicked fixed-band.csv` avec Python. Pour l’instrumentation, choisir les mêmes compilateurs C et C++ que CMake avec `--cc` et `--cxx`.
 
 ## Série historique sur Apple M1 Pro
 
@@ -49,14 +49,14 @@ Les cas 20k utilisent la première paire de chaque taux du générateur de réf�
 cmake -S . -B build-alt -DCMAKE_BUILD_TYPE=Release -DCHPS_QUICKED=ON \
   -DCMAKE_C_FLAGS=-mcpu=native -DCMAKE_CXX_FLAGS=-mcpu=native
 cmake --build build-alt --parallel
-python3 scripts/synthetic.py
-python3 scripts/human_reference.py
-python3 bench/alternatives.py --build build-alt --out build-alt/trials.csv --machine apple-m1-pro
+python3 scripts/datasets/synthetic.py
+python3 scripts/datasets/human_reference.py
+python3 bench/cpu/alternatives/alternatives.py --build build-alt --out build-alt/trials.csv --machine apple-m1-pro
 ```
 
 ## A*PA2 sur les mêmes paires
 
-L'expérience [astar.csv](astar.csv) rassemble 175 processus neufs sur Apple M1 Pro, soit cinq entrées, sept variantes et cinq répétitions. Les deux modes publiés, A*PA2-simple et A*PA2-full, calculent la distance globale unitaire **avec chemin**. Les fonctions Rust de l'interface C construisent aussi le CIGAR sous forme de chaîne. Le temps de l'adaptateur couvre l'appel et la libération de cette chaîne. Les deux modes donnent les mêmes distances qu'edlib sur les cinq entrées. [Article WABI 2024](https://doi.org/10.4230/LIPIcs.WABI.2024.17) · [Code amont utilisé](https://github.com/RagnarGrootKoerkamp/astar-pairwise-aligner/tree/bf2e14e0cbc3a9a03600dcda0641d7f89e401e63) · [Interface C](https://github.com/RagnarGrootKoerkamp/astar-pairwise-aligner/blob/bf2e14e0cbc3a9a03600dcda0641d7f89e401e63/astarpa-c/src/lib.rs) · [Adaptateur](../../bench/astar_trial.cpp)
+L'expérience [astar.csv](astar.csv) rassemble 175 processus neufs sur Apple M1 Pro, soit cinq entrées, sept variantes et cinq répétitions. Les deux modes publiés, A*PA2-simple et A*PA2-full, calculent la distance globale unitaire **avec chemin**. Les fonctions Rust de l'interface C construisent aussi le CIGAR sous forme de chaîne. Le temps de l'adaptateur couvre l'appel et la libération de cette chaîne. Les deux modes donnent les mêmes distances qu'edlib sur les cinq entrées. [Article WABI 2024](https://doi.org/10.4230/LIPIcs.WABI.2024.17) · [Code amont utilisé](https://github.com/RagnarGrootKoerkamp/astar-pairwise-aligner/tree/bf2e14e0cbc3a9a03600dcda0641d7f89e401e63) · [Interface C](https://github.com/RagnarGrootKoerkamp/astar-pairwise-aligner/blob/bf2e14e0cbc3a9a03600dcda0641d7f89e401e63/astarpa-c/src/lib.rs) · [Adaptateur](../../bench/cpu/alternatives/astar_trial.cpp)
 
 | Entrée | Distance | Médiane simple (ms) | Médiane full (ms) |
 | --- | ---: | ---: | ---: |
@@ -66,7 +66,7 @@ L'expérience [astar.csv](astar.csv) rassemble 175 processus neufs sur Apple M1 
 | Fenêtre chr21, 50k | 698 | 2,160 | 3,416 |
 | Contrôle central chr21, 100k | 72 | 2,002 | 6,196 |
 
-Reproduction depuis la racine du projet après la préparation des entrées et de `build-alt` ci-dessus. Les fichiers amont fixent le compilateur Rust à `nightly-2026-05-21`, les dépendances via `Cargo.lock` et les instructions natives via `-C target-cpu=native`. La révision date du 22 mai 2026. Sur la machine mesurée, `g++-16` désigne GCC 16.1.0. L'adaptateur inclut l'en-tête C publié par l'amont. [Collecteur](../../bench/alternatives.py)
+Reproduction depuis la racine du projet après la préparation des entrées et de `build-alt` ci-dessus. Les fichiers amont fixent le compilateur Rust à `nightly-2026-05-21`, les dépendances via `Cargo.lock` et les instructions natives via `-C target-cpu=native`. La révision date du 22 mai 2026. Sur la machine mesurée, `g++-16` désigne GCC 16.1.0. L'adaptateur inclut l'en-tête C publié par l'amont. [Collecteur](../../bench/cpu/alternatives/alternatives.py)
 
 ```sh
 up=build/astar-pairwise-aligner
@@ -74,8 +74,8 @@ git clone https://github.com/RagnarGrootKoerkamp/astar-pairwise-aligner "$up"
 git -C "$up" checkout --detach bf2e14e0cbc3a9a03600dcda0641d7f89e401e63
 (cd "$up" && cargo build --release --locked -p astarpa-c)
 g++-16 -std=c++20 -O3 -mcpu=native -Iinclude -I"$up/astarpa-c" \
-  bench/astar_trial.cpp src/fasta.cpp -L"$up/target/release" -lastarpa_c \
+  bench/cpu/alternatives/astar_trial.cpp src/io/fasta.cpp -L"$up/target/release" -lastarpa_c \
   -Wl,-rpath,"$PWD/$up/target/release" -o build-alt/astar-trial
-OMP_NUM_THREADS=1 python3 bench/alternatives.py --build build-alt \
+OMP_NUM_THREADS=1 python3 bench/cpu/alternatives/alternatives.py --build build-alt \
   --astar-binary build-alt/astar-trial --out build-alt/astar.csv --machine apple-m1-pro
 ```

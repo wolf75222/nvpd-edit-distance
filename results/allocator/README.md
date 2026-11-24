@@ -5,8 +5,8 @@ The probe compares two allocation policies with the same production NvPD CUDA ke
 Run these commands from the project root on ROMEO. The checkout must contain commit `3f1840ff498bd68240cbf806def414ff32c1e331`. The natural cohort path is `data/phix174/cohort.fa`. The three fixed-size ACGT cohorts are generated in the job. Both jobs request one GH200 and four host workers. The toolchain is CUDA 13.0.2 with GPU target sm_90 and host OpenMP.
 
 ```bash
-sbatch --account="$ROMEO_PROJECT" bench/allocator.sbatch
-sbatch --account="$ROMEO_PROJECT" bench/allocator_validate.sbatch
+sbatch --account="$ROMEO_PROJECT" bench/gpu/allocation/allocator.sbatch
+sbatch --account="$ROMEO_PROJECT" bench/gpu/allocation/allocator_validate.sbatch
 ```
 
 The first launcher extracts the original source revision and checks the kernel digest. For a staged source tree, supply a Git archive with `ALLOCATOR_BASE_ARCHIVE`. Each job writes to `results/allocator/<job-id>/`. The second launcher builds the archived CLI and the current CLI, runs CTest on both, checks public traceback and tests a sequence of changes from wide to short rows and back to wide rows.

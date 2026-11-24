@@ -12,13 +12,13 @@ Les trois rapports correspondent aux secondes mesurées sous les deux versions p
 
 Un nœud EPYC 9654 exécute simultanément trois processus de calcul. Chaque paire dispose d'un groupe de huit cœurs physiques. Ses deux variantes utilisent le même groupe, successivement, dans deux processus neufs. L'ordre est initiale puis SIMD à 2 et 10 %, et SIMD puis initiale à 5 %. La mesure couvre un appel au noyau avec construction de l'index, allocations, démarrage de l'équipe OpenMP et calcul du score. La lecture du FASTA et l'échantillonnage des CPU sont hors chronométrage. Il n'y a ni appel d'échauffement ni répétition par variante. Les rapports décrivent ces trois observations sous charge concurrente. Les bandes de variabilité obtenues sur les tailles plus courtes appartiennent à l'autre campagne. [Essais répétés à tailles plus courtes](../cpu/README.md)
 
-Les deux sources de `src/dp.cpp` viennent des commits `f08b4f6` et `4724f68` et utilisent le même pilote, GCC et les options `-std=c++20 -O3 -DNDEBUG -march=native -fopenmp`. La validation compare le SHA-256, les deux longueurs et le score de chaque mesure aux sorties indépendantes d'edlib et WFA2. Elle regroupe les identifiants de CPU par socket et cœur physique via sysfs avant de vérifier le placement des équipes. [Pilote C++](../../../bench/million_pair.cpp) · [Script Slurm et validation](../../../bench/profile_million.sbatch)
+Les deux sources de `src/cpu/dp.cpp` viennent des commits `f08b4f6` et `4724f68` et utilisent le même pilote, GCC et les options `-std=c++20 -O3 -DNDEBUG -march=native -fopenmp`. La validation compare le SHA-256, les deux longueurs et le score de chaque mesure aux sorties indépendantes d'edlib et WFA2. Elle regroupe les identifiants de CPU par socket et cœur physique via sysfs avant de vérifier le placement des équipes. [Pilote C++](../../../bench/cpu/openmp/million_pair.cpp) · [Script Slurm et validation](../../../bench/cpu/openmp/profile_million.sbatch)
 
-Depuis la racine d'un clone qui contient les deux commits, soumettre `sbatch --account="$ROMEO_PROJECT" --partition=instant bench/profile_million.sbatch`. Si les trois FASTA manquent, les lignes suivantes régénèrent uniquement ces entrées en conservant le manifeste de la campagne principale.
+Depuis la racine d'un clone qui contient les deux commits, soumettre `sbatch --account="$ROMEO_PROJECT" --partition=instant bench/cpu/openmp/profile_million.sbatch`. Si les trois FASTA manquent, les lignes suivantes régénèrent uniquement ces entrées en conservant le manifeste de la campagne principale.
 
 ```sh
 tmp=$(mktemp -d)
-python3 scripts/synthetic.py --out "$tmp" --lengths 1000000 --rates .02 .05 .1 --pairs 1 --seed 2026
+python3 scripts/datasets/synthetic.py --out "$tmp" --lengths 1000000 --rates .02 .05 .1 --pairs 1 --seed 2026
 mkdir -p data/synthetic/pairs
 cp "$tmp"/pairs/*.fa data/synthetic/pairs/
 ```

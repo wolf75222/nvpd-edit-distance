@@ -35,8 +35,8 @@ Sur les quinze paires, le rapport médian des temps appariés NvPD initial / ant
 Depuis la racine du dépôt, générer le corpus synthétique avec sa graine par défaut puis soumettre le job. Il extrait la révision initiale dans un répertoire temporaire et vérifie son manifeste de sources.
 
 ```bash
-python3 scripts/synthetic.py --out data/synthetic
-sbatch --account="$ROMEO_PROJECT" bench/complete_1m.sbatch
+python3 scripts/datasets/synthetic.py --out data/synthetic
+sbatch --account="$ROMEO_PROJECT" bench/cpu/openmp/million/complete_1m.sbatch
 ```
 
 Les fichiers d’une nouvelle exécution se trouvent dans `results/romeo/completion-1m/jobs/<job>/`.

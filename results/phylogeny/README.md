@@ -38,9 +38,9 @@ Sur ce phage, la RMSE des paires traversant une branche varie de 9,62 à 26,63 p
 ## Recalcul à partir des scores publiés
 
 ```sh
-python3 scripts/phylo_fit.py results/romeo/cohort-837271/matrix.tsv --out results/phylogeny/phix174
-python3 scripts/phylo_fit.py results/phylogeny/sars-edit/matrix.tsv --out results/phylogeny/sars-edit
-python3 scripts/phylo_groups.py results/phylogeny/sars-edit/matrix.tsv results/ncbi/sars_metadata.tsv \
+python3 scripts/phylogeny/phylo_fit.py results/romeo/cohort-837271/matrix.tsv --out results/phylogeny/phix174
+python3 scripts/phylogeny/phylo_fit.py results/phylogeny/sars-edit/matrix.tsv --out results/phylogeny/sars-edit
+python3 scripts/phylogeny/phylo_groups.py results/phylogeny/sars-edit/matrix.tsv results/ncbi/sars_metadata.tsv \
   --reference-group reference --out results/phylogeny/sars-edit \
   --comparison-tree results/phylogeny/sars-surveillance/usher.nwk \
   --comparison-out results/phylogeny/sars-surveillance
@@ -51,6 +51,6 @@ Les distances de chemin de chaque arbre publié ont aussi été recalculées ave
 Pour reproduire la restriction depuis le Newick public `public-2026-11-23.all.nwk.gz` indiqué dans l’index UCSC, utiliser la commande suivante à la racine du projet.
 
 ```sh
-python3 scripts/restrict_newick.py public-2026-11-23.all.nwk.gz results/ncbi/sars_metadata.tsv \
+python3 scripts/phylogeny/restrict_newick.py public-2026-11-23.all.nwk.gz results/ncbi/sars_metadata.tsv \
   --alias MN908947.3=NC_045512.2 --out results/phylogeny/sars-surveillance/usher.nwk
 ```

@@ -41,11 +41,11 @@ La tuile couvre huit lignes au maximum. Chaque bloc recalcule à gauche les cell
 Générer les paires synthétiques avec la graine maître 2026. Les commandes suivantes utilisent la version de référence épinglée et les fichiers exacts de la première paire de chaque configuration. En dehors d’un checkout Git, exporter la source `f08b4f6:src/cuda.cu` dans un fichier, puis définir `GPU_BASELINE` sur son chemin. Le banc vérifie son empreinte.
 
 ```sh
-python3 scripts/synthetic.py --out data/synthetic --seed 2026
-sbatch --account="$ROMEO_PROJECT" bench/profile_gpu.sbatch profile
-GPU_CANDIDATE_REV=9afad07 GPU_INTERMEDIATE=0 sbatch --account="$ROMEO_PROJECT" bench/profile_gpu.sbatch compare
-GPU_CANDIDATE_REV=21d7b77 GPU_COUNTERS=1 sbatch --account="$ROMEO_PROJECT" bench/profile_gpu.sbatch compare
-GPU_CANDIDATE_REV=21d7b77 sbatch --account="$ROMEO_PROJECT" bench/profile_gpu.sbatch holdout
+python3 scripts/datasets/synthetic.py --out data/synthetic --seed 2026
+sbatch --account="$ROMEO_PROJECT" bench/gpu/cuda/profile_gpu.sbatch profile
+GPU_CANDIDATE_REV=9afad07 GPU_INTERMEDIATE=0 sbatch --account="$ROMEO_PROJECT" bench/gpu/cuda/profile_gpu.sbatch compare
+GPU_CANDIDATE_REV=21d7b77 GPU_COUNTERS=1 sbatch --account="$ROMEO_PROJECT" bench/gpu/cuda/profile_gpu.sbatch compare
+GPU_CANDIDATE_REV=21d7b77 sbatch --account="$ROMEO_PROJECT" bench/gpu/cuda/profile_gpu.sbatch holdout
 ```
 
-Le mode `holdout` utilise aussi `data/phix174/cohort.fa`, préparé par `scripts/ncbi_phix174.py`. Les trois moteurs du job 838173 donnent une matrice identique, enregistrée par son empreinte dans `cohort.csv`. L’exécutable CUDA prend 43,51 s pour cette matrice, edlib 0,0543 s et WFA2 0,00986 s. [Mesures de la cohorte](838173/cohort.csv)
+Le mode `holdout` utilise aussi `data/phix174/cohort.fa`, préparé par `scripts/datasets/ncbi_phix174.py`. Les trois moteurs du job 838173 donnent une matrice identique, enregistrée par son empreinte dans `cohort.csv`. L’exécutable CUDA prend 43,51 s pour cette matrice, edlib 0,0543 s et WFA2 0,00986 s. [Mesures de la cohorte](838173/cohort.csv)

@@ -1,5 +1,9 @@
 # Benchmarks on ROMEO
 
+The report uses warmed calls on fixed inputs. The sampling unit is a process for the CPU, GPU and library timings, and a launch for MPI. The results include means, sample standard deviations and 95% intervals. [Repeated runs](../results/repeated/) · [Alignment libraries](../results/alternatives/) · [MPI scaling](../results/mpi/).
+
+## Initial coverage study
+
 Submit from the project root. Both jobs build in a temporary directory on the compute node. The CPU job requests eight cores. The GPU job requests four host cores and one Hopper GPU. Both request 8 GiB for 30 minutes. The build needs the two dependency archives in `deps/` or network access to the sources configured by CMake.
 
 ```bash

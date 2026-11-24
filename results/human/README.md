@@ -15,8 +15,8 @@ Pour le contrôle sur chromosome entier, le générateur insère un G à chacune
 ## Exécution
 
 ```sh
-python3 scripts/human_reference.py
-sbatch --account="$ROMEO_PROJECT" bench/human.sbatch
+python3 scripts/datasets/human_reference.py
+sbatch --account="$ROMEO_PROJECT" bench/human/human.sbatch
 ```
 
 Le job réserve un GH200, quatre cœurs Arm, 16 Gio et 45 minutes. Chaque ligne de `trials.csv` correspond à un nouveau processus. Le champ `seconds` mesure l’appel de l’algorithme. Le champ `wall_seconds` couvre en plus la lecture du FASTA et le lancement du processus. Les temps CUDA incluent l’initialisation du contexte et les copies. `device_bytes` compte les allocations CUDA explicites. Une valeur nulle de `peak_rss_kib` renvoyée par le système pour un processus ayant effectivement chargé des données indique une mesure indisponible.

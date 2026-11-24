@@ -14,7 +14,7 @@ Les fichiers `cpu-*.csv` et `gpu-*.csv` contiennent les essais individuels. Une 
 Ces commandes recalculent la synthèse depuis la racine du projet et vérifient les effectifs.
 
 ```sh
-python3 bench/summarize.py --plan results/romeo/submissions.tsv \
+python3 bench/campaign/summarize.py --plan results/romeo/submissions.tsv \
   results/romeo/cpu-*.csv results/romeo/gpu-*.csv > summary-check.csv
 cmp summary-check.csv results/romeo/summary.csv
 git archive f08b4f6 -o /tmp/nvpd-initial.tar
