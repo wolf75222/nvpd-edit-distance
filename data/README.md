@@ -6,7 +6,7 @@ Le lecteur accepte l’alphabet IUPAC de l’ADN, ignore la casse et compare les
 
 ## Cohorte biologique
 
-NCBI Datasets 18.41.1 a fourni les 64 génomes complets du bactériophage φX174. Le manifeste associe une accession versionnée et une empreinte SHA-256 à chaque séquence. Les arbres utilisent les distances d’édition entre les séquences déposées, dans leur orientation et à leur origine publiées. Le volet SARS-CoV-2 contient les métadonnées du panel. [Manifeste φX174](../results/ncbi/phix174.tsv) · [Métadonnées SARS-CoV-2](../results/ncbi/sars_metadata.tsv)
+NCBI Datasets 18.41.1 a fourni les 64 génomes complets du bactériophage φX174. Le manifeste associe une accession versionnée et une empreinte SHA-256 à chaque séquence. Les arbres utilisent les distances d’édition entre les séquences déposées, dans leur orientation et à leur origine publiées. Le panel SARS-CoV-2 comprend 64 identifiants. Les [distances et les deux arbres](../results/phylogeny/README.md) couvrent les 2 016 paires. [Manifeste φX174](../results/ncbi/phix174.tsv) · [Métadonnées SARS-CoV-2](../results/ncbi/sars_metadata.tsv)
 
 ```sh
 python3 scripts/ncbi_phix174.py

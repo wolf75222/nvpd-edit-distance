@@ -1,0 +1,5 @@
+sample,tips,criterion,combinations,violations,max_gap
+all,64,ultrametric,41664,40003,60
+all,64,four_point,635376,389529,61
+distinct,63,ultrametric,39711,38275,60
+distinct,63,four_point,595665,368769,61
