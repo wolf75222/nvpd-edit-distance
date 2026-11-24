@@ -62,6 +62,10 @@ int main() {
         check(a,b);
     }
     check(dna(259), dna(519));
+    // Exercise absent symbols, distant matches and SIMD tails in both orientations.
+    const std::string rare = "R" + std::string(511, 'A') + "Y";
+    check("RYNNR", rare);
+    check(rare, "RYNNR");
     if (sequential("GATTACA", "GCATGCU").distance != 4) return 1;
-    std::cout << "192 differential pairs, including traceback replay\n";
+    std::cout << "194 differential pairs, including traceback replay\n";
 }

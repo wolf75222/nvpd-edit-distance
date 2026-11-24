@@ -138,9 +138,15 @@ Result nvpd_omp(std::string_view a, std::string_view b, bool trace) {
             int* curr = table.data() + (trace ? i : i % 2) * stride;
             const auto s = matches.symbol[static_cast<unsigned char>(a[i-1])];
             const int* last = matches.entries.data() + s * stride;
-            #pragma omp for schedule(static)
-            for (int j = 0; j <= n; ++j) {
-                curr[j] = j == 0 ? i : detail::nvpd_cell(prev, j, last[j]);
+            #pragma omp master
+            curr[0] = i;
+            #pragma omp for simd schedule(static)
+            for (int j = 1; j <= n; ++j) {
+                const int k = last[j];
+                // k=j gives the matching diagonal. If k=0, this candidate
+                // is (i-1)+j >= max(i,j), a valid upper bound on the cost.
+                const int via_match = prev[std::max(0, k - 1)] + (j - k);
+                curr[j] = std::min(1 + std::min(prev[j-1], prev[j]), via_match);
             } // One barrier per row; the next row reads only this row.
         }
     }
