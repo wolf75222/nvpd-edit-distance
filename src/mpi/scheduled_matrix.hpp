@@ -1,6 +1,8 @@
 #pragma once
-#include "chps/dp.hpp"
+#include "chps/baselines.hpp"
 #include "chps/fasta.hpp"
+#include "indexed_rows.hpp"
+#include <optional>
 #include <mpi.h>
 #ifdef CHPS_KOKKOS
 #include <Kokkos_Core.hpp>
@@ -72,7 +74,7 @@ inline std::vector<long long> weighted_cuts(const std::vector<Task>& tasks,
 }
 
 struct RankWork {
-    unsigned long long pairs = 0, cells = 0, stolen = 0, cross_node = 0;
+    unsigned long long pairs = 0, cells = 0, stolen = 0, cross_node = 0, certified = 0;
     double busy_seconds = 0;
 };
 
@@ -161,9 +163,14 @@ public:
     }
 };
 
+using Score = Result (*)(std::string_view, std::string_view);
+
+inline Result dense_score(std::string_view a, std::string_view b) { return nvpd_omp(a, b); }
+
 inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const std::string& schedule,
                                           int rank, int ranks, int team, int grain,
-                                          const std::vector<int>& host, RankWork& work, bool kokkos_workers) {
+                                          const std::vector<int>& host, RankWork& work, bool kokkos_workers,
+                                          Score score = dense_score, bool indexed = false, bool length_bound = false) {
     const auto n = static_cast<long long>(data.size());
     const auto count = n * (n-1) / 2;
     if (count > INT_MAX) throw std::length_error("triangle exceeds MPI reduction count");
@@ -189,8 +196,11 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
     const auto stride = cyclic ? ranks : 1;
     const auto size = weighted ? cuts[rank+1]-begin :
                       cyclic ? (count+ranks-1-rank)/ranks : count*(rank+1)/ranks-begin;
+    std::optional<CohortIndexes> indexes;
+    if (indexed || length_bound) indexes.emplace(data);
     auto run_worker = [&](int worker) {
         auto& local = per_worker[worker];
+        std::vector<int> workspace;
         for (;;) {
             Range chunk;
             if (steal) {
@@ -208,7 +218,18 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
             for (auto i=chunk.first; i<chunk.last; i+=stride) {
                 const auto& t=tasks[i];
                 try {
-                    scores[t.slot]=nvpd_omp(data[t.i].bases,data[t.j].bases).distance;
+                    const auto& a = data[t.i].bases;
+                    const auto& b = data[t.j].bases;
+                    const bool a_shorter = a.size() <= b.size();
+                    const auto& shorter = a_shorter ? a : b;
+                    const auto& longer = a_shorter ? b : a;
+                    if (length_bound && longer.size() / 3 >= shorter.size() &&
+                        indexes->contains(shorter, a_shorter ? t.j : t.i, longer.size())) {
+                        scores[t.slot] = static_cast<int>(longer.size() - shorter.size());
+                        ++local.certified;
+                    } else {
+                        scores[t.slot] = indexed ? indexes->score(a, b, t.j, workspace) : score(a, b).distance;
+                    }
                     ++local.pairs;
                     local.cells+=static_cast<unsigned long long>(data[t.i].bases.size())*data[t.j].bases.size();
                     local.stolen+=chunk.owner!=rank;
@@ -240,7 +261,7 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
     if (failure) std::rethrow_exception(failure);
     for (const auto& r : per_worker) {
         work.pairs+=r.pairs; work.cells+=r.cells; work.stolen+=r.stolen; work.cross_node+=r.cross_node;
-        work.busy_seconds+=r.busy_seconds;
+        work.certified+=r.certified; work.busy_seconds+=r.busy_seconds;
     }
     MPI_Reduce(scores.data(),result.data(),static_cast<int>(count),MPI_INT,MPI_MAX,0,MPI_COMM_WORLD);
     if (!rank && std::find(result.begin(),result.end(),-1)!=result.end())
@@ -260,15 +281,16 @@ inline std::vector<int> node_leaders(int rank, int ranks) {
 }
 
 inline void rank_diagnostics(const RankWork& work, int rank, int ranks, int trial) {
-    unsigned long long counters[]{work.pairs,work.cells,work.stolen,work.cross_node};
-    std::vector<unsigned long long> all(rank ? 0 : 4*ranks);
+    unsigned long long counters[]{work.pairs,work.cells,work.stolen,work.cross_node,work.certified};
+    std::vector<unsigned long long> all(rank ? 0 : 5*ranks);
     std::vector<double> times(rank ? 0 : ranks);
-    MPI_Gather(counters,4,MPI_UNSIGNED_LONG_LONG,all.data(),4,MPI_UNSIGNED_LONG_LONG,0,MPI_COMM_WORLD);
+    MPI_Gather(counters,5,MPI_UNSIGNED_LONG_LONG,all.data(),5,MPI_UNSIGNED_LONG_LONG,0,MPI_COMM_WORLD);
     MPI_Gather(&work.busy_seconds,1,MPI_DOUBLE,times.data(),1,MPI_DOUBLE,0,MPI_COMM_WORLD);
     if (!rank) for (int i=0;i<ranks;++i)
         std::cerr << std::setprecision(12) << "{\"rank\":" << i << ",\"trial\":" << trial
-                  << ",\"pairs\":" << all[4*i] << ",\"cells\":" << all[4*i+1]
-                  << ",\"stolen_pairs\":" << all[4*i+2] << ",\"cross_node_pairs\":" << all[4*i+3]
+                  << ",\"pairs\":" << all[5*i] << ",\"cells\":" << all[5*i+1]
+                  << ",\"stolen_pairs\":" << all[5*i+2] << ",\"cross_node_pairs\":" << all[5*i+3]
+                  << ",\"certified_pairs\":" << all[5*i+4]
                   << ",\"busy_seconds\":" << times[i] << "}\n";
 }
 } // namespace chps::mpi

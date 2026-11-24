@@ -30,8 +30,9 @@ struct Options {
     std::string mode, input;
     int threads = 1, trials = 1, warmups = 0, pipeline_rows = 0;
     bool report_rss = false;
-    std::string schedule;
-    bool kokkos_workers = false;
+    std::string schedule, algorithm;
+    chps::mpi::Score score = chps::mpi::dense_score;
+    bool kokkos_workers = false, length_bound = false;
     int grain = 1;
 };
 
@@ -43,6 +44,14 @@ Options parse(int argc, char** argv) {
         if (i + 1 >= argc) throw std::invalid_argument("missing argument value");
         std::string_view key = argv[i], value = argv[i+1];
         if (key == "--input") { o.input = value; continue; }
+        if (key == "--algorithm" && o.mode == "matrix") {
+            if (value == "nvpd-omp" || value == "nvpd-indexed") o.score = chps::mpi::dense_score;
+            else if (value == "edlib") o.score = chps::edlib_distance;
+            else if (value == "wfa2") o.score = chps::wfa_distance;
+            else throw std::invalid_argument("expected nvpd-omp, nvpd-indexed, edlib or wfa2");
+            o.algorithm = value;
+            continue;
+        }
         if (key == "--workers" && o.mode == "matrix") {
             if (value != "openmp" && value != "kokkos") throw std::invalid_argument("expected openmp or kokkos");
             o.kokkos_workers = value == "kokkos";
@@ -59,6 +68,7 @@ Options parse(int argc, char** argv) {
         if (ec != std::errc{} || end != value.data() + value.size())
             throw std::invalid_argument("expected integer for " + std::string(key));
         if (key == "--threads" && n > 0) o.threads = n;
+        else if (key == "--length-bound" && o.mode == "matrix" && n == 1) o.length_bound = true;
         else if (key == "--grain" && o.mode == "matrix" && n > 0) o.grain = n;
         else if (key == "--pipeline-rows" && o.mode == "pair" && n > 0) o.pipeline_rows = n;
         else if (key == "--report-rss" && n == 1) o.report_rss = true;
@@ -66,6 +76,7 @@ Options parse(int argc, char** argv) {
         else if (key == "--warmups" && n >= 0) o.warmups = n;
         else throw std::invalid_argument("unknown option or invalid value: " + std::string(key));
     }
+    if ((!o.algorithm.empty() || o.length_bound) && o.schedule.empty()) o.schedule = "cyclic";
     if (o.kokkos_workers && o.schedule.empty()) throw std::invalid_argument("Kokkos workers require --schedule");
     if (o.input.empty()) throw std::invalid_argument("--input is required");
     return o;
@@ -327,7 +338,7 @@ int main(int argc, char** argv) {
             if (o.mode == "pair")
                 distance = distributed_pair(records[0].bases, records[1].bases, rank, ranks, team, o.pipeline_rows, workers);
             else if (!o.schedule.empty()) {
-                matrix = chps::mpi::scheduled_matrix(records,o.schedule,rank,ranks,team,o.grain,hosts,work,o.kokkos_workers);
+                matrix = chps::mpi::scheduled_matrix(records,o.schedule,rank,ranks,team,o.grain,hosts,work,o.kokkos_workers,o.score,o.algorithm == "nvpd-indexed",o.length_bound);
                 workers = static_cast<int>(std::min<unsigned long long>(team,work.pairs));
             } else matrix = batch(records, rank, ranks, team, o.mode == "pairs", workers);
             double elapsed = MPI_Wtime() - start, slowest = 0;
@@ -358,6 +369,7 @@ int main(int argc, char** argv) {
                           << ",\"pipeline_rows\":" << o.pipeline_rows
                           << ",\"assigned_workers\":" << total_workers << ",\"seconds\":" << slowest;
                 if (!o.schedule.empty()) std::cerr << ",\"worker_backend\":\"" << (o.kokkos_workers ? "kokkos" : "openmp") << '"';
+                if (!o.schedule.empty()) std::cerr << ",\"algorithm\":\"" << (o.algorithm.empty() ? "nvpd-omp" : o.algorithm) << '"';
                 if (o.report_rss) std::cerr << ",\"max_rank_rss_kib\":" << max_rss_kib;
                 std::cerr << "}\n";
             }
