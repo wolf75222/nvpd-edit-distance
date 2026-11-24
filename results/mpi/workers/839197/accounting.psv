@@ -1,0 +1,2 @@
+JobID|Partition|State|ExitCode|ElapsedRaw|AllocCPUS|AllocNodes|ReqMem|Timelimit
+839197|instant|COMPLETED|0:0|352|384|2|24G|00:30:00

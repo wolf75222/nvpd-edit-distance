@@ -26,4 +26,3 @@ inline void replay(std::string_view a, std::string_view b, const chps::Result& r
     if (i != a.size() || j != b.size() || cost != result.distance)
         throw std::runtime_error("traceback failed to consume sequences or achieve optimal cost");
 }
-

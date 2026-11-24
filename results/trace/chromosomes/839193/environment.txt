@@ -1,0 +1,6 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Model name:                              AMD EPYC 9654 96-Core Processor
+L1d cache:                               6 MiB (192 instances)
+L2 cache:                                192 MiB (192 instances)
+L3 cache:                                768 MiB (24 instances)

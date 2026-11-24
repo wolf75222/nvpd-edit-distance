@@ -1,0 +1,2 @@
+block,case,mode,method,threads,process_limit_s
+1,chr1,trace,edlib,1,120

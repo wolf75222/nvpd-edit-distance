@@ -1,2 +1,3 @@
 *.csv whitespace=cr-at-eol
 *.tsv whitespace=cr-at-eol
+*.patch whitespace=-blank-at-eol

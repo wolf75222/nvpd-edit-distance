@@ -1,0 +1,6 @@
+JobID|Partition|State|ExitCode|ElapsedRaw|AllocCPUS|AllocNodes|ReqMem|Timelimit
+839200_1|instant|COMPLETED|0:0|342|8|1|8G|00:15:00
+839200_2|instant|COMPLETED|0:0|341|8|1|8G|00:15:00
+839200_3|instant|COMPLETED|0:0|341|8|1|8G|00:15:00
+839200_4|instant|COMPLETED|0:0|342|8|1|8G|00:15:00
+839200_5|instant|COMPLETED|0:0|342|8|1|8G|00:15:00

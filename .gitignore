@@ -22,6 +22,7 @@ slurm-*.log
 *.out
 /report/*.log
 /report/*.aux
+/report/*.toc
 /report/*.synctex.gz
 
 /*-[0-9]*.log
