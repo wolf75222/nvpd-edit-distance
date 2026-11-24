@@ -1,0 +1,13 @@
+case,nodes,height,allgathers_per_rank
+wide,2,32,0
+wide,2,0,1024
+square,1,8,0
+square,1,0,20000
+wide,2,8,0
+square,2,8,0
+square,1,32,0
+wide,1,8,0
+wide,1,32,0
+wide,1,0,1024
+square,2,32,0
+square,2,0,20000

@@ -25,10 +25,12 @@ def main():
     a = p.parse_args()
     launch = shlex.split(a.launcher) + [a.binary]
     rng = random.Random(87)
-    pairs = [("", ""), ("", "AC"), ("TT", "R"), ("NNNNN", "G"),
+    pairs = [("", ""), ("", "AC"), ("A", "T"), ("TT", "R"), ("NNNNN", "G"),
              ("CCCCAAA", "AGAAAAACCAAAAAA"), ("NRGACNT", "RAAAGACNNNAACTTAA"),
              ("R" + "A"*11 + "C", "C" + "A"*33 + "G"*51 + "R"),
-             ("RYNNR", "R" + "A"*511 + "Y")]
+             ("RYNNR", "R" + "A"*511 + "Y"),
+             ("CGT" + "A"*24, "A"*110 + "CGT" + "A"*27),
+             ("RYSWKMBDHVN"*3, "NNN" + "RYSWKMBDHVN"*5 + "W")]
     pairs.extend(("".join(rng.choices("ACGTRYN", k=m)), "".join(rng.choices("ACGTRY", k=n)))
                  for m, n in [(7,13),(19,59),(33,17),(68,123)])
     with tempfile.TemporaryDirectory(dir=os.environ.get("CHPS_MPI_DATA_TMP")) as tmp:
@@ -38,9 +40,14 @@ def main():
             args = ["pair","--input",str(fasta)]
             native = [json.loads(invoke([a.oracle,*args,"--algorithm",algo]))["distance"]
                       for algo in ("seq","edlib")]
-            actual = json.loads(invoke([*launch,*args,"--threads",str(1+i%2)]))["distance"]
-            if native != [actual,actual]:
-                raise ValueError(f"pair {i}: scalar/edlib={native} MPI={actual}")
+            height = (1, 3, 8, 32, 2**31-1)[i % 5]
+            for extra in ([], ["--pipeline-rows", str(height)]):
+                actual = json.loads(invoke([*launch, *args, "--threads", str(1+i%2), *extra]))
+                if native != [actual["distance"]]*2:
+                    raise ValueError(f"pair {i}, {extra}: scalar/edlib={native} MPI={actual}")
+                method = "nvpd-mpi-pipeline" if extra else "nvpd-mpi"
+                if actual["algorithm"] != method:
+                    raise ValueError(f"wrong algorithm label: {actual}")
         for seqs in [["A"], ["", "ANC"], ["GAT", "TT", "", "ATC", "RNNN", "GAT"]]:
             fasta.write_text("".join(f">r{i}\n{s}\n" for i,s in enumerate(seqs)))
             args = ["matrix","--input",str(fasta)]
@@ -51,7 +58,7 @@ def main():
             actual = invoke([*launch,*args,"--threads","2"])
             if expected != actual:
                 raise ValueError("MPI matrix disagrees with edlib")
-    print(f"{len(pairs)} MPI pair checks against scalar and edlib, 3 MPI and 3 OpenMP matrices against edlib")
+    print(f"{len(pairs)} pairs in both MPI modes matched scalar and edlib, 3 MPI and 3 OpenMP matrices against edlib")
 
 
 if __name__ == "__main__":

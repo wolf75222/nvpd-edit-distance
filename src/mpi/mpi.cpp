@@ -21,7 +21,7 @@
 namespace {
 struct Options {
     std::string mode, input;
-    int threads = 1, trials = 1, warmups = 0;
+    int threads = 1, trials = 1, warmups = 0, pipeline_rows = 0;
 };
 
 Options parse(int argc, char** argv) {
@@ -37,6 +37,7 @@ Options parse(int argc, char** argv) {
         if (ec != std::errc{} || end != value.data() + value.size())
             throw std::invalid_argument("expected integer for " + std::string(key));
         if (key == "--threads" && n > 0) o.threads = n;
+        else if (key == "--pipeline-rows" && o.mode == "pair" && n > 0) o.pipeline_rows = n;
         else if (key == "--trials" && n > 0) o.trials = n;
         else if (key == "--warmups" && n >= 0) o.warmups = n;
         else throw std::invalid_argument("unknown option or invalid value: " + std::string(key));
@@ -68,20 +69,11 @@ std::vector<chps::Record> input(const Options& o, int rank) {
     return records;
 }
 
-// All coordinates are one-based in B. Rank r owns columns starts[r]+1..starts[r+1].
-int distributed_pair(std::string_view a, std::string_view b, int rank, int ranks, int team,
-                     int& workers) {
-    chps::detail::validate(a, b, false);
-    if (a.size() > b.size()) std::swap(a,b);
-    const int m = static_cast<int>(a.size()), n = static_cast<int>(b.size());
-    if (!m) { workers = 0; return n; }
-    std::vector<int> starts(ranks + 1);
-    for (int r = 0; r <= ranks; ++r)
-        starts[r] = (n / ranks) * r + std::min(n % ranks, r);
+// Allgather recurrence, with the global last match before this stripe.
+int allgather_stripe(std::string_view a, std::string_view b, const std::vector<int>& starts,
+                     const chps::detail::MatchIndex& matches, int rank, int team) {
+    const int m = static_cast<int>(a.size()), ranks = static_cast<int>(starts.size() - 1);
     const int start = starts[rank], width = starts[rank+1] - start;
-    workers = std::min(team, width);
-    const auto local = b.substr(start, width);
-    const chps::detail::MatchIndex matches(a, local);
     std::array<int, 256> preceding{}, slot{};
     for (int j = 0; j < start; ++j) preceding[static_cast<unsigned char>(b[j])] = j + 1;
     // Only one match before the stripe can contribute to each symbol. Its
@@ -98,7 +90,7 @@ int distributed_pair(std::string_view a, std::string_view b, int rank, int ranks
     std::iota(prev.begin(), prev.end(), start);
     for (int i = 1; i <= m; ++i) {
         const auto c = static_cast<unsigned char>(a[i-1]);
-        const int* last = matches.entries.data() + matches.symbol[c] * (local.size()+1);
+        const int* last = matches.entries.data() + matches.symbol[c] * (static_cast<std::size_t>(width)+1);
         const int k_end = last[width];
         const int send[] = {prev[width], k_end > 1 ? prev[k_end-1] : 0};
         MPI_Allgather(send, 2, MPI_INT, edges.data(), 2, MPI_INT, MPI_COMM_WORLD);
@@ -115,8 +107,71 @@ int distributed_pair(std::string_view a, std::string_view b, int rank, int ranks
         }
         std::swap(prev,curr);
     }
-    int result = prev[width];
-    MPI_Bcast(&result, 1, MPI_INT, std::min(ranks,n)-1, MPI_COMM_WORLD);
+    return prev[width];
+}
+
+// Each message contains the consecutive global left boundary scores of a
+// rectangle. Its bottom boundary stays in this rank for the following block.
+int pipeline_stripe(std::string_view a, int start, int width, int rank, int active_ranks,
+                    int workers, int height, const chps::detail::MatchIndex& matches) {
+    if (!width) return 0;
+    const int m = static_cast<int>(a.size());
+    height = std::min(height, m);
+    const std::size_t stride = static_cast<std::size_t>(width) + 1;
+    std::vector<int> even(stride), odd(stride), left(height), right(height);
+    std::iota(even.begin(), even.end(), start);
+    for (int done = 0; done < m;) {
+        const int count = std::min(height, m - done);
+        if (rank) MPI_Recv(left.data(), count, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        else std::iota(left.begin(), left.begin() + count, done + 1);
+        #pragma omp parallel num_threads(workers) if(workers > 1)
+        {
+            for (int t = 0; t < count; ++t) {
+                const int i = done + t + 1;
+                const int* prev = (i % 2 ? even : odd).data();
+                int* curr = (i % 2 ? odd : even).data();
+                const auto symbol = matches.symbol[static_cast<unsigned char>(a[i-1])];
+                const int* last = matches.entries.data() + symbol * stride;
+                const int edge = left[t];
+                #pragma omp master
+                curr[0] = edge;
+                #pragma omp for simd schedule(static)
+                for (int x = 1; x <= width; ++x) {
+                    const int edit = 1 + std::min(prev[x], prev[x-1]);
+                    const int from_edge = edge + x;
+                    const int k = last[x];
+                    const int match = k ? prev[k-1] + (x-k) : from_edge;
+                    curr[x] = std::min({edit, from_edge, match});
+                } // All readers finish before the older buffer is overwritten.
+                #pragma omp master
+                right[t] = curr[width];
+            }
+        }
+        if (rank + 1 < active_ranks)
+            MPI_Send(right.data(), count, MPI_INT, rank + 1, 0, MPI_COMM_WORLD);
+        done += count;
+    }
+    return (m % 2 ? odd : even)[width];
+}
+
+int distributed_pair(std::string_view a, std::string_view b, int rank, int ranks, int team,
+                     int pipeline_rows, int& workers) {
+    chps::detail::validate(a, b, false);
+    if (a.size() > b.size()) std::swap(a,b);
+    const int n = static_cast<int>(b.size());
+    if (a.empty()) { workers = 0; return n; }
+    std::vector<int> starts(static_cast<std::size_t>(ranks) + 1);
+    for (int r = 0; r < ranks; ++r)
+        starts[r] = (n / ranks) * r + std::min(n % ranks, r);
+    starts[ranks] = n;
+    const int start = starts[rank], width = starts[rank+1] - start;
+    workers = std::min(team, width);
+    const chps::detail::MatchIndex matches(a, b.substr(start, width));
+    const int active_ranks = std::min(n, ranks);
+    int result = pipeline_rows ? pipeline_stripe(a, start, width, rank, active_ranks, workers,
+                                                 pipeline_rows, matches)
+                               : allgather_stripe(a, b, starts, matches, rank, team);
+    MPI_Bcast(&result, 1, MPI_INT, active_ranks - 1, MPI_COMM_WORLD);
     return result;
 }
 
@@ -228,7 +283,7 @@ int main(int argc, char** argv) {
             const double start = MPI_Wtime();
             int workers = 0;
             if (o.mode == "pair")
-                distance = distributed_pair(records[0].bases, records[1].bases, rank, ranks, team, workers);
+                distance = distributed_pair(records[0].bases, records[1].bases, rank, ranks, team, o.pipeline_rows, workers);
             else matrix = batch(records, rank, ranks, team, workers);
             double elapsed = MPI_Wtime() - start, slowest = 0;
             MPI_Reduce(&elapsed, &slowest, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -243,11 +298,13 @@ int main(int argc, char** argv) {
                 std::cerr << std::setprecision(12) << "{\"mode\":\"" << o.mode << "\",\"trial\":" << trial+1
                           << ",\"ranks\":" << ranks << ",\"threads_per_rank\":" << team
                           << ",\"sampled_physical_cores\":" << physical
+                          << ",\"pipeline_rows\":" << o.pipeline_rows
                           << ",\"assigned_workers\":" << total_workers << ",\"seconds\":" << slowest << "}\n";
         }
         if (!rank) {
             if (o.mode == "matrix") matrix_output(records,matrix);
-            else std::cout << "{\"algorithm\":\"nvpd-mpi\",\"distance\":" << distance << "}\n";
+            else std::cout << "{\"algorithm\":\"" << (o.pipeline_rows ? "nvpd-mpi-pipeline" : "nvpd-mpi")
+                           << "\",\"distance\":" << distance << "}\n";
         }
     } catch (const std::exception& e) {
         std::cerr << "editdist-mpi rank " << rank << ": " << e.what() << '\n';

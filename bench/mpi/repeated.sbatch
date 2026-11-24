@@ -20,7 +20,7 @@ shared=$(mktemp -d "$PWD/.pmpi.XXXXXXXX")
 trap 'rm -rf -- "$tmp" "$shared"' EXIT
 base=bench/mpi/collectives
 study=${1:-collectives}
-case "$study" in collectives|scaling) ;; *) exit 2 ;; esac
+case "$study" in collectives|scaling|pipeline) ;; *) exit 2 ;; esac
 out=results/mpi/$study/$SLURM_JOB_ID
 mkdir -p "$out"
 export OMP_PROC_BIND=close OMP_PLACES=cores OMP_DYNAMIC=false CHPS_MPI_LAUNCHER=mpirun
@@ -35,6 +35,13 @@ cp "$tmp/editdist-mpi" "$shared/"
 if [[ $study == collectives ]]; then
     mpicc -shared -fPIC -O2 "$base/probe.c" -o "$shared/probe.so"
     python3 "$base/run.py" "$shared/editdist-mpi" "$tmp/editdist" "$shared/probe.so" "$out/trials.csv"
+elif [[ $study == pipeline ]]; then
+    mpicc -shared -fPIC -O2 "$base/probe.c" -o "$shared/probe.so"
+    export CHPS_MPI_DATA_TMP="$shared"
+    python3 bench/mpi/mpi_checks.py --binary "$shared/editdist-mpi" --oracle "$tmp/editdist" \
+        --launcher "mpirun --host ${CHPS_MPI_HOSTS%%,*}:192 -n 4 --map-by ppr:4:node:PE=2 --bind-to core" > "$out/validation.txt"
+    sha256sum src/mpi/mpi.cpp bench/mpi/pipeline/measure.py bench/mpi/mpi_checks.py bench/mpi/mpi_benchmark.py > "$out/source.sha256"
+    python3 bench/mpi/pipeline/measure.py "$shared/editdist-mpi" "$tmp/editdist" "$shared/probe.so" "$out"
 else
     python3 bench/mpi/scaling.py "$shared/editdist-mpi" "$tmp/editdist" data/phix174/cohort.fa "$out/trials.csv"
 fi
