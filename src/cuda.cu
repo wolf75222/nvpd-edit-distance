@@ -34,6 +34,52 @@ __global__ void next_row(const int* prev, int* curr, const int* last, int i, int
     if (j <= n) curr[j] = j == 0 ? i : detail::nvpd_cell(prev, j, last[j]);
 }
 
+constexpr int tile_rows = 8;
+constexpr int max_halo_step = 64;
+struct Symbols { int id[tile_rows]; };
+
+// Largest leftward dependency in any MIT row. A missing match uses j and j-1.
+int left_reach(const detail::MatchIndex& matches, std::size_t stride) {
+    int reach = 1;
+    for (std::size_t offset = 0; offset < matches.entries.size(); offset += stride) {
+        for (int j = 1; j < static_cast<int>(stride); ++j) {
+            const int k = matches.entries[offset + j];
+            if (k) reach = std::max(reach, j - k + 1);
+            if (reach > max_halo_step) return reach;
+        }
+    }
+    return reach;
+}
+
+// After t rows, column j can only depend on columns [j-t*reach, j].
+// Redundant cells at the left of each block let it advance without a grid barrier.
+__global__ void row_tile(const int* input, int* output, const int* indices,
+                         Symbols symbols, int first_i, int count, int n, int reach) {
+    extern __shared__ int scratch[];
+    const int width = static_cast<int>(blockDim.x);
+    const int begin = static_cast<int>(blockIdx.x) * width;
+    const int end = begin + min(n - begin, width - 1);
+    const int pitch = width + (count - 1) * reach;
+    const int* previous = input;
+    int previous_begin = 0;
+    for (int t = 0; t < count; ++t) {
+        const int left = max(0, begin - (count - t - 1) * reach);
+        const int* last = indices + static_cast<std::size_t>(symbols.id[t]) * (n + 1);
+        int* next = scratch + (t % 2) * pitch;
+        for (int x = threadIdx.x; x <= end - left; x += width) {
+            const int j = x + left;
+            const int k = last[j];
+            const int value = j == 0 ? first_i + t :
+                detail::nvpd_cell(previous, j - previous_begin, k ? k - previous_begin : 0);
+            if (t + 1 == count) output[j] = value;
+            else next[x] = value;
+        }
+        __syncthreads();
+        previous = next;
+        previous_begin = left;
+    }
+}
+
 } // namespace
 
 Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {
@@ -53,13 +99,28 @@ Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {
     first_row<<<blocks, threads>>>(table.data, n);
     check(cudaGetLastError(), "launch first row");
     int* prev = table.data;
-    // Launches use one stream, so each row sees the completed preceding row.
-    for (int i = 1; i <= m; ++i) {
-        int* curr = table.data + (trace ? i : i % 2) * stride;
-        const auto s = matches.symbol[static_cast<unsigned char>(a[i-1])];
-        next_row<<<blocks, threads>>>(prev, curr, indices.data + s * stride, i, n);
-        check(cudaGetLastError(), "launch NvPD row");
-        prev = curr;
+    const int reach = !trace && m >= tile_rows ? left_reach(matches, stride) : max_halo_step + 1;
+    if (reach <= max_halo_step) {
+        int* curr = table.data + stride;
+        for (int i = 1; i <= m;) {
+            const int count = std::min(tile_rows, m - i + 1);
+            Symbols symbols{};
+            for (int t = 0; t < count; ++t)
+                symbols.id[t] = matches.symbol[static_cast<unsigned char>(a[i-1+t])];
+            const auto bytes = 2 * (threads + (count - 1) * reach) * sizeof(int);
+            row_tile<<<blocks, threads, bytes>>>(prev, curr, indices.data, symbols, i, count, n, reach);
+            check(cudaGetLastError(), "launch NvPD tile");
+            std::swap(prev, curr);
+            i += count;
+        }
+    } else {
+        for (int i = 1; i <= m; ++i) {
+            int* curr = table.data + (trace ? i : i % 2) * stride;
+            const auto s = matches.symbol[static_cast<unsigned char>(a[i-1])];
+            next_row<<<blocks, threads>>>(prev, curr, indices.data + s * stride, i, n);
+            check(cudaGetLastError(), "launch NvPD row");
+            prev = curr;
+        }
     }
     const auto device_bytes = indices.bytes + table.bytes;
     if (trace) {
