@@ -1,0 +1,2 @@
+JobID	State	Partition	Elapsed	AllocNodes	AllocCPUS	NodeList	ExitCode
+838760	COMPLETED	instant	00:02:32	2	384	romeo-c[025,039]	0:0
