@@ -1,0 +1,5 @@
+case,algorithm,scope,calls,biwfa_entries,recursive_bounds
+chr21-2m,wfa2,score,2,0,0
+chr21-2m,wfa2,trace,2,0,0
+chr21-2m,biwfa,score,2,2,0
+chr21-2m,biwfa,trace,2,2,124

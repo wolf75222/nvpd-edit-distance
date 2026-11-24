@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /tmp/human-biwfa.qn4pqE3H/build
+Test project /tmp/human-biwfa.qn4pqE3H/build
+    Start 1: distances
+1/1 Test #1: distances ........................   Passed    0.07 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.08 sec

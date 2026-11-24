@@ -89,11 +89,32 @@ def check_chromosome(path, variants, m, n):
                 target_sha256=hashlib.sha256(target).hexdigest())
 
 
+def verify_consensus(path, rows):
+    expected = {row["case"]: row["patched_sha256"] for row in rows}
+    observed = {}
+    digest = None
+    with path.open("rb") as stream:
+        for line in stream:
+            if line.startswith(b">"):
+                name = line[1:].split()[0].decode()
+                digest = None
+                if name in expected:
+                    if name in observed:
+                        raise ValueError(f"duplicate consensus sequence: {name}")
+                    digest = hashlib.sha256()
+                    observed[name] = digest
+            elif digest is not None:
+                digest.update(line.rstrip().upper())
+    if {name: digest.hexdigest() for name, digest in observed.items()} != expected:
+        raise ValueError("external consensus differs from VCF replay")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("panel", type=Path)
     p.add_argument("patch", type=Path)
     p.add_argument("output", type=Path)
+    p.add_argument("--consensus", type=Path, help="also verify a FASTA rebuilt by bcftools consensus -H 1")
     args = p.parse_args()
     with (args.panel / "manifest.tsv").open() as stream:
         manifest = list(csv.DictReader(stream, delimiter="\t"))
@@ -103,6 +124,8 @@ def main():
         chrom = item["case"]
         row = check_chromosome(args.panel / f"{chrom}.fa", variants[chrom], int(item["m"]), int(item["n"]))
         rows.append(dict(case=chrom, **row))
+    if args.consensus:
+        verify_consensus(args.consensus, rows)
     with args.output.open("w", newline="") as stream:
         writer = csv.DictWriter(stream, rows[0], lineterminator="\n")
         writer.writeheader()

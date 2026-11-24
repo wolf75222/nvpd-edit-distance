@@ -1,0 +1,7 @@
+romeo-c022
+Model name:                              AMD EPYC 9654 96-Core Processor
+Thread(s) per core:                      1
+gcc (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Python 3.9.21
+C/C++ flags: -O3 -DNDEBUG -march=native
+Cpus_allowed_list:	5

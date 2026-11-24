@@ -10,7 +10,7 @@ Edlib et WFA2 donnent le même score sur les 18 paires. Le chromosome 18 demande
 
 ## Position des modifications de référence
 
-Le VCF officiel donne les remplacements entre versions, en coordonnées de la v1.0. Sur les 18 chromosomes, ses 310 entrées ont passé le filtre du consortium. Le pilote vérifie chaque allèle de référence et applique le premier allèle du génotype déposé. Sur 292 entrées, tout l’intervalle de référence tient dans les mille premières ou dernières bases du chromosome. Le remplacement reproduit la v1.1 sur 14 chromosomes. Sur les chromosomes 1, 3, 4 et X, seule la première base du résultat diffère de la v1.1.
+Le VCF officiel donne les remplacements entre versions, en coordonnées de la v1.0. Sur les 18 chromosomes, ses 310 entrées ont passé le filtre du consortium. Le pilote vérifie chaque allèle de référence et applique le premier allèle du génotype déposé. Sur 292 entrées, tout l’intervalle de référence tient dans les mille premières ou dernières bases du chromosome. Le remplacement reproduit la v1.1 sur 14 chromosomes. Sur les chromosomes 1, 3, 4 et X, seule la première base du résultat diffère de la v1.1. BCFtools 1.21, utilisé avec le premier allèle de chaque génotype, reproduit les 18 empreintes du rejeu.
 
 Dans ce VCF, l’un des deux allèles de chaque remplacement a une seule base. Pour un allèle long de longueur $k$, le coût local vaut $k-1$ si la base isolée y apparaît et $k$ sinon. Les coûts locaux totalisent 2 663. Quatre substitutions supplémentaires donnent une transformation réalisable de coût 2 667 entre les séquences publiées. L’optimisation globale économise 80 opérations par rapport à ce chemin. [Fichier du consortium](https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/changes/v1.0_to_v1.1/v1.0_patch.vcf.gz) · [Rejeu par chromosome et empreintes](release-patch.csv)
 
@@ -32,6 +32,15 @@ cmp data/human/chm13-panel/manifest.tsv results/human/chromosome-panel/manifest.
 curl -fL https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/changes/v1.0_to_v1.1/v1.0_patch.vcf.gz -o build/t2t-cache/patch.vcf.gz
 python3 bench/human/chromosome-panel/release_patch.py data/human/chm13-panel build/t2t-cache/patch.vcf.gz build/t2t-cache/release-patch.csv
 cmp build/t2t-cache/release-patch.csv results/human/chromosome-panel/release-patch.csv
+```
+
+Pour effectuer aussi le contrôle avec BCFtools, indexer une copie BGZF du VCF, produire la séquence consensus, puis passer ce FASTA au pilote. Les exécutables `bgzip` et `bcftools` sont disponibles avec HTSlib et BCFtools.
+
+```sh
+gzip -dc build/t2t-cache/patch.vcf.gz | bgzip -c > build/t2t-cache/edits.vcf.gz
+bcftools index build/t2t-cache/edits.vcf.gz
+bcftools consensus -H 1 -f build/t2t-cache/chm13.v1.0.fa.gz -o build/t2t-cache/consensus.fa build/t2t-cache/edits.vcf.gz
+python3 bench/human/chromosome-panel/release_patch.py data/human/chm13-panel build/t2t-cache/patch.vcf.gz build/t2t-cache/release-patch.csv --consensus build/t2t-cache/consensus.fa
 ```
 
 Sur ROMEO, mettre le chemin absolu des entrées dans `panel`. Les deux bancs historiques compilent le lecteur contenu dans leur copie de travail. Les révisions ci-dessous restituent celui effectivement mesuré. CMake utilise les archives vérifiées de WFA2 et d’edlib dans `deps/`, ou les télécharge à la configuration.
