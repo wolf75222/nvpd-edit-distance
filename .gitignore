@@ -1,5 +1,6 @@
 /build*/
 /deps/
+/data/controls/quicked/
 /data/**/*.fa
 /data/**/*.fna
 /data/**/*.zip
@@ -21,3 +22,5 @@ slurm-*.log
 /report/*.log
 /report/*.aux
 /report/*.synctex.gz
+
+/*-[0-9]*.log

@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 
-SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[1] / "scripts" / "phylogeny"
 
 
 class PhylogenyDiagnostics(unittest.TestCase):

@@ -5,10 +5,8 @@ import json
 import os
 from pathlib import Path
 import random
-import sys
 import tempfile
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mpi_benchmark import generated, launch, run, sha, sizes
 from mpi_weak import inputs
 

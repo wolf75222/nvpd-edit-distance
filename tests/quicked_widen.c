@@ -9,7 +9,7 @@ static quicked_params_t narrow_start(void) {
     return p;
 }
 #define quicked_default_params narrow_start
-#include "../src/quicked_adapter.c"
+#include "../src/libraries/quicked/quicked_adapter.c"
 
 int main(void) {
     enum { length = 1152 };

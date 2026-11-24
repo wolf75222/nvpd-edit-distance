@@ -5,8 +5,8 @@ from decimal import Decimal
 from itertools import combinations
 from pathlib import Path
 
-from scripts.synthetic import generate
-from scripts.tree import build_tree, read_matrix
+from scripts.datasets.synthetic import generate
+from scripts.phylogeny.tree import build_tree, read_matrix
 
 
 class DatasetTests(unittest.TestCase):

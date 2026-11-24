@@ -1,11 +1,12 @@
 """Recreate the five historical inputs and deterministic boundary controls."""
+import argparse
 import csv
 import hashlib
 from pathlib import Path
 import shutil
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "cpu/alternatives"))
 from alternatives import historical_cases
 
 def prepare(dest):
@@ -34,4 +35,6 @@ def prepare(dest):
         w.writerows(rows)
 
 if __name__ == "__main__":
-    prepare(Path(sys.argv[1]))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("destination", type=Path, nargs="?", default=Path("data/controls/quicked"))
+    prepare(parser.parse_args().destination)

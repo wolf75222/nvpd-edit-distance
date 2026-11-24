@@ -18,5 +18,5 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCHPS_MPI=ON -DCHPS_QUICKED=ON -DCHPS_KOKKOS=ON -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/install"
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
-      - run: python3 bench/mpi_checks.py --binary build/editdist-mpi --oracle build/editdist --launcher 'mpiexec --oversubscribe -n 4'
+      - run: python3 bench/mpi/mpi_checks.py --binary build/editdist-mpi --oracle build/editdist --launcher 'mpiexec --oversubscribe -n 4'
       - run: python3 -m unittest discover -s tests

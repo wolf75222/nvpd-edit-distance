@@ -3,10 +3,10 @@
 Submit from the project root. Both jobs build in a temporary directory on the compute node. The CPU job requests eight cores. The GPU job requests four host cores and one Hopper GPU. Both request 8 GiB for 30 minutes. The build needs the two dependency archives in `deps/` or network access to the sources configured by CMake.
 
 ```bash
-python3 scripts/synthetic.py --out data/synthetic
-sbatch --account="$ROMEO_PROJECT" bench/cpu.sbatch
-sbatch --account="$ROMEO_PROJECT" bench/gpu.sbatch
-python3 bench/summarize.py results/cpu-*.csv results/gpu-*.csv > results/summary.csv
+python3 scripts/datasets/synthetic.py --out data/synthetic
+sbatch --account="$ROMEO_PROJECT" bench/campaign/cpu.sbatch
+sbatch --account="$ROMEO_PROJECT" bench/campaign/gpu.sbatch
+python3 bench/campaign/summarize.py results/cpu-*.csv results/gpu-*.csv > results/summary.csv
 ```
 
 The default run uses the first pair at each error rate for 5,000 and 20,000 nt. Each configuration runs three times in a fresh process. OpenMP runs on 1, 2, 4 and 8 cores with fixed thread placement. The Slurm log records the CPU, CUDA device and compiler configuration. A CSV row records the job and host, plus SHA-256 digests of the executable and input FASTA. The archived campaign includes the [submission commands](../results/romeo/submissions.tsv) and [kernel source checksums](../results/romeo/sources.sha256).
@@ -14,14 +14,14 @@ The default run uses the first pair at each error rate for 5,000 and 20,000 nt. 
 Use `--profile full` to select every pair. Split long jobs by length, rate, replicate or backend. Adjust the Slurm wall time to the measured runtime. At 1,000,000 nt, the sequential DP reference runs once per rate on replicate 1. Pair-specific speedups stay empty for replicates without a sequential measurement. Example of a single shard:
 
 ```bash
-sbatch --account="$ROMEO_PROJECT" --time=02:00:00 bench/cpu.sbatch \
+sbatch --account="$ROMEO_PROJECT" --time=02:00:00 bench/campaign/cpu.sbatch \
   --profile full --lengths 100000 --rates 0.02 --replicates 1 2 \
   --algorithms seq nvpd-omp --threads 1 4 8 --trials 1
 ```
 
 For offline compute nodes, stage the source directories, the two archives in `deps/`, and `data/synthetic/` on ROMEO before submitting. Stage the cohort FASTA as well when requesting a matrix.
 
-The Python runner also accepts a prebuilt executable. Use `python3 bench/run.py --help` for the arguments. It flushes each trial to disk. A failed or timed-out subprocess leaves a diagnostic row. The job exits with an error if any trial fails.
+The Python runner also accepts a prebuilt executable. Use `python3 bench/campaign/run.py --help` for the arguments. It flushes each trial to disk. A failed or timed-out subprocess leaves a diagnostic row. The job exits with an error if any trial fails.
 
 ## Reading the results
 
@@ -39,23 +39,23 @@ Set `COHORT_FASTA` to run both library backends over every unordered pair. Set `
 
 ```bash
 COHORT_FASTA=data/cohort.fa COHORT_GROUPS=data/groups.tsv \
-    sbatch --account="$ROMEO_PROJECT" bench/cpu.sbatch
+    sbatch --account="$ROMEO_PROJECT" bench/campaign/cpu.sbatch
 ```
 
 ## Profilage et architectures
 
 | Expérience | Protocole | Mesures |
 |---|---|---|
-| SIMD, caches, RSS, échelle forte et faible | [OpenMP](profile_cpu.md) | [Compteurs et temps](../results/profile/cpu/) |
-| CUDA, tailles de tuiles, Nsight Systems | [Script Slurm](profile_gpu.sbatch) | [Appels, noyaux et gains](../results/profile/gpu/) |
-| Deux nœuds complets | [MPI et OpenMP](mpi.md) | [Résultats à 192 et 384 cœurs](../results/mpi/) |
-| Allocations GPU par lot | [Protocole Slurm](allocator.sbatch) | [Réutilisation des tampons](../results/allocator/) |
-| Portabilité CPU/GPU | [Kokkos](kokkos.md) | [Comparaison aux versions natives](../results/kokkos/) |
-| Chromosome 21 | [Script Slurm](human.sbatch) | [Fenêtres et contrôle entier](../results/human/) |
-| Méthodes en bande et bibliothèques | [Comparaison locale](alternatives.py) | [Temps et empreintes](../results/alternatives/) |
-| Fronts sur GH200 | [eWFA-GPU](ewfa.sbatch) | [Validation des scores et des traces](../results/ewfa/) |
-| Localité sur GH200 | [Secteurs par warp](gpu_sectors.cu) | [Demandes de secteurs par case](../results/locality/) |
-| Passage à l'échelle faible sur deux nœuds | [Paires et lots MPI](mpi_weak.py) | [Essais à charge par cœur constante](../results/mpi/weak/) |
-| Quinze paires à un million | [Deux versions OpenMP](complete_1m.sbatch) | [Temps des quinze entrées](../results/romeo/completion-1m/) |
-| Chromosomes entiers | [Limites de temps et d'espace](whole_chromosomes.py) | [Mesures et bornes](../results/human/whole/) |
-| Trace sur processeur | [Matrice et Hirschberg](traceback.py) | [Temps et RSS](../results/traceback/) |
+| SIMD, caches, RSS, échelle forte et faible | [OpenMP](cpu/openmp/profile_cpu.md) | [Compteurs et temps](../results/profile/cpu/) |
+| CUDA, tailles de tuiles, Nsight Systems | [Script Slurm](gpu/cuda/profile_gpu.sbatch) | [Appels, noyaux et gains](../results/profile/gpu/) |
+| Deux nœuds complets | [MPI et OpenMP](mpi/mpi.md) | [Résultats à 192 et 384 cœurs](../results/mpi/) |
+| Allocations GPU par lot | [Protocole Slurm](gpu/allocation/allocator.sbatch) | [Réutilisation des tampons](../results/allocator/) |
+| Portabilité CPU/GPU | [Kokkos](kokkos/kokkos.md) | [Comparaison aux versions natives](../results/kokkos/) |
+| Chromosome 21 | [Script Slurm](human/human.sbatch) | [Fenêtres et contrôle entier](../results/human/) |
+| Méthodes en bande et bibliothèques | [Comparaison locale](cpu/alternatives/alternatives.py) | [Temps et empreintes](../results/alternatives/) |
+| Fronts sur GH200 | [eWFA-GPU](gpu/ewfa/ewfa.sbatch) | [Validation des scores et des traces](../results/ewfa/) |
+| Localité sur GH200 | [Secteurs par warp](gpu/locality/gpu_sectors.cu) | [Demandes de secteurs par case](../results/locality/) |
+| Passage à l'échelle faible sur deux nœuds | [Paires et lots MPI](mpi/mpi_weak.py) | [Essais à charge par cœur constante](../results/mpi/weak/) |
+| Quinze paires à un million | [Deux versions OpenMP](cpu/openmp/million/complete_1m.sbatch) | [Temps des quinze entrées](../results/romeo/completion-1m/) |
+| Chromosomes entiers | [Limites de temps et d'espace](human/whole_chromosomes.py) | [Mesures et bornes](../results/human/whole/) |
+| Trace sur processeur | [Matrice et Hirschberg](cpu/traceback/traceback.py) | [Temps et RSS](../results/traceback/) |

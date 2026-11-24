@@ -16,7 +16,7 @@ tmp=$(mktemp -d "/project/$SLURM_JOB_ACCOUNT/$USER/quicked-ab.XXXXXX")
 trap 'rm -rf -- "$tmp"' EXIT
 out=results/alternatives/romeo/$SLURM_JOB_ID
 mkdir -p "$out"
-test -s inputs/quicked/cases.csv || { echo "Prepare the FASTA files with bench/quicked/cases.py inputs/quicked" >&2; exit 2; }
+test -s data/controls/quicked/cases.csv || { echo "Prepare the FASTA files with bench/quicked/cases.py data/controls/quicked" >&2; exit 2; }
 test -f deps/astar-src.tar.gz || { echo "Stage the pinned A*PA archive (see results/alternatives/README.md)." >&2; exit 2; }
 cmake -S . -B "$tmp/cxx" -DCMAKE_BUILD_TYPE=Release -DCHPS_QUICKED=ON \
     -DCMAKE_C_FLAGS=-march=native -DCMAKE_CXX_FLAGS=-march=native
@@ -39,13 +39,13 @@ build_astar() (
     sh "$tmp/rustup-init.sh" -y --no-modify-path --profile minimal --default-toolchain nightly-2026-05-21
     (cd "$tmp/astar" && cargo build --release --locked -j 6 -p astarpa-c)
     g++ -std=c++20 -O3 -march=native -DCHPS_BENCH_ASTAR -Iinclude -I"$tmp/astar/astarpa-c" \
-        bench/quicked/warm.cpp src/fasta.cpp -L"$tmp/astar/target/release" -lastarpa_c \
+        bench/quicked/warm.cpp src/io/fasta.cpp -L"$tmp/astar/target/release" -lastarpa_c \
         -Wl,-rpath,"$tmp/astar/target/release" -o "$tmp/astar-trial"
     rustc --version > "$out/rust-version.txt"
 )
 build_astar
 # Keep originals for stock, including its architecture-specific failures.
-cp -R inputs/quicked "$tmp/inputs"
+cp -R data/controls/quicked "$tmp/inputs"
 g++ -std=c++20 -O3 -march=native -Iinclude -I"$tmp/cxx/_deps/edlib-src/edlib/include" \
     bench/quicked/find_witness.cpp "$tmp/cxx/CMakeFiles/measure-quicked-stock.dir/_deps/quicked-src/quicked/src/bpm_banded.c.o" \
     "$tmp/cxx/libquicked_static.a" "$tmp/cxx/libedlib_static.a" -lm -o "$tmp/find-witness"

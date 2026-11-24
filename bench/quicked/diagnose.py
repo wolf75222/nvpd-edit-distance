@@ -44,7 +44,7 @@ def main():
             subprocess.run([args.cc, "-O3", "-march=native", *["-I"+x for x in inc],
                             "-c", d/(name+".c"), "-o", d/(name+".o")], check=True)
         subprocess.run([args.cxx, "-O3", "-march=native", "-std=c++20", "-DCHPS_BENCH_STOCK",
-                        "-Iinclude", "bench/quicked/warm.cpp", "src/fasta.cpp", d/"bound.o", d/"banded.o",
+                        "-Iinclude", "bench/quicked/warm.cpp", "src/io/fasta.cpp", d/"bound.o", d/"banded.o",
                         args.build/"libquicked_static.a", args.build/"libedlib_static.a", "-lm", "-o", d/"run"], check=True)
         with args.output.open("w", newline="") as f:
             w = csv.writer(f)

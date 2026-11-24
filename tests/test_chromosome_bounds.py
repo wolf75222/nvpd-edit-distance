@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "bench"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "bench" / "human"))
 from chromosome_bounds import bounds
 from fasta_records import read_pair
 
