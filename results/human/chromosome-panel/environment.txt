@@ -1,0 +1,16 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Model name:                              AMD EPYC 9654 96-Core Processor
+L1d cache:                               6 MiB (192 instances)
+L2 cache:                                192 MiB (192 instances)
+L3 cache:                                768 MiB (24 instances)
+NUMA node(s):                            8
+3b8b5568da43536700c4e0e98ddbee8fa55bf5489dafd86db5151344c85a0908  bench/human/chromosome-panel/run.sbatch
+38e8d7bd698093f6774346a6b85311db8772623fa94fe90ea60aefb0ae64d036  bench/human/chromosome-panel/measure.py
+6102a102576c545a8bec97399fa8ad392e79ee20f3cf6c75c9937a2036780df1  bench/human/chromosome-panel/trial.cpp
+1f3023fa968d0561dced5d58df4bfe5469717fbbb75e148cadc882dcacff8390  bench/human/chromosome-panel/targets.cmake
+655d80fa4fa8cb519d5b10504bd053d62688d628874367dd1ce496bb953f2e06  bench/human/chromosome-panel/counters.hpp
+2bb6087a2ae06544a0c20185eafa06b53b7b755a1a5a41744f66d9fa2b685539  src/io/fasta.cpp
+cf5140abcfa626322ce2db8df5f2bc96fc2b1d014322a5f1db549b1a3d9e3a63 panel_initial
+d473ae7ca9493f871c2b7b2764ef73edabc075d4fa66afede044406aa473e4a5 panel_scalar
+d36a53d98e04a825f47641c6ba2c96da4f2e9e95faab803b3eb7cf2421b1c034 panel_simd

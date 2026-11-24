@@ -28,7 +28,13 @@ void operator delete(void* p, std::size_t) noexcept { std::free(p); }
 void operator delete[](void* p, std::size_t) noexcept { std::free(p); }
 
 int main(int argc, char** argv) {
+#ifdef CHPS_PANEL_FAI
+    if (argc != 3 && argc != 4) return 2;
+    const std::string fasta = argv[1];
+    const std::string index = argc == 4 ? argv[3] : "";
+#else
     if (argc != 3) return 2;
+#endif
     using Clock = std::chrono::steady_clock;
     const std::string_view mode = argv[2];
     if (mode != "reader" && mode != "profile" && mode != "check") return 2;
@@ -40,7 +46,11 @@ int main(int argc, char** argv) {
         if (profile) counters.start();
         const auto start = Clock::now();
         counting = profile;
+#ifdef CHPS_PANEL_FAI
+        rows = index.empty() ? chps::read_fasta(fasta) : chps::read_fasta(fasta, index);
+#else
         rows = chps::read_fasta(argv[1]);
+#endif
         counting = false;
         const double seconds = std::chrono::duration<double>(Clock::now()-start).count();
         if (profile) counters.stop();

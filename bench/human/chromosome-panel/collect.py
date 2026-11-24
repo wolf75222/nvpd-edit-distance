@@ -27,11 +27,31 @@ def summarize(values):
     return dict(n=5, mean=mu, sd=sd, low95=mu-half, high95=mu+half)
 
 
+def collect_blocks(lanes, out):
+    from measure import READ_CASES
+
+    records = [item for path in sorted(lanes.glob("blocks-*.csv")) for item in read(path)]
+    data = {(r["case"], r["method"], int(r["block"])): r for r in records}
+    methods = ("portable", "blocks")
+    expected = [(case, method, block) for case in READ_CASES for block in range(1, 6) for method in methods]
+    if len(records) != len(expected) or data.keys() != set(expected):
+        raise ValueError("incomplete or duplicate SIMD block experiment")
+    for case in READ_CASES:
+        if len({data[case, method, block]["cpu"] for method in methods for block in range(1, 6)}) != 1:
+            raise ValueError(f"worker migrated between trials on {case}")
+    out.mkdir(exist_ok=True, parents=True)
+    write(out / "blocks.csv", [data[key] for key in expected])
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("lanes", type=Path)
     p.add_argument("out", type=Path)
+    p.add_argument("--reader-blocks", action="store_true", help="combine the explicit SIMD comparison")
     opt = p.parse_args()
+    if opt.reader_blocks:
+        collect_blocks(opt.lanes, opt.out)
+        return
     manifest = {r["case"]: r for r in read(opt.lanes / "manifest.tsv", "\t")}
     if len(manifest) != 18:
         raise ValueError("expected 18 complete chromosomes")

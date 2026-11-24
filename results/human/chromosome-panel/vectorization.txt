@@ -1,0 +1,4 @@
+/usr/include/c++/11/bits/vector.tcc:502:30: optimized: basic block part vectorized using 32 byte vectors
+/scratch_p/rmdraux/chps-human-scale.DTM1CY1U/src/io/fasta.cpp:24:13: optimized: loop vectorized using 32 byte vectors
+/usr/include/c++/11/bits/basic_ios.h:462:2: optimized: basic block part vectorized using 32 byte vectors
+/usr/include/c++/11/bits/basic_ios.h:462:2: optimized: basic block part vectorized using 32 byte vectors

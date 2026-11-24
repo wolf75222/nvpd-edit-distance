@@ -1,0 +1,14 @@
+romeo-c022
+Architecture:                            x86_64
+Model name:                              AMD EPYC 9654 96-Core Processor
+Thread(s) per core:                      1
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+g++ -std=c++20 -O3 -march=native -fopenmp -DCHPS_PANEL_FAI -Iinclude
+ea308a53e63965273ca5411f2428b761b0d27b51ba3fde8d59ba279977748491  src/io/fasta.cpp
+6031e3322edfae1e86a05d58ef49b8c4b6ad3e521d43a5bda1f096ae7e246f3b  include/chps/fasta.hpp
+655d80fa4fa8cb519d5b10504bd053d62688d628874367dd1ce496bb953f2e06  bench/human/chromosome-panel/counters.hpp
+38e8d7bd698093f6774346a6b85311db8772623fa94fe90ea60aefb0ae64d036  bench/human/chromosome-panel/measure.py
+afc91603591c5e5de704a5be5eade11424583edcc7464dda2b7907e129f9dc07  bench/human/chromosome-panel/blocks/probe.cpp
+bb8e13b16b4e3f76423c9bac84937d6e97bc9d06b910f1a1fb403b65e840dd42  bench/human/chromosome-panel/blocks/index.py
+4664899ee13b11993cb1b1b2875a84c05b03dd41e68f0246bd0cef502e61ff07  bench/human/chromosome-panel/blocks/index.sbatch
+300f135deee65543da532c632ec8e020d1e2c4706eaa2c3ab28f424b2fffde18 probe
