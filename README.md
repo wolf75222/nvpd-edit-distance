@@ -2,7 +2,7 @@
 
 `editdist` calcule la distance de Levenshtein globale entre deux séquences d’ADN. Chaque insertion, suppression ou substitution coûte une unité. NvPD utilise la dernière occurrence de chaque symbole pour calculer en parallèle les colonnes d’une ligne. Le projet compare son coût sur CPU et GPU, puis utilise les distances pour construire des arbres. [Article de Sadiq et coll.](https://doi.org/10.1007/s10586-019-02962-w)
 
-[Rapport complet](report/rapport.pdf) · [Synthèse courte](report/rapport-court.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
+[Rapport complet](report/rapport.pdf) · [Synthèse courte](report/rapport-court.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Bibliographie](report/tex/references.bib) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
 
 Sur ROMEO, NvPD sur GH200 devance edlib et WFA2-lib sur un cœur Grace pour une des douze paires synthétiques chronométrées à chaud. Cette paire compte un million de bases de référence et 10 % d’éditions injectées. En cinq répétitions, NvPD prend 3,591 ± 0,011 s, edlib 5,903 ± 0,060 s et WFA2-lib 9,835 ± 0,023 s (moyenne ± écart-type). [Mesures sur GH200](results/repeated/gh200/summary.csv)
 
@@ -157,7 +157,7 @@ Avec le noyau indexé et le vol de tâches, le pool Kokkos traite les 294 528 pa
 | Méthode ou option CMake | Utilisation |
 | --- | --- |
 | `seq`, `diagonal`, `nvpd-omp` | Programmation dynamique séquentielle, parcours par anti-diagonales OpenMP ou calcul NvPD par ligne. `--threads` fixe la taille de l’équipe OpenMP. |
-| `edlib`, `wfa2`, `biwfa` | Edlib de Šošić et Šikić utilise le parallélisme sur bits. WFA2 de Marco-Sola et coll. suit des fronts de coût croissant. BiWFA des mêmes auteurs les propage depuis les deux extrémités. Les deux parcours WFA acceptent `--trace`. |
+| `edlib`, `wfa2`, `biwfa` | Edlib de Šošić et Šikić utilise le parallélisme sur bits. WFA2 de Marco-Sola et coll. suit des fronts de coût croissant. BiWFA les propage depuis les deux extrémités. Les deux parcours WFA acceptent `--trace`. |
 | `nvpd-adaptive` | Score seul. Une borne sur le nombre d’éditions limite les colonnes NvPD. La bande s’élargit jusqu’à couvrir un chemin optimal. |
 | `nvpd-split`, `nvpd-sparse` | Des coupes vérifiées répartissent les fragments entre cœurs. Pour le score, `nvpd-sparse` essaie un front borné à 128 éditions par grand fragment, puis passe à BiWFA. Les deux commandes reconstruisent aussi le CIGAR par le découpage initial. |
 | `packed-wfa` | Pour le score sur A, C, G et T, le front bidirectionnel compare 32 bases par mot de 64 bits. BiWFA prend le relais si la paire dépasse le budget de 96 éditions ou contient un autre symbole. |
