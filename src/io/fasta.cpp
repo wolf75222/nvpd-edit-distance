@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -19,15 +21,33 @@ constexpr auto base_codes = [] {
     return codes;
 }();
 
-bool is_upper_acgt(std::string_view line) {
-    unsigned other = 0;
-    #pragma omp simd reduction(|:other)
-    for (std::size_t i = 0; i < line.size(); ++i) {
-        const char c = line[i];
-        other |= (c != 'A') & (c != 'C') & (c != 'G') & (c != 'T');
-    }
-    return other == 0;
+#if defined(__GNUC__) || defined(__clang__)
+bool acgt_block(const char* text) {
+    using Bytes = unsigned char __attribute__((vector_size(16)));
+    Bytes bases;
+    std::memcpy(&bases, text, sizeof(bases));
+    const Bytes mask = (bases == 'A') | (bases == 'C') | (bases == 'G') | (bases == 'T');
+    std::array<std::uint64_t, 2> halves;
+    std::memcpy(halves.data(), &mask, sizeof(mask));
+    return (halves[0] & halves[1]) == UINT64_MAX;
 }
+#endif
+
+bool is_upper_acgt(std::string_view line) {
+#if defined(__GNUC__) || defined(__clang__)
+    if (line.size() >= 16) {
+        const char* last = line.data() + line.size() - 16;
+        for (const char* block = line.data(); block < last; block += 16)
+            if (!acgt_block(block)) return false;
+        // The final block may overlap its predecessor and stays inside the line.
+        return acgt_block(last);
+    }
+#endif
+    return std::all_of(line.begin(), line.end(), [](char c) {
+        return c == 'A' || c == 'C' || c == 'G' || c == 'T';
+    });
+}
+
 } // namespace
 
 std::vector<Record> read_fasta(const std::string& path) {
