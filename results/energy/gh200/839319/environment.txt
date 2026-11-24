@@ -1,0 +1,9 @@
+romeo-a058
+name, uuid, pci.bus_id, driver_version, power.limit [W]
+NVIDIA GH200 120GB, GPU-57fe4001-37de-e203-ab45-7f685b91aae2, 00000029:01:00.0, 590.48.01, 900.00 W
+69da1c15670ba3b09a6d0fcc53c9158f82a059ab8906c8541ee411b6262d46aa  bench/gpu/energy/trial.cu
+fc6d9b294dadf14846759dbbff18a727e24157aa2624ab197b4ea8e9352513c2  bench/gpu/energy/geometry.cu
+e24e46ce7fc266f6816beb8c86a51f9f7d16a2e13aae39da4f354cf7d0779381  bench/gpu/energy/sensor.sbatch
+96d14e4917ed1b5ac9821aaa493761e3b90c8a55ba286bc32d6aaaa3b51a845f  bench/gpu/energy/sensor.py
+2527c47366826819cffb860594293cc227784032f987b356e23e0c50ea97e6a7  src/cuda/cuda.cu
+1d4e55a432683f534594240d02d1403240143c72ecfe80aa770b792ff0aa18f8  src/cuda/local_tiles.cuh

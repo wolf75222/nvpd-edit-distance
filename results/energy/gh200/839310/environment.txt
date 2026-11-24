@@ -1,0 +1,15 @@
+romeo-a058
+name, uuid, pci.bus_id, driver_version, power.limit [W], memory.total [MiB]
+NVIDIA GH200 120GB, GPU-ef8692f3-8bd7-80a2-608b-10731c9ec114, 00000009:01:00.0, 590.48.01, 900.00 W, 97871 MiB
+gpu_uuid, process_name
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+Version 2025.3.1.0 (build 36398880) (public-release)
+NVIDIA Nsight Systems version 2025.3.2.474-253236389321v0
+RmProfilingAdminOnly: 1
+69da1c15670ba3b09a6d0fcc53c9158f82a059ab8906c8541ee411b6262d46aa  bench/gpu/energy/trial.cu
+ad302cd2da761b9b1203c7e50d6f75fd9b00cf1191de0eaeaaf9505534122e70  bench/gpu/energy/run.sbatch
+18ead8ff8654230c60ec688ef7b80ae7fa623f967d5020c0b770069233b8ab65  bench/gpu/energy/measure.py
+2527c47366826819cffb860594293cc227784032f987b356e23e0c50ea97e6a7  src/cuda/cuda.cu
+1d4e55a432683f534594240d02d1403240143c72ecfe80aa770b792ff0aa18f8  src/cuda/local_tiles.cuh
+4dae0862e8588b75adcb9b5935ffa1bb882a6bc25a775b7c77cbbd14ed57ce13  bench/gpu/roofline/calibrate.cu

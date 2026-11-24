@@ -1,0 +1,5 @@
+chrom,m,n,score,proposed,accepted,dense_pieces,biwfa_pieces,global_retry
+chr1_MATERNAL,244022067,244022037,54,7,6,0,7,0
+chr1_PATERNAL,252060741,252060672,111,7,6,0,8,0
+chr21_MATERNAL,47311724,47311723,6,6,6,1,1,0
+chr21_PATERNAL,44312598,44312584,15,7,7,2,0,0

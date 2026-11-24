@@ -1,0 +1,8 @@
+case,sms,shared_limit,columns,pitch,reach,index_entries,sentinels,kernel
+collinear-65536,132,49152,256,605,89,262260,16,packed-tile
+insertion-65536,132,49152,256,539,86,300396,26,packed-tile
+collinear-524288,132,49152,1024,1862,375,2097728,201,packed-tile
+insertion-524288,132,49152,1024,3584,1813,2149236,2379,packed-tile
+gap-255,132,49152,256,264,260,1056,19,packed-tile
+gap-4700,132,49152,256,4709,4705,18836,13354,direct-tile
+gap-9000,132,49152,256,0,9005,36036,26254,single-row

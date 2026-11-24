@@ -1,0 +1,31 @@
+  ls_any_fills_from_sys.dram_io_far
+       [Any data cache fills from either DRAM or MMIO in a different NUMA node
+        (same or different socket)]
+        default_core/event=0x44,umask=0x40/
+  ls_any_fills_from_sys.dram_io_near
+       [Any data cache fills from either DRAM or MMIO in the same NUMA node]
+        default_core/event=0x44,umask=0x8/
+  ls_any_fills_from_sys.far_all
+--
+  ls_dmnd_fills_from_sys.dram_io_far
+       [Demand data cache fills from either DRAM or MMIO in a different NUMA
+        node (same or different socket)]
+        default_core/event=0x43,umask=0x40/
+  ls_dmnd_fills_from_sys.dram_io_near
+       [Demand data cache fills from either DRAM or MMIO in the same NUMA node]
+        default_core/event=0x43,umask=0x8/
+  ls_dmnd_fills_from_sys.far_cache
+--
+  ls_hw_pf_dc_fills.dram_io_far
+       [Hardware prefetch data cache fills from either DRAM or MMIO in a
+        different NUMA node (same or different socket)]
+        default_core/event=0x5a,umask=0x40/
+  ls_hw_pf_dc_fills.dram_io_near
+       [Hardware prefetch data cache fills from either DRAM or MMIO in the
+        same NUMA node]
+        default_core/event=0x5a,umask=0x8/
+--
+  ls_l1_d_tlb_miss.all_l2_miss
+       [L1 DTLB misses with L2 DTLB misses (page-table walks are requested)
+        for all page sizes]
+        default_core/event=0x45,umask=0xf0/

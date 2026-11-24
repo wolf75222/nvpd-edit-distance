@@ -1,0 +1,11 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Model name:                              AMD EPYC 9654 96-Core Processor
+L1d cache:                               6 MiB (192 instances)
+L2 cache:                                192 MiB (192 instances)
+L3 cache:                                768 MiB (24 instances)
+NUMA node(s):                            8
+fbe353e437fde73b92a49dd8ac7028e0eeeda7db60632113c9dd8f203b86387c  src/cpu/sparse_frontier.cpp
+a25187d1bf8906ca1517596a41592d6f394e33c0f6c48f9622992fe6c6ec50e4  src/cpu/split.cpp
+ab6f60c71bdfc860807b193ee61d621362f28b87490a9d81a70758f0c33ff629  bench/cpu/chromosome-dispatch/measure.py
+62cce8d6653e2e773ccf71eb8acbb70319226a4ca5c803ed79d27bdcb4838cb1  bench/cpu/chromosome-dispatch/trial.cpp

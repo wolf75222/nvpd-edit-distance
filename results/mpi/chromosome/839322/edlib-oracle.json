@@ -1,0 +1,10 @@
+{
+  "oracle": "edlib",
+  "records": 768,
+  "pairs": 294528,
+  "fasta_sha256": "f3c7670f16201521e0138479a2279dfd70d35ddb7c6a4163c0c60f98ea43c146",
+  "matrix_sha256": "ff5f8e2e03416d4e69f90dcec4920a808385d7c6eda59f2bda159035da7b7ffa",
+  "eligible_pairs": 110592,
+  "certified_pairs": 39679,
+  "verified_mpi_trials": 65
+}

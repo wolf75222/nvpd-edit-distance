@@ -1,0 +1,2 @@
+JobID|State|Elapsed|ExitCode|AllocCPUS|NodeList
+839322|COMPLETED|00:04:21|0:0|384|romeo-c[038-039]

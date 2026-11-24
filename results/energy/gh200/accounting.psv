@@ -1,0 +1,5 @@
+JobID|JobName|State|Elapsed|ExitCode|NodeList|AllocTRES
+839310|nvpd-energy|COMPLETED|00:06:30|0:0|romeo-a058|billing=4,cpu=4,gres/gpu=1,mem=12G,node=1
+839317|nvpd-match-cache|COMPLETED|00:03:18|0:0|romeo-a058|billing=4,cpu=4,gres/gpu=1,mem=12G,node=1
+839319|nvpd-energy-window|COMPLETED|00:01:17|0:0|romeo-a058|billing=4,cpu=4,gres/gpu=1,mem=8G,node=1
+839323|nvpd-candidate-loci|COMPLETED|00:02:57|0:0|romeo-a058|billing=4,cpu=4,gres/gpu=1,mem=16G,node=1

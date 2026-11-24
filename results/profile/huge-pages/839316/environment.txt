@@ -1,0 +1,14 @@
+romeo-c022
+Linux 5.14.0-570.154.1.el9_6.x86_64
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+perf version 6.9.10
+Model name:                              AMD EPYC 9654 96-Core Processor
+L1d cache:                               6 MiB (192 instances)
+L1i cache:                               6 MiB (192 instances)
+L2 cache:                                192 MiB (192 instances)
+L3 cache:                                768 MiB (24 instances)
+/sys/kernel/mm/transparent_hugepage/enabled [always] madvise never
+/sys/kernel/mm/transparent_hugepage/defrag always defer defer+madvise [madvise] never
+/sys/kernel/mm/transparent_hugepage/hpage_pmd_size 2097152
+/proc/sys/kernel/perf_event_paranoid 2
+64

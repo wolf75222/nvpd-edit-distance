@@ -1,0 +1,13 @@
+job=839350
+romeo-c036
+Model name:                              AMD EPYC 9654 96-Core Processor
+Thread(s) per core:                      1
+Core(s) per socket:                      96
+Socket(s):                               2
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+cef1343f43d93e2cfc541a3a5e3b0e0259c9c257ed3291d2acd7b950559a3486 cohort.fa
+d8498a90ce4d6e45b35c8f0a553bc9b6e1394284a2be467b6cdccc4a8597374d  bench/cpu/packed-cohort/prepare.py
+f7761bc7604ba2cfcb4e06ba2870ae2f0d1c28f1f1ff094c3dda5cd02014d61d  bench/cpu/packed-cohort/trial.cpp
+b37acb0b0d7c6c0fa8cefb3a0970d17c163912c9dbd3cb520d0b280726bba01c  bench/cpu/packed-cohort/run.sbatch
+bf0ecf34dd82b04af6311f02043b63c195ccdd1629521d30ef52c3f1563733e5  src/cpu/packed.cpp
+165a3beedefe82dacf1f361bf5a21eb8e6b9d67464c040b34fe2279f6cfe3ca2  include/chps/packed.hpp

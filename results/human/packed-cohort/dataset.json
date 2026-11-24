@@ -1,0 +1,22 @@
+{
+  "reference_url": "https://api.genome.ucsc.edu/getData/sequence?genome=hg19;chrom=chr21;start=20000000;end=20032768",
+  "reference_sha256": "91eb3a01f88ad50ac7ee8b5e1fb9808fc07253bf041d2556ac5e2ec4fc7a3354",
+  "vcf": "https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr21.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz",
+  "vcf_index_sha256": "e87a55de3db734add587258c23f228bdc042323e2daf09ac4b7d18480b8de3a0",
+  "retained_rows_sha256": "0447066de25cb090a2af3a6be0512b64b740f8a7f6447ffa524970dd38437a93",
+  "seed": 1001,
+  "sampled_individuals": 512,
+  "haplotypes": 1024,
+  "distinct_sequences": 386,
+  "available_individuals": 2504,
+  "counts": {
+    "total_records": 960,
+    "overlap_or_boundary": 2,
+    "snps": 912,
+    "other_small_variants": 38,
+    "filtered_or_nonbiallelic": 8
+  },
+  "length_min": 32736,
+  "length_max": 32775,
+  "fasta_sha256": "cef1343f43d93e2cfc541a3a5e3b0e0259c9c257ed3291d2acd7b950559a3486"
+}

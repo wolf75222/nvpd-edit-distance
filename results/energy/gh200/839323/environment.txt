@@ -1,0 +1,11 @@
+romeo-a058
+name, uuid, pci.bus_id, driver_version
+NVIDIA GH200 120GB, GPU-57fe4001-37de-e203-ab45-7f685b91aae2, 00000029:01:00.0, 590.48.01
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+991763effd7b74200fb108109953a48733a92a680523cfc1b098512bff968916  src/cuda/cuda.cu
+1d4e55a432683f534594240d02d1403240143c72ecfe80aa770b792ff0aa18f8  src/cuda/local_tiles.cuh
+46a190e83d3a6a18d86067a945aa001c6c2e7ae7d080212be2fb3e3383ccbb07  src/cuda/packed_match.cuh
+cbd7632f24926cc849b4919ed6de4f1d026a852824f0722d6445ff15d5f69aac  CMakeLists.txt
+ed8dbc35efb1b9d0108e9a4ca530a52a96234069b7f3a585cfeb51959c87ec8d  bench/gpu/energy/loci.py
+aeb0a74383029a20522483e2fb2bb46adc7b37f1a8ce9df7bf62e24512bd65c6  bench/gpu/energy/loci.sbatch
