@@ -33,8 +33,10 @@ target_include_directories(edlib_static PUBLIC "${edlib_SOURCE_DIR}/edlib/includ
 # The four directories contain the pinned upstream C library, without tools or tests.
 file(GLOB wfa_sources "${wfa2_SOURCE_DIR}/wavefront/*.c" "${wfa2_SOURCE_DIR}/system/*.c"
                       "${wfa2_SOURCE_DIR}/utils/*.c" "${wfa2_SOURCE_DIR}/alignment/*.c")
+include(cmake/patches/wfa2-portability.cmake)
 add_library(wfa_static STATIC ${wfa_sources})
-target_include_directories(wfa_static PUBLIC "${wfa2_SOURCE_DIR}")
+target_include_directories(wfa_static PUBLIC "${wfa2_SOURCE_DIR}"
+  PRIVATE "${wfa2_SOURCE_DIR}/wavefront" "${wfa2_SOURCE_DIR}/system")
 add_library(distances STATIC src/cpu/dp.cpp src/cpu/hirschberg.cpp src/cpu/banded.cpp src/libraries/baselines.cpp src/libraries/wfa2/wfa_adapter.c)
 target_include_directories(distances PUBLIC include PRIVATE src/cpu)
 target_link_libraries(distances PUBLIC OpenMP::OpenMP_CXX PRIVATE edlib_static wfa_static m)

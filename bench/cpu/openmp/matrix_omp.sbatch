@@ -15,7 +15,7 @@ export work=$(mktemp -d "${TMPDIR:-/tmp}/chps-matrix.XXXXXXXX")
 trap 'rm -rf -- "$work"' EXIT
 export out="$PWD/results/profile/matrix-omp/$SLURM_JOB_ID"
 mkdir -p "$out" "$work/source"
-cp -R CMakeLists.txt include src "$work/source/"
+cp -R CMakeLists.txt cmake include src "$work/source/"
 [[ ! -d deps ]] || ln -s "$PWD/deps" "$work/source/deps"
 cmake -S "$work/source" -B "$work/build" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
     -DCMAKE_C_FLAGS=-march=native -DCMAKE_CXX_FLAGS=-march=native
