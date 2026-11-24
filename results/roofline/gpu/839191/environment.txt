@@ -1,0 +1,19 @@
+romeo-a058
+name, compute_cap, driver_version, memory.total [MiB]
+NVIDIA GH200 120GB, 9.0, 590.48.01, 97871 MiB
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+Version 2025.3.1.0 (build 36398880) (public-release)
+NVIDIA Nsight Systems version 2025.3.2.474-253236389321v0
+RmProfilingAdminOnly: 1
+3559c0e1277011c0c8ce68819e5e82cfb804fc6975c713a0b319af63ca055f92  bench/gpu/roofline/trial.cu
+6cb9940fb0d693cf30ec94ab70ff1206c0fc2a72d21766b8a9edea38186b9b7e  bench/gpu/roofline/instrument.py
+0daf0b2cbb315600bd8464e9c2fca00498795f27053b303a72350c592f351acf  bench/gpu/roofline/measure.py
+4cc39998d0e2bfa0e05a8a5059385fb7848d0e8dccab53799ca63483e28931b4  bench/gpu/roofline/solve.sbatch
+f55662005c5d6375c96288f83c7f3ca113d7aa272d5c864e9f5f7d4efd7c771b  src/cuda/paired_rows.cuh
+2527c47366826819cffb860594293cc227784032f987b356e23e0c50ea97e6a7  src/cuda/cuda.cu
+b72a710e6282bd6987ee122487bd16d738700dc60ed990987952e3d11f2a30d5  src/cuda/local_tiles.cuh
+c21c1d7920069d3d4d4b223be2e76c4d54e5593d2d8e2c3dc18605799a877175  include/chps/cuda.hpp
+2b4891c386da9e903d1c1f680d1be241077dd87760910d10a0f366c216b5d46a  bench/gpu/roofline/local_check.py
+fcfeddea81c10a8cd941ee573e10c44f9dafecadeba98d952da090a3a5d88a1d  experiment.cu
+fac22f5ba3075091232ea1393f8d821fe3ec27c7cdc1a64529dfc2b9c0cbc97d  trial

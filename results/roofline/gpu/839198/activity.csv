@@ -1,0 +1,5 @@
+case,method,kernel_launches,kernel_seconds,copies,copy_bytes,copy_seconds
+collinear-16384,local,2049,0.011355003,3,264404,1.3792e-05
+collinear-16384,classes,4097,0.022869049,3,264404,1.4944e-05
+insertion-524288,local,65537,1.686361508,3,8613748,0.000108448
+insertion-524288,classes,131073,2.374156541,3,8613748,0.00010752

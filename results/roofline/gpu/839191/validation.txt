@@ -1,0 +1,2 @@
+102 pairs x three variants: scalar score and trace matched, including empty/odd and warp tails
+195 local-halo sizes in both orientations; empty/tile remainders/long dependencies and reuse passed

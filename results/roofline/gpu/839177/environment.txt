@@ -1,0 +1,10 @@
+romeo-a058
+name, compute_cap, driver_version, memory.total [MiB], clocks.max.sm [MHz], clocks.max.memory [MHz]
+NVIDIA GH200 120GB, 9.0, 590.48.01, 97871 MiB, 1980 MHz, 2619 MHz
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+Version 2025.3.1.0 (build 36398880) (public-release)
+NVIDIA Nsight Systems version 2025.3.2.474-253236389321v0
+RmProfilingAdminOnly: 1
+53225b9ffbf0094dd4a9dbb726f82c8221cd3f1fbb48bb23e5a1a9606cba8258  bench/gpu/roofline/calibrate.cu
+5b72616845cef4889ea7b192bfce46eb037f9164cd0c1b265f58347a25f48936  bench/gpu/roofline/calibrate.sbatch

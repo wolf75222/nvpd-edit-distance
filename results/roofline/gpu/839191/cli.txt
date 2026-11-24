@@ -1,0 +1,1 @@
+10 matrix pairs and four public CUDA traces match the compiled reference
