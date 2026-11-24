@@ -1,0 +1,9 @@
+romeo-a058
+Linux 5.14.0-570.154.1.el9_6.aarch64+64k
+65536
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+c16fc8010d9e1809fe821bdcd166a29046a5164fb91c4a8031b733d7f349349d  bench/repeated/inputs.csv
+88fc51454cbc1a9827f1bad66a1cc614f7f4710ef70409734002076c702a8fa8  bench/repeated/grace_memory.py
+124fea75866a5ab6477f8242db7d48b71443331960a07f0c85ee6b773cf7964b  bench/repeated/grace_memory.sbatch
+9e1c340c77454ab5e74ed528e7d29d5f058d729dc969e3cc38b70f9ae8e15d0e  bench/repeated/kernel.cpp
+050034727ebe539f6fb5824b3813aebfc4140b70c5a4b7349aa19a870866281a  results/repeated/gh200/summary.csv

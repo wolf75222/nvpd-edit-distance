@@ -1,0 +1,141 @@
+block,variant,domain,name,count,total_ns
+1,baseline,kernel,"chps::<unnamed>::next_row(const int *, int *, const int *, int, int)",4992,6255970
+1,baseline,kernel,"chps::<unnamed>::first_row(int *, int)",1,768
+1,baseline,copy,[CUDA memcpy Host-to-Device],1,5376
+1,baseline,copy,[CUDA memcpy Device-to-Host],1,1952
+1,baseline,api,cudaLaunchKernel,4993,12294336
+1,baseline,api,cuKernelGetName,4993,221184
+1,baseline,api,cudaMalloc,2,190528
+1,baseline,api,cudaFree,2,106080
+1,baseline,api,cudaMemcpy,2,49664
+1,baseline,api,cuProfilerStart,1,1888
+1,candidate,kernel,"chps::<unnamed>::row_tile(const int *, int *, const int *, chps::<unnamed>::Symbols, int, int, int, int, int)",624,3295521
+1,candidate,kernel,"chps::<unnamed>::first_row(int *, int)",1,768
+1,candidate,copy,[CUDA memcpy Host-to-Device],1,5440
+1,candidate,copy,[CUDA memcpy Device-to-Host],1,1696
+1,candidate,api,cudaMemcpy,2,2301184
+1,candidate,api,cudaLaunchKernel,625,1527872
+1,candidate,api,cudaMalloc,2,173824
+1,candidate,api,cudaFree,2,95648
+1,candidate,api,cuKernelGetName,625,28128
+1,candidate,api,cuProfilerStart,1,1984
+2,candidate,kernel,"chps::<unnamed>::row_tile(const int *, int *, const int *, chps::<unnamed>::Symbols, int, int, int, int, int)",624,3294656
+2,candidate,kernel,"chps::<unnamed>::first_row(int *, int)",1,768
+2,candidate,copy,[CUDA memcpy Host-to-Device],1,5568
+2,candidate,copy,[CUDA memcpy Device-to-Host],1,3840
+2,candidate,api,cudaMemcpy,2,2335808
+2,candidate,api,cudaLaunchKernel,625,1526080
+2,candidate,api,cudaMalloc,2,205824
+2,candidate,api,cudaFree,2,126176
+2,candidate,api,cuKernelGetName,625,29056
+2,candidate,api,cuProfilerStart,1,3232
+2,baseline,kernel,"chps::<unnamed>::next_row(const int *, int *, const int *, int, int)",4992,6257824
+2,baseline,kernel,"chps::<unnamed>::first_row(int *, int)",1,768
+2,baseline,copy,[CUDA memcpy Host-to-Device],1,5472
+2,baseline,copy,[CUDA memcpy Device-to-Host],1,2016
+2,baseline,api,cudaLaunchKernel,4993,12427008
+2,baseline,api,cuKernelGetName,4993,216192
+2,baseline,api,cudaMalloc,2,194176
+2,baseline,api,cudaFree,2,103264
+2,baseline,api,cudaMemcpy,2,52192
+2,baseline,api,cuProfilerStart,1,2496
+3,baseline,kernel,"chps::<unnamed>::next_row(const int *, int *, const int *, int, int)",4992,6274016
+3,baseline,kernel,"chps::<unnamed>::first_row(int *, int)",1,800
+3,baseline,copy,[CUDA memcpy Host-to-Device],1,5216
+3,baseline,copy,[CUDA memcpy Device-to-Host],1,2016
+3,baseline,api,cudaLaunchKernel,4993,12380256
+3,baseline,api,cudaFree,2,1549088
+3,baseline,api,cudaMalloc,2,225504
+3,baseline,api,cuKernelGetName,4993,222944
+3,baseline,api,cudaMemcpy,2,60704
+3,baseline,api,cuProfilerStart,1,3872
+3,candidate,kernel,"chps::<unnamed>::row_tile(const int *, int *, const int *, chps::<unnamed>::Symbols, int, int, int, int, int)",624,3295039
+3,candidate,kernel,"chps::<unnamed>::first_row(int *, int)",1,800
+3,candidate,copy,[CUDA memcpy Host-to-Device],1,5344
+3,candidate,copy,[CUDA memcpy Device-to-Host],1,2912
+3,candidate,api,cudaMalloc,2,17620480
+3,candidate,api,cudaFree,2,2479008
+3,candidate,api,cudaMemcpy,2,2251872
+3,candidate,api,cudaLaunchKernel,625,1555424
+3,candidate,api,cuKernelGetName,625,28608
+3,candidate,api,cuProfilerStart,1,6112
+4,candidate,kernel,"chps::<unnamed>::row_tile(const int *, int *, const int *, chps::<unnamed>::Symbols, int, int, int, int, int)",624,3295007
+4,candidate,kernel,"chps::<unnamed>::first_row(int *, int)",1,768
+4,candidate,copy,[CUDA memcpy Host-to-Device],1,5088
+4,candidate,copy,[CUDA memcpy Device-to-Host],1,2912
+4,candidate,api,cudaMalloc,2,15150880
+4,candidate,api,cudaFree,2,3179616
+4,candidate,api,cudaMemcpy,2,2246848
+4,candidate,api,cudaLaunchKernel,625,1566240
+4,candidate,api,cuKernelGetName,625,27776
+4,candidate,api,cuProfilerStart,1,5888
+4,baseline,kernel,"chps::<unnamed>::next_row(const int *, int *, const int *, int, int)",4992,6273536
+4,baseline,kernel,"chps::<unnamed>::first_row(int *, int)",1,800
+4,baseline,copy,[CUDA memcpy Host-to-Device],1,5536
+4,baseline,copy,[CUDA memcpy Device-to-Host],1,3552
+4,baseline,api,cudaMalloc,2,111381184
+4,baseline,api,cudaFree,2,79101472
+4,baseline,api,cudaLaunchKernel,4993,12365056
+4,baseline,api,cuKernelGetName,4993,218560
+4,baseline,api,cudaMemcpy,2,70528
+4,baseline,api,cuProfilerStart,1,3200
+5,baseline,kernel,"chps::<unnamed>::next_row(const int *, int *, const int *, int, int)",4992,6271941
+5,baseline,kernel,"chps::<unnamed>::first_row(int *, int)",1,800
+5,baseline,copy,[CUDA memcpy Host-to-Device],1,4928
+5,baseline,copy,[CUDA memcpy Device-to-Host],1,2912
+5,baseline,api,cudaMalloc,2,16936000
+5,baseline,api,cudaLaunchKernel,4993,12325760
+5,baseline,api,cudaFree,2,481152
+5,baseline,api,cuKernelGetName,4993,216800
+5,baseline,api,cudaMemcpy,2,63968
+5,baseline,api,cuProfilerStart,1,4352
+5,candidate,kernel,"chps::<unnamed>::row_tile(const int *, int *, const int *, chps::<unnamed>::Symbols, int, int, int, int, int)",624,3295842
+5,candidate,kernel,"chps::<unnamed>::first_row(int *, int)",1,800
+5,candidate,copy,[CUDA memcpy Host-to-Device],1,5568
+5,candidate,copy,[CUDA memcpy Device-to-Host],1,3456
+5,candidate,api,cudaMemcpy,2,2332576
+5,candidate,api,cudaLaunchKernel,625,1552000
+5,candidate,api,cudaMalloc,2,188576
+5,candidate,api,cudaFree,2,110304
+5,candidate,api,cuKernelGetName,625,28192
+5,candidate,api,cuProfilerStart,1,3072
+6,candidate,kernel,"chps::<unnamed>::row_tile(const int *, int *, const int *, chps::<unnamed>::Symbols, int, int, int, int, int)",624,3295549
+6,candidate,kernel,"chps::<unnamed>::first_row(int *, int)",1,736
+6,candidate,copy,[CUDA memcpy Host-to-Device],1,5824
+6,candidate,copy,[CUDA memcpy Device-to-Host],1,3072
+6,candidate,api,cudaMemcpy,2,2231008
+6,candidate,api,cudaLaunchKernel,625,1508064
+6,candidate,api,cudaMalloc,2,200832
+6,candidate,api,cudaFree,2,111104
+6,candidate,api,cuKernelGetName,625,28480
+6,candidate,api,cuProfilerStart,1,2656
+6,baseline,kernel,"chps::<unnamed>::next_row(const int *, int *, const int *, int, int)",4992,6258848
+6,baseline,kernel,"chps::<unnamed>::first_row(int *, int)",1,768
+6,baseline,copy,[CUDA memcpy Host-to-Device],1,5216
+6,baseline,copy,[CUDA memcpy Device-to-Host],1,2720
+6,baseline,api,cudaLaunchKernel,4993,12311552
+6,baseline,api,cuKernelGetName,4993,224928
+6,baseline,api,cudaMalloc,2,212672
+6,baseline,api,cudaFree,2,109184
+6,baseline,api,cudaMemcpy,2,54272
+6,baseline,api,cuProfilerStart,1,2944
+7,baseline,kernel,"chps::<unnamed>::next_row(const int *, int *, const int *, int, int)",4992,6255808
+7,baseline,kernel,"chps::<unnamed>::first_row(int *, int)",1,800
+7,baseline,copy,[CUDA memcpy Host-to-Device],1,5696
+7,baseline,copy,[CUDA memcpy Device-to-Host],1,3392
+7,baseline,api,cudaLaunchKernel,4993,12413088
+7,baseline,api,cuKernelGetName,4993,225536
+7,baseline,api,cudaMalloc,2,203808
+7,baseline,api,cudaFree,2,114080
+7,baseline,api,cudaMemcpy,2,56768
+7,baseline,api,cuProfilerStart,1,2752
+7,candidate,kernel,"chps::<unnamed>::row_tile(const int *, int *, const int *, chps::<unnamed>::Symbols, int, int, int, int, int)",624,3295263
+7,candidate,kernel,"chps::<unnamed>::first_row(int *, int)",1,768
+7,candidate,copy,[CUDA memcpy Host-to-Device],1,5184
+7,candidate,copy,[CUDA memcpy Device-to-Host],1,2848
+7,candidate,api,cudaMemcpy,2,2231008
+7,candidate,api,cudaLaunchKernel,625,1524640
+7,candidate,api,cudaMalloc,2,197664
+7,candidate,api,cudaFree,2,107008
+7,candidate,api,cuKernelGetName,625,29408
+7,candidate,api,cuProfilerStart,1,2560

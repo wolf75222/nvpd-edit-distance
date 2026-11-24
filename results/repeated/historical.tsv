@@ -1,0 +1,15 @@
+family	file	replications	warmup	replication_unit	scope
+CPU A/B and scaling	results/profile/cpu/{ab,scaling}.csv	3 per case-method-thread-job	one identical pair	invocation	same input and new process for each trial
+CUDA tile variants	results/profile/gpu/838170/trials.csv	3 launches x 3 warm calls	one identical pair	launch	average the three warm calls within each launch before a between-launch interval
+MPI strong	results/mpi/838226/trials.csv	3 per case-node count	one identical case	internal call	one MPI launch per configuration with three measurements after warmup
+MPI weak	results/mpi/weak/838444/trials.csv	5 per case-node count	one identical case	internal call	one MPI launch per configuration with five measurements after warmup
+Kokkos CPU and CUDA	results/kokkos/timings.csv	3 per case-method-threads-job	one identical pair	invocation	fresh equally warmed native and portable backend processes by block
+OpenMP matrix traversal	results/profile/matrix-omp/trials.csv	5 per version	one external invocation	invocation	end-to-end CLI including reading input and writing the matrix
+CUDA allocation probe	results/allocator/trials.csv	3 per workload-mode	first pair per process	invocation	entire matrix batch inside probe with warm device
+CUDA matrix production	results/allocator/production.csv	3 per version	no per-process warmup	invocation	end-to-end production CLI on 2016 pairs
+CPU synthetic coverage	results/romeo/completion-1m/trials.csv	1 per input-method	no per-process warmup	distinct FASTA	five distinct pairs per error level and method
+CPU million A/B	results/profile/million/838538/trials.csv	1 per input-method	no per-process warmup	invocation	first synthetic pair of each rate
+CUDA synthetic survey	results/romeo/gpu-837263.csv	1 per input-method	no per-process warmup	distinct FASTA	coverage of fifteen million-base pairs
+Human chr21 windows and planted control	results/human/838220/trials.csv	2 per case-method	no per-process warmup	invocation	cost-only per process on Grace and Hopper
+Complete chromosome assemblies	results/human/whole/838443/trials.csv	3 success per method for chr20	no per-process warmup	invocation	both chr21 methods reached 120 s wall limit without reporting a distance
+M1 traceback	results/traceback/trials.csv	5 per case-method	no per-process warmup	invocation	one fresh process per method and trial

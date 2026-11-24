@@ -1,0 +1,16 @@
+# Inject just the two benchmark targets into the normal top-level configuration.
+if(PROJECT_NAME STREQUAL "chps_edit_distance" AND NOT TARGET repeat_kernel)
+  set(repeat_dir "${CMAKE_CURRENT_LIST_DIR}")
+  add_executable(repeat_kernel "${repeat_dir}/kernel.cpp" "${CMAKE_SOURCE_DIR}/src/io/fasta.cpp")
+  set_target_properties(repeat_kernel PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+  target_link_libraries(repeat_kernel PRIVATE distances)
+  if(CHPS_REPEAT_INITIAL)
+    add_executable(repeat_initial "${repeat_dir}/kernel.cpp" "${CHPS_REPEAT_INITIAL}"
+                   "${CMAKE_SOURCE_DIR}/src/io/fasta.cpp")
+    set_target_properties(repeat_initial PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+    target_compile_definitions(repeat_initial PRIVATE CHPS_REPEAT_INITIAL_ONLY)
+    target_include_directories(repeat_initial PRIVATE "${CMAKE_SOURCE_DIR}/include" "${CMAKE_SOURCE_DIR}/src/cpu")
+    find_package(OpenMP REQUIRED COMPONENTS CXX)
+    target_link_libraries(repeat_initial PRIVATE OpenMP::OpenMP_CXX)
+  endif()
+endif()

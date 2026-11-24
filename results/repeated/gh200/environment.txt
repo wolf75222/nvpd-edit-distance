@@ -1,0 +1,27 @@
+romeo-a058
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+cmake version 3.30.5
+Architecture:                            aarch64
+Model name:                              Neoverse-V2
+name, driver_version, memory.total [MiB]
+NVIDIA GH200 120GB, 590.48.01, 97871 MiB
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+OMP_DYNAMIC=FALSE
+OMP_NUM_THREADS=1
+OMP_PLACES=cores
+OMP_PROC_BIND=close
+OMP_WAIT_POLICY=ACTIVE
+CUDA_FLAGS = -O3 -DNDEBUG -std=c++20 "--generate-code=arch=compute_90,code=[compute_90,sm_90]"
+CXX_FLAGS = -O3 -DNDEBUG -std=c++20 -fopenmp
+eb8dd38c31d714c0477bc5479a8301b532c6bbfc71cf924738ca9ec57dc70dc1  src/dp.cpp
+06711e4b010cc9254e8b0f6f8e14fc7ff93afc522388e5b3110954b9e9e0eddb  src/dp_internal.hpp
+facd603a8a4d264d759840d225b2c380dce3786e0ead5a565a4d311a221c4a4d  src/banded.cpp
+8d0daafc67c73c5df6cd3cea2935a2ecc182522b25c28ea44596a720a0b9c4b7  src/baselines.cpp
+32b153293cb01d2c503ac947e0a1a8fd817561dabc77d92732abfe0aafe4e090  src/cuda.cu
+7d94207464107bc46d65666d9d793e8c581f2f9c288898a0e0a0306a0f1140dd  src/hirschberg.cpp
+c16fc8010d9e1809fe821bdcd166a29046a5164fb91c4a8031b733d7f349349d  bench/repeated/inputs.csv
+9e1c340c77454ab5e74ed528e7d29d5f058d729dc969e3cc38b70f9ae8e15d0e  bench/repeated/kernel.cpp
+bf86894999075762927833ba33c998a8d28fc683b47385a9e66633b7c9454ac0  bench/repeated/measure.py
+e09d533fd080dc170565b9c95f9af8820fdcc23602c3af766b815b8bd73c9891  bench/repeated/run.sbatch
+7eae6b76283a9c1f269e34a3949ea9fbc4eee6e93bc791f84ad70c50b757dfb0  bench/repeated/targets.cmake

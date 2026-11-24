@@ -1,0 +1,23 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+cmake version 3.30.9
+Architecture:                            x86_64
+Model name:                              AMD EPYC 9654 96-Core Processor
+OMP_DYNAMIC=FALSE
+OMP_NUM_THREADS=1
+OMP_PLACES=cores
+OMP_PROC_BIND=close
+OMP_WAIT_POLICY=ACTIVE
+CXX_FLAGS = -march=native -O3 -DNDEBUG -std=c++20 -fopenmp
+eb8dd38c31d714c0477bc5479a8301b532c6bbfc71cf924738ca9ec57dc70dc1  src/dp.cpp
+06711e4b010cc9254e8b0f6f8e14fc7ff93afc522388e5b3110954b9e9e0eddb  src/dp_internal.hpp
+facd603a8a4d264d759840d225b2c380dce3786e0ead5a565a4d311a221c4a4d  src/banded.cpp
+8d0daafc67c73c5df6cd3cea2935a2ecc182522b25c28ea44596a720a0b9c4b7  src/baselines.cpp
+32b153293cb01d2c503ac947e0a1a8fd817561dabc77d92732abfe0aafe4e090  src/cuda.cu
+7d94207464107bc46d65666d9d793e8c581f2f9c288898a0e0a0306a0f1140dd  src/hirschberg.cpp
+c16fc8010d9e1809fe821bdcd166a29046a5164fb91c4a8031b733d7f349349d  bench/repeated/inputs.csv
+9a80d704b8ecb041e521d734277dedabd85f6e33d49bac6f84b37b44822ac1bf  bench/repeated/kernel.cpp
+af7574b46e4a9df78f30386c6cebeaedeebaef8bcfd10ec3f289434632cd8a19  bench/repeated/measure.py
+94034c3e68992fdb7b11fd4849bff986b6cbebe39aced4ebcc3e85d16ecb6afb  bench/repeated/run.sbatch
+7eae6b76283a9c1f269e34a3949ea9fbc4eee6e93bc791f84ad70c50b757dfb0  bench/repeated/targets.cmake
+2ba30fd6237bb33a9cef3e8836e78631fcc4f12b44f742844f8eaa5007455a2b  bench/repeated/bands.py
