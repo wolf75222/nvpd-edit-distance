@@ -27,8 +27,17 @@ def main():
     with tempfile.TemporaryDirectory() as tmp, args.out.open("w") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
-        cases = [(f"20k-{rate}", next(Path("data/synthetic/pairs").glob(f"n20000_r{rate}_p1_*.fa")))
-                 for rate in ["0.02", "0.05", "0.1"]]
+        # The generator can leave older seeds in pairs/. Only the manifest
+        # identifies the active inputs for this campaign.
+        manifest = Path("data/synthetic/manifest.tsv")
+        rates = ("0.02", "0.05", "0.1")
+        with manifest.open(newline="") as f:
+            selected = [r for r in csv.DictReader(f, delimiter="\t")
+                        if r["length"] == "20000" and r["rep"] == "1" and r["rate"] in rates]
+        paths = {r["rate"]: manifest.parent / r["path"] for r in selected}
+        if len(selected) != len(rates) or set(paths) != set(rates):
+            raise ValueError("expected one 20k replicate per error rate in the synthetic manifest")
+        cases = [(f"20k-{rate}", paths[rate]) for rate in rates]
         a, b = fasta_pair(Path("data/human/chr21-2m.fa"))
         def pair(name, x, y):
             path = Path(tmp, name + ".fa")

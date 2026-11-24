@@ -1,4 +1,5 @@
 #include "chps/fasta.hpp"
+#include <edlib.h>
 #include <sys/resource.h>
 #include <chrono>
 #include <climits>
@@ -30,7 +31,18 @@ int main(int argc, char** argv) {
 #ifdef __APPLE__
         usage.ru_maxrss /= 1024;
 #endif
-        std::cout << std::setprecision(12) << "{\"algorithm\":\"quicked\",\"m\":" << a.size()
+        // Some periodic sequences give a suboptimal upstream CIGAR. Keep the
+        // comparison outside both the QuickEd timer and its RSS measurement.
+        const auto config = edlibNewAlignConfig(-1, EDLIB_MODE_NW, EDLIB_TASK_DISTANCE, nullptr, 0);
+        auto oracle = edlibAlign(a.data(), static_cast<int>(a.size()), b.data(), static_cast<int>(b.size()), config);
+        const int exact = oracle.editDistance;
+        const auto status = oracle.status;
+        edlibFreeAlignResult(oracle);
+        if (status != EDLIB_STATUS_OK || exact < 0) throw std::runtime_error("edlib verification failed");
+        if (score != exact)
+            throw std::runtime_error("QuickEd returned " + std::to_string(score) + ", edlib returned " +
+                                     std::to_string(exact));
+        std::cout << std::setprecision(12) << "{\"algorithm\":\"quicked\",\"verified_by\":\"edlib\",\"m\":" << a.size()
                   << ",\"n\":" << b.size() << ",\"distance\":" << score << ",\"seconds\":" << elapsed.count()
                   << ",\"peak_rss_kib\":" << usage.ru_maxrss << "}\n";
     } catch (const std::exception& e) {

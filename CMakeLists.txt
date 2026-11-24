@@ -73,7 +73,7 @@ if(CHPS_QUICKED)
   # Keep upstream C symbols isolated from the WFA2 executable.
   add_executable(editdist-quicked src/quicked_main.cpp src/fasta.cpp)
   target_include_directories(editdist-quicked PRIVATE include)
-  target_link_libraries(editdist-quicked PRIVATE quicked_static m)
+  target_link_libraries(editdist-quicked PRIVATE quicked_static edlib_static m)
 endif()
 include(CTest)
 if(BUILD_TESTING)
