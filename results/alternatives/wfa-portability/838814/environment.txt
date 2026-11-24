@@ -1,0 +1,7 @@
+romeo-c022
+Model name:                              AMD EPYC 9654 96-Core Processor
+Thread(s) per core:                      1
+gcc (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+GNU objdump version 2.35.2-63.el9_6.1
+C/C++ flags -O3 -DNDEBUG -march=native
+bound core 159

@@ -4,7 +4,7 @@ set(wfa_alloc "${wfa2_SOURCE_DIR}/system/mm_allocator.c")
 set(patched_dir "${CMAKE_CURRENT_BINARY_DIR}/wfa2-portable")
 file(READ "${wfa_extend}" source)
 string(REPLACE "FORCE_INLINE wf_offset_t wavefront_extend_matches_kernel_blockwise("
-  [[static inline uint64_t load_word(const char* p) {
+  [[FORCE_INLINE uint64_t wavefront_load_unaligned_word(const char* p) {
   uint64_t word;
   memcpy(&word,p,sizeof(word));
   return word;
@@ -15,7 +15,7 @@ foreach(name pattern text)
   string(REPLACE "uint64_t* ${name}_blocks = (uint64_t*)" "const char* ${name}_blocks = " source "${source}")
   string(REPLACE "++${name}_blocks;" "${name}_blocks += sizeof(uint64_t);" source "${source}")
 endforeach()
-string(REPLACE "*pattern_blocks ^ *text_blocks" "load_word(pattern_blocks) ^ load_word(text_blocks)" source "${source}")
+string(REPLACE "*pattern_blocks ^ *text_blocks" "wavefront_load_unaligned_word(pattern_blocks) ^ wavefront_load_unaligned_word(text_blocks)" source "${source}")
 file(GENERATE OUTPUT "${patched_dir}/wavefront_extend_kernels.c" CONTENT "${source}")
 
 # Keep the cursor one past the live requests, including when none remain.
