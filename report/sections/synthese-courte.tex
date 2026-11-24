@@ -11,8 +11,8 @@ Pour deux longueurs \(m,n\) et des coûts unitaires,
 Une paire permet de mesurer le travail par cellule. Une collection ajoute le coût de la répartition des paires entre travailleurs.
 \subsection{Longueur et divergence}
 Edlib de Šošić et Šikić code plusieurs différences de scores dans un mot binaire~\cite{edlib}. WFA2 de Marco-Sola et ses coauteurs garde la position la plus avancée sur chaque diagonale à coût fixé~\cite{wfa}. Sur GH200, Kokkos calcule deux lignes de NvPD par lancement. Pour une fenêtre humaine de 524\,288 bases, cette fusion ramène le temps de \(2{,}520\pm0{,}034\) à \(1{,}345\pm0{,}018\)\,s (cinq processus après échauffement).
-\chart{comparison/synthese.png}{Le temps d'une paire est comparé au débit d'un lot de taille fixe. Les barres d'incertitude de chaque panneau portent sur ses unités expérimentales.}{fig:short-work}{notebooks/profil_nvpd.ipynb}
-La figure~\ref{fig:short-work} compare les régimes de calcul sur les mêmes jeux de paires. Sur une paire à 2\,\%, cinq blocs chauds donnent \(3{,}570\pm0{,}009\)\,s avec NvPD sur GH200 et \(0{,}767\pm0{,}006\)\,s avec WFA2 sur Grace. À 10\,\%, les mêmes méthodes prennent \(3{,}591\pm0{,}011\) et \(9{,}835\pm0{,}023\)\,s.
+\chart{comparison/synthese.png}{Rapport des temps de NvPD sur GPU et de chaque bibliothèque sur un cœur Grace, sur douze paires synthétiques. Les crochets donnent les IC à 95\,\% des rapports appariés.}{fig:short-work}{notebooks/profil_nvpd.ipynb}
+La figure~\ref{fig:short-work} couvre quatre longueurs de 5~knt à 1~Mnt. À 1~Mnt et 2\,\%, cinq blocs chauds donnent \(3{,}570\pm0{,}009\)\,s avec NvPD sur GH200 et \(0{,}767\pm0{,}006\)\,s avec WFA2 sur Grace. À 10\,\%, les mêmes méthodes prennent \(3{,}591\pm0{,}011\) et \(9{,}835\pm0{,}023\)\,s.
 
 \synthese{Les trois taux injectés, 2, 5 et 10\,\%, laissent l'aire du rectangle presque constante. Ils modifient pourtant assez le temps de WFA2 pour inverser son classement face au calcul dense sur GH200.}
 
@@ -23,7 +23,7 @@ Dans une matrice hétérogène, une paire de longueurs \(m_i,m_j\) coûte \(m_i 
 
 \subsection{Reconstruction du chemin sur les chromosomes}
 BiWFA de Marco-Sola et ses coauteurs rencontre deux fronts pour restituer un chemin avec une mémoire de travail proportionnelle au score~\cite{biwfa}. Le solveur par fragments cherche des coupes dans de longues régions identiques. Si la somme des scores des fragments vaut \(U\), plus de \(U\) mots disjoints et uniques de chaque côté de la coupe suffisent à la conserver sur un chemin optimal. Les intervalles qui perdent une coupe sont réalignés.
-\chart{comparison/trace_chromosomes.png}{Les temps du score, du CIGAR et la mémoire résidente sont comparés sur trois chromosomes CHM13 et un intervalle entre deux références distinctes.}{fig:short-trace}{bench/cpu/chromosome-trace/measure.py}
+\chart{comparison/trace_chromosomes.png}{Le temps et le pic de mémoire du CIGAR sont comparés sur le chromosome 1 de CHM13. Les accélérations sur quatre paires distinguent le changement de méthode du gain obtenu en ajoutant des cœurs.}{fig:short-trace}{bench/cpu/chromosome-trace/measure.py}
 \synthese{Sur le chromosome 1 de CHM13, le CIGAR de 176 éditions prend \(11{,}81\pm1{,}23\)\,ms avec huit travailleurs et \(183{,}11\pm5{,}14\)\,ms avec WFA2 sur un cœur (figure~\ref{fig:short-trace}). Le solveur par fragments utilise BiWFA sur les deux intérieurs qui subsistent.}
 
 \section{Conclusion}

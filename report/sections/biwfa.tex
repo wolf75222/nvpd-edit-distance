@@ -24,7 +24,7 @@ L'algorithme~\ref{alg:biwfa} décrit cette décomposition pour le coût unitaire
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=.97\linewidth,height=.44\textheight,keepaspectratio]{../figures/comparison/biwfa_humain.png}
-\caption{Les temps et pics RSS sur un cœur EPYC distinguent le score et la restitution d’un chemin pour des fenêtres homologues du chromosome 21. L'astérisque marque les tailles où le processus QuickEd atteint son échéance.}\label{fig:biwfa}\sourcefig{bench/human/algorithms/study.py}
+\caption{Les rapports de temps et de mémoire entre WFA2 et BiWFA distinguent le score et la reconstruction sur un cœur EPYC. Un rapport supérieur à un favorise BiWFA. Le tableau donne les temps d’une seconde allocation. Le terme « échéance » indique un arrêt du processus à 120\,s, chauffe comprise.}\label{fig:biwfa}\sourcefig{bench/human/algorithms/study.py}
 \end{figure}
 La figure~\ref{fig:biwfa} compare des appels complets après échauffement, sur cinq processus indépendants par cas. Les fenêtres se recouvrent en partie. À quatre millions de bases et \(s=12\,482\), BiWFA rend le chemin en \(218{,}72\pm1{,}00\)\,ms avec un pic RSS moyen de 54,02\,Mio. WFA2 unidirectionnel prend \(375{,}90\pm2{,}35\)\,ms et 627,02\,Mio pour le même résultat. Le rapport géométrique apparié des temps vaut 1,719 (IC à 95\,\% de 1,707 à 1,730). Sur les deux loci de 250\,000 bases, WFA2 unidirectionnel termine en \(1{,}25\pm0{,}24\) et \(1{,}45\pm0{,}16\)\,ms. BiWFA prend \(2{,}03\pm0{,}13\) et \(2{,}28\pm0{,}06\)\,ms.
 

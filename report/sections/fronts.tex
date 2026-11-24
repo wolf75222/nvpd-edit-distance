@@ -23,7 +23,7 @@ La figure~\ref{fig:tuiles} compare des appels après échauffement. Trois appels
 
 \subsection{Lancements et accès à la mémoire de l’accélérateur}
 Le coût d'une ligne dépend des lancements et des adresses lues par un groupe de fils. Nsight Systems, le profileur chronologique de NVIDIA, enregistre les appels hôtes et les opérations GPU. Dans ce profil, les durées des appels API hôtes peuvent recouvrir celles des opérations GPU.
-\chart{gpu/trace_cuda.png}{Nsight Systems compte les lancements et cumule les durées d'exécution sur la paire de 5\,000 et 4\,992 bases.}{fig:lancements}{bench/repeated/trace/gpu_trace.py}
+\chart{gpu/trace_cuda.png}{Sept captures Nsight Systems après chauffe donnent les durées par domaine, leur écart-type et leur intervalle de confiance sur la paire de 5\,000 et 4\,992 bases.}{fig:lancements}{bench/repeated/trace/gpu_trace.py}
 La figure~\ref{fig:lancements} inclut le noyau d'initialisation. Pour 4\,992 lignes de récurrence, le noyau de hauteur huit demande \(1+\lceil4992/8\rceil=625\) lancements. Les sept processus profilés par version exécutent auparavant un alignement hors capture. Tous donnent \(d=99\). Le temps cumulé des noyaux passe de \(6{,}2648\pm0{,}0087\) à \(3{,}2960\pm0{,}0004\)\,ms. Les copies prennent \(8{,}00\pm0{,}79\) et \(8{,}39\pm0{,}77\)\,\(\mu\mathrm{s}\). Les appels API hôtes totalisent \(42{,}77\pm70{,}99\) et \(9{,}55\pm9{,}24\)\,ms. Dans l'ancienne version, un processus cumule 203,14\,ms d'API. L'intervalle de Student sur cette moyenne est très large et sa borne basse franchit zéro. L'intervalle exprime ici l'imprécision de l'estimation.
 \input{sections/localite-accelerateur}
 \subsection{Durée de vie des allocations sur accélérateur}
@@ -32,7 +32,7 @@ Une matrice de \(N\) séquences contient \(P=N(N-1)/2\) paires non ordonnées. L
  A=\sum_{t=1}^2\left(1+\sum_{i=2}^{P}[b_{it}\ne b_{i-1,t}]\right).
 \]
 Cette expression suppose des entrées non vides et le traitement sériel des paires dans leur ordre de lecture.
-\chart{gpu/allocations_cuda.png}{La sonde compare les deux politiques d'allocation sur des lots de même contenu et mesure le pic réservé sur le GPU.}{fig:alloc}{bench/gpu/allocation/allocator_measure.py}
+\chart{gpu/allocations_cuda.png}{Pour chaque lot, le gain de temps est apparié sur trois blocs. Les deux nombres à gauche indiquent les appels à \texttt{cudaMalloc} avant et avec réutilisation.}{fig:alloc}{bench/gpu/allocation/allocator_measure.py}
 Pour les 64 phages de la figure~\ref{fig:alloc}, la sonde compte 4\,032 puis 250 allocations physiques. Le pic reste de 150\,892 octets. Les temps et leur dispersion distinguent le coût d'allocation sur les petits lots de celui des mises à jour de la matrice.
 
 \synthese{Sur le lot de phages, les trois processus passent de \(23{,}32\pm1{,}26\) à \(9{,}35\pm0{,}22\)\,s avec la réutilisation des tampons. Leur durée de vie réduit les allocations sans changer le pic mémoire du lot.}

@@ -1,0 +1,12 @@
+\subsection{Concentration du travail entre rangs}\label{sec:concentration}
+
+Le maximum de charge décrit un seul rang. Pour savoir combien de rangs portent le calcul, on classe leurs charges par ordre décroissant, \(W_{(1)}\ge\cdots\ge W_{(48)}\). La part des cellules attribuées aux \(k\) premiers rangs est
+\[
+  C(k)=\frac{\sum_{r=1}^{k}W_{(r)}}{\sum_{r=1}^{48}W_{(r)}}.
+\]
+Un partage égal suit la droite \(C(k)=k/48\). La figure~\ref{fig:rank-work} compare trois politiques sur les mêmes 8\,128 paires, en ordre de longueur des fragments. Chaque paire contribue le produit des deux longueurs, quelle que soit la durée de son alignement.
+
+\chart{distributed/concentration_rangs.png}{Part des cellules calculées par les rangs les plus chargés sur deux nœuds. Le ruban donne l’intervalle de confiance ponctuel à 95\,\% sur cinq lancements avec vol. La barre à douze rangs donne l’écart-type. Les répartitions statiques se reproduisent à l’identique.}{fig:rank-work}{python/studies/rank_concentration.py}
+Avec le vol, les douze rangs les plus chargés exécutent en moyenne \(56{,}5\,\%\) des cellules (écart-type \(2{,}0\) points, IC à 95\,\% de \(54{,}0\) à \(59{,}0\,\%\)). La répartition varie selon les transferts de paires entre rangs. La section suivante conserve les politiques d’attribution et change le moteur de calcul à l’intérieur de chaque rang.
+
+\synthese{Sur 48 rangs, les douze premiers reçoivent \(77{,}0\,\%\) du travail avec des blocs de Hilbert de même effectif. Pondérer ces blocs par le nombre de cellules ramène leur part à \(25{,}2\,\%\), pour un quart des rangs.}

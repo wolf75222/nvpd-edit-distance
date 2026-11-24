@@ -1,21 +1,26 @@
 \begin{tikzpicture}[x=1cm,y=1cm,font=\footnotesize\rmfamily,
- plage/.style={fill=powderTeal!30,draw=powderBlue!55!black,rounded corners=1pt,minimum height=7mm,text width=22mm,align=center},
- dep/.style={-{Latex[length=1.7mm]},line width=.6pt}]
-\node[align=left,anchor=west] at (.4,2.05) {\textbf{a)} Calcul d'une ligne};
-\node[align=right,anchor=east] at (0,1.35) {ligne \(i\)};
-\node[align=right,anchor=east] at (0,-.2) {ligne \(i+1\)};
+  tile/.style={draw=black!65,rounded corners=1pt,minimum height=5.7mm,minimum width=17mm},
+  edge/.style={-{Latex[length=1.45mm]},draw=black!70,line width=.5pt},
+  label/.style={anchor=east,inner sep=2pt},
+  heading/.style={anchor=west,inner sep=0pt,font=\small\bfseries\rmfamily}]
+\node[heading] at (0,1.57) {a) Une équipe par paire};
+\node[label] at (2.4,.89) {ligne \(i\)};
+\node[label] at (2.4,-.66) {ligne \(i+1\)};
 \foreach \t in {0,1,2,3} {
-  \pgfmathsetmacro{\xx}{1.6+2.5*\t}
-  \node[plage,fill=powderBlue!40] at (\xx,1.35) {colonnes \(J_{\t}\)};
-  \node[plage] at (\xx,-.2) {colonnes \(J_{\t}\)};
-  \draw[dep] (\xx,.98) -- (\xx,.71);
-  \draw[dep] (\xx,.43) -- (\xx,.17);
+  \pgfmathsetmacro{\x}{3.55+2.05*\t}
+  \node[tile,fill=powderBlue!27] (prev\t) at (\x,.89) {\(J_{\t}\)};
+  \node[tile,fill=powderTeal!25] (next\t) at (\x,-.66) {\(J_{\t}\)};
+  \draw[edge] (prev\t.south)--(\x,.13);
+  \draw[edge] (\x,.10)--(next\t.north);
 }
-\draw[line width=1.3pt] (.45,.57)--(10.25,.57);
-\node[fill=white,inner xsep=5pt,inner ysep=0pt] at (5.35,.57) {ligne \(i\) entièrement disponible};
-\node[align=left,anchor=west] at (.4,-.93)
-  {Lecture de \(P\), écriture de \(Q\) sur la ligne \(i\). Les rôles de \(P\) et \(Q\) s'inversent à la ligne suivante.};
-\node[align=left,anchor=west] at (.4,-1.65) {\textbf{b)} Matrice de 120 paires sur huit cœurs EPYC};
-\node[plage,text width=4.25cm] at (2.7,-2.5) {Équipe affectée à une paire\\\(227{,}89\pm1{,}67\) ms};
-\node[plage,text width=4.25cm] at (7.9,-2.5) {Paires réparties entre les fils\\\(43{,}41\pm0{,}42\) ms};
+\draw[line width=1pt] (2.56,.12)--(10.65,.12);
+\node[label] at (2.4,.12) {barrière};
+\node[anchor=west] at (10.7,.89) {plages de colonnes};
+\node[heading] at (0,-1.52) {b) Une paire par fil};
+\foreach \y/\name/\first/\second in {-2.14/0/{(0,1)}/{(1,2)},-2.86/1/{(0,2)}/{(1,3)}} {
+  \node[label] at (2.4,\y) {fil \(\name\)};
+  \node[tile,fill=powderTeal!25,minimum width=26mm] (first\name) at (4,\y) {paire \(\first\)};
+  \node[tile,fill=powderTeal!25,minimum width=26mm] (second\name) at (8.2,\y) {paire \(\second\)};
+  \draw[edge] (first\name.east)--(second\name.west);
+}
 \end{tikzpicture}

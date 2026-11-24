@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.ticker import NullLocator, ScalarFormatter
 
 
@@ -19,6 +20,11 @@ COLORS = ["#8b9dc3", "#c98b9a", "#7fa8a1", "#d9c28a", "#a5a5a5", "#a88fb8"]
 INK = "#000000"
 PAPER = "#ffffff"
 GUIDE = dict(color=INK, lw=0.7, ls="--", zorder=1)
+
+
+def powder_cmap():
+    """Coder une grandeur croissante du papier à l'encre par le bleu poudre."""
+    return LinearSegmentedColormap.from_list("powder_ink", [PAPER, COLORS[0], INK])
 
 
 class _FrenchScalarFormatter(ScalarFormatter):
@@ -43,7 +49,7 @@ def use_style():
         "font.family": "serif", "font.serif": ["Times New Roman", "Liberation Serif",
                                                "Nimbus Roman", "DejaVu Serif"],
         "mathtext.fontset": "stix", "font.size": 9, "axes.labelsize": 9, "axes.titlesize": 9,
-        "legend.fontsize": 7.5, "xtick.labelsize": 8, "ytick.labelsize": 8,
+        "legend.fontsize": 9, "xtick.labelsize": 8.5, "ytick.labelsize": 8.5,
         "axes.prop_cycle": plt.cycler(color=COLORS), "axes.linewidth": 0.8, "axes.edgecolor": INK,
         "text.color": INK, "axes.labelcolor": INK, "xtick.color": INK, "ytick.color": INK,
         "axes.axisbelow": True, "axes.grid": True, "axes.grid.which": "major",
@@ -84,7 +90,7 @@ def legend_above(figure, axes, ncol):
         handles, labels = axis.get_legend_handles_labels()
         entries.update(zip(labels, handles))
     figure.legend(entries.values(), entries.keys(), loc="outside upper center",
-                  ncol=ncol, columnspacing=1.25, handlelength=1.7, fontsize=7)
+                  ncol=ncol, columnspacing=1.1, handlelength=1.6)
 
 
 def estimate(axis, position, result, color, *, marker="o", label=None, horizontal=False,
@@ -119,7 +125,7 @@ def value_label(axis, x, y, value, digits=2, *, horizontal=False):
     offset = (4, 0) if horizontal else (0, 4)
     axis.annotate(text, (x,y), xytext=offset, textcoords="offset points",
                   ha="left" if horizontal else "center", va="center" if horizontal else "bottom",
-                  fontsize=7, zorder=4)
+                  fontsize=8, zorder=4)
 
 
 def comparison(axis, row, estimates, *, annotate=True, digits=2):
@@ -140,7 +146,7 @@ def comparison(axis, row, estimates, *, annotate=True, digits=2):
             text = f"{center:.{digits}f}".replace(".", ",")
             axis.annotate(text, (center, row), xytext=(-2 if left else 2, 5),
                           textcoords="offset points", ha="right" if left else "left",
-                          va="bottom", fontsize=6.8, color=INK, zorder=5)
+                          va="bottom", fontsize=8, color=INK, zorder=5)
 
 
 def category_rows(axis, labels, xlabel):

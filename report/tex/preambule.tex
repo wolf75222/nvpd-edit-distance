@@ -20,6 +20,10 @@
 \newcommand{\DocHeader}{Distance d'édition sur ROMEO}
 \newcommand{\reposource}[1]{\href{https://github.com/wolf75222/nvpd-edit-distance/blob/main/#1}{\nolinkurl{#1}}}
 \newcommand{\sourcefig}[1]{\par\vspace{1pt}{\raggedright\footnotesize Code\,: \reposource{#1}\par}}
+\BeforeBeginEnvironment{figure}{\par}
+\AfterEndEnvironment{figure}{\par}
+\BeforeBeginEnvironment{algorithm}{\par}
+\AfterEndEnvironment{algorithm}{\par}
 \newcommand{\chart}[5][.94\linewidth]{\begin{figure}[!htbp]\centering
   \includegraphics[width=#1,height=.35\textheight,keepaspectratio]{../figures/#2}
   \caption{#3}\label{#4}\sourcefig{#5}\end{figure}}
@@ -30,7 +34,7 @@
 \setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
 \setcounter{topnumber}{3}\setcounter{bottomnumber}{2}\setcounter{totalnumber}{5}
 \renewcommand{\topfraction}{.9}\renewcommand{\bottomfraction}{.85}
-\renewcommand{\floatpagefraction}{.64}\renewcommand{\textfraction}{.09}
+\renewcommand{\floatpagefraction}{.82}\renewcommand{\textfraction}{.09}
 \newcommand{\doctitle}[1]{\thispagestyle{firstpage}\begin{center}
  % Trim the margins of the official images so their visible lower edges align.
  \includegraphics[trim=28.8bp 27.8bp 28.8bp 28.4bp,clip,height=14.5mm]{assets/logos/urca.png}%

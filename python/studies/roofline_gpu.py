@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from bench_stats import sample
-from ct_plot import COLORS, INK, column_titles, estimate, join, label_panels, legend_above
+from ct_plot import COLORS, INK, column_titles, estimate, join, label_panels, legend_above, use_style
 
 CALIBRATION_JOB = "839177"
 LOCAL_JOB = "839191"
@@ -17,7 +17,8 @@ def make_figure(root: Path):
     data = root / "results" / "roofline" / "gpu"
     calibration = pd.read_csv(data / CALIBRATION_JOB / "calibration.csv")
     trials = pd.read_csv(data / LOCAL_JOB / "trials.csv")
-    figure, axes = plt.subplots(1, 3, figsize=(9.6, 3.05), layout="constrained")
+    use_style()
+    figure, axes = plt.subplots(1, 3, figsize=(9.1, 3.25), layout="constrained")
     left = axes[0]
     copy = calibration[calibration.method == "stream-copy"]
     reg = calibration[calibration.method == "register-updates"]
@@ -32,6 +33,10 @@ def make_figure(root: Path):
         linewidth=0.9,
         label="Enveloppe empirique",
     )
+    ridge = ceiling / bandwidth
+    left.annotate(f"$I^*$ = {ridge:.2f}".replace(".", ","), (ridge, ceiling),
+                  xytext=(-25, 4), textcoords="offset points", ha="right", color=INK,
+                  arrowprops=dict(arrowstyle="-", color=INK, linewidth=.65), fontsize=9)
     for steps, rows in calibration[calibration.method == "stream-updates"].groupby("steps"):
         stats = sample(rows.updates / rows.seconds / 1e9)
         estimate(

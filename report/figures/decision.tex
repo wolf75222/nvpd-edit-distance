@@ -1,0 +1,32 @@
+\begin{tikzpicture}[x=1cm,y=1cm,font=\small\rmfamily,
+  branch/.style={draw=black!70,line width=.45pt},
+  next/.style={branch,-{Latex[length=1.5mm]}},
+  stage/.style={draw=black!65,rounded corners=1pt,align=center,
+    text width=2.25cm,minimum height=8mm,inner sep=2pt},
+  option/.style={anchor=west,align=left,inner xsep=3pt,inner ysep=1pt}]
+\node[stage,fill=powderGrey!18,text width=1.65cm] (root) at (0,0) {Sortie\par demandée};
+\node[stage,fill=powderBlue!30] (score) at (3.1,2.1) {Score d'une paire};
+\node[stage,fill=powderRose!24] (trace) at (3.1,0) {Chemin optimal};
+\node[stage,fill=powderTeal!28] (batch) at (3.1,-2.1) {Matrice des scores};
+\draw[branch] (root.east) -- (1.5,0);
+\draw[branch] (1.5,2.1) -- (1.5,-2.1);
+\foreach \id in {score,trace,batch}{\draw[next] (1.5,0 |- \id.west) -- (\id.west);}
+\node[option] (band) at (5.15,2.57)
+  {\textbf{NvPD en bande}\\Élargir tant que le score restreint dépasse le budget \(k\).};
+\node[option] (wave) at (5.15,1.63)
+  {\textbf{Calcul par fronts}\\Étendre les fronts de WFA2 jusqu’à la case terminale.};
+\node[option] (cut) at (5.15,.47)
+  {\textbf{Coupe vérifiée}\\Tracer les fragments séparément, puis concaténer les chemins.};
+\node[option] (whole) at (5.15,-.47)
+  {\textbf{Coupe rejetée}\\Réunir les fragments adjacents et appliquer NvPD ou BiWFA.};
+\node[option] (length) at (5.15,-1.63)
+  {\textbf{Entrées triées par longueur}\\Partager le parcours de Hilbert selon le poids \(m_i m_j\).};
+\node[option] (locus) at (5.15,-2.57)
+  {\textbf{Entrées groupées par locus}\\Distribuer les paires du panel dense dans l'ordre cyclique.};
+\foreach \id/\upper/\lower in {score/band/wave,trace/cut/whole,batch/length/locus}{
+  \draw[branch] (\id.east) -- (4.77,0 |- \id.east);
+  \draw[branch] (4.77,0 |- \upper.west) -- (4.77,0 |- \lower.west);
+  \draw[next] (4.77,0 |- \upper.west) -- (\upper.west);
+  \draw[next] (4.77,0 |- \lower.west) -- (\lower.west);
+}
+\end{tikzpicture}

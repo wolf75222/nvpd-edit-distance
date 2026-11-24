@@ -1,6 +1,6 @@
 \subsection{Fenêtres homologues du chromosome humain}
 Les fenêtres homologues comparent des segments correspondants de GRCh38.p14 et T2T-CHM13v2.0~\cite{t2t,chmreleases}. Sur le chromosome 21, les intervalles commencent en 34\,000\,000 et 32\,381\,795, en coordonnées de base zéro. Les ancres de 41 bases qui encadrent chaque intervalle sont uniques sur leur chromosome. La chaîne de correspondance UCSC place leurs extrémités dans le même ordre sur le brin positif. Les insertions et les délétions internes restent dans les fenêtres.
-\chart{biology/chromosome21.png}{Les fenêtres homologues et la copie du chromosome portant des insertions connues comparent les durées et les empreintes des méthodes.}{fig:humain}{bench/human/human.sbatch}
+\chart{biology/chromosome21.png}{Chaque ligne associe le temps et la mémoire d’un alignement. Les hachures indiquent le maximum résident échantillonné et les barres pleines, le pic système.}{fig:humain}{bench/human/human.sbatch}
 Dans la figure~\ref{fig:humain}, cinq processus par méthode alignent les mêmes fenêtres après un premier appel complet. Pour deux puis quatre millions de bases de référence, les distances valent \(5\,599\) et \(12\,482\). La portée \(R\) de l'index atteint 290 puis 622 colonnes, ce qui impose un lancement CUDA par ligne. NvPD prend \(17{,}558\pm0{,}115\) puis \(90{,}420\pm0{,}276\)\,s, allocations, transferts et synchronisation compris. L'initialisation du contexte a lieu pendant l'échauffement. Pour les mêmes fenêtres, WFA2 sur un cœur Grace prend \(0{,}0539\pm0{,}0006\) puis \(0{,}3455\pm0{,}0019\)\,s, et edlib \(0{,}7864\pm0{,}0079\) puis \(2{,}9980\pm0{,}0013\)\,s.
 
 La mémoire hôte est mesurée dans cinq processus par méthode. À quatre millions de bases, le pic RSS du processus CUDA vaut 252\,Mio. Les compteurs de pic des bibliothèques Grace restent à zéro dans le premier relevé. Un second passage échantillonne leur RSS environ chaque milliseconde. Les maxima observés, bornes inférieures du pic réel, valent \(24{,}125\pm0{,}000\)\,Mio pour edlib et \(20{,}988\pm0{,}028\)\,Mio pour WFA2. Les tampons explicitement réservés sur le GPU sont comptés à part.
@@ -23,11 +23,11 @@ UPGMA, la méthode de classification moyenne de Sokal et Michener~\cite{upgma}, 
 \]
 Dans NJ, la première branche mesure \(d_{ij}/2+(s_i-s_j)/(2(r-2))\), la seconde complète \(d_{ij}\). À chaque fusion, les deux implémentations examinent toutes les paires actives. Pour \(N\) feuilles, elles utilisent \(O(N^3)\) opérations et \(O(N^2)\) distances stockées.
 
-Les phylogrammes de la figure~\ref{fig:arbres} utilisent la longueur cumulée des branches comme abscisse. Les échelles horizontales sont propres à chaque panneau. La longueur patristique se calcule par \(t_{ij}=\sum_{e\in\operatorname{path}(i,j)}\ell_e\). Le choix du point de dessin initial de NJ laisse ces sommes invariantes.
+Les phylogrammes de la figure~\ref{fig:arbres} utilisent la longueur cumulée des branches comme abscisse. La longueur patristique se calcule par \(t_{ij}=\sum_{e\in\operatorname{path}(i,j)}\ell_e\). Le choix du point de dessin initial de NJ laisse ces sommes invariantes.
 
-\begin{figure}[!tbp]\centering
+\begin{figure}[!htbp]\centering
 \resizebox{!}{.68\textheight}{\input{figures/arbres}}
-\caption{Les deux phylogrammes portent les identifiants des séquences et une barre horizontale de dix éditions pour chaque arbre.}\label{fig:arbres}\sourcefig{report/figures/phylograms.py}
+\caption{Les deux phylogrammes partagent une échelle horizontale, marquée par une barre de dix éditions. Les pointillés relient les feuilles à leurs identifiants.}\label{fig:arbres}\sourcefig{report/figures/phylograms.py}
 \end{figure}
 
 
@@ -47,6 +47,7 @@ où \(P\) désigne le nombre de paires et \(t_{ij}\) la longueur du chemin entre
 \chart[.70\linewidth]{biology/phylogenie.png}{Les écarts aux conditions d'ultramétrie et d'additivité sont comparés aux résidus entre distances d'édition et longueurs des chemins.}{fig:phage}{scripts/phylogeny/phylo_fit.py}
 \synthese{Sur 2\,016 paires, la racine de l'erreur quadratique moyenne vaut 14,89 éditions pour UPGMA et 3,56 pour NJ. Le meilleur ajustement moyen laisse subsister des écarts de plus de 60 éditions sur certaines paires.}
 
+\FloatBarrier
 \subsection{Structure des groupes dans les arbres de surveillance}
 La cohorte SARS-CoV-2 associe la référence Wuhan-Hu-1 et neuf accessions de chacun de sept lignages Pango. Cet effectif imposé permet de comparer les groupes, mais leur fréquence dans la population reste inconnue. Les distances des 64 entrées servent à tester si une arête sépare toutes les feuilles d'un groupe. Dans un arbre enraciné, un groupe est retrouvé si les descendants d'une arête positive coïncident avec ses membres. Pour NJ, non enraciné, les deux côtés de l'arête sont examinés. Sur les 1\,905\,372 caractères lus, 65\,588 sont ambigus. La distance compte les différences entre caractères déposés, y compris aux positions ambiguës.
 \chart{biology/phylogenie_surveillance.png}{Les distances globales entre paires et les groupes isolés par une arête sont comparés aux partitions de l'arbre de surveillance sur les identifiants communs.}{fig:surveillance}{scripts/phylogeny/phylo_groups.py}

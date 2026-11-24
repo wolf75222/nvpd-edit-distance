@@ -16,7 +16,7 @@ L'algorithme~\ref{alg:mpi} décrit les deux scalaires dont chaque rang a besoin 
 \end{algorithm}
 \schema{mpi}{Le parcours collectif échange deux scores par rang à chaque ligne. Une réduction rassemble les scores du lot.}{fig:comm}{src/mpi/mpi.cpp}
 Avec le collectif et \(r\) rangs, chacun reçoit \(2r\) entiers par ligne. Dans le lot de la figure~\ref{fig:comm}, le rang \(q\) prend les paires d'indices \(q,q+r,\ldots\). Chaque fil traite une paire en SIMD. Le temps mesuré est le maximum des temps de rang, hors lecture du FASTA.
-\chart{distributed/echelle_mpi.png}{À charge fixe, le passage de vingt-quatre à quarante-huit rangs de huit fils change le temps d'une paire et celui d'une matrice.}{fig:mpifort}{bench/mpi/scaling.py}
+\chart{distributed/echelle_mpi.png}{À charge fixe, le rapport des temps sur un et deux nœuds distingue le ralentissement des paires isolées du gain obtenu sur les lots.}{fig:mpifort}{bench/mpi/scaling.py}
 La figure~\ref{fig:mpifort} donne la moyenne de sept blocs indépendants après deux échauffements. L’ordre des essais est randomisé. Chaque configuration réserve un ou deux nœuds entiers, soit 192 ou 384 cœurs. Sur la paire de 20\,000 lignes, le temps passe de \(91{,}49\pm0{,}78\) à \(997{,}1\pm12{,}5\)\,ms. Le temps du lot synthétique de 2\,016 paires passe de \(768{,}17\pm3{,}62\) à \(528{,}33\pm0{,}93\)\,ms.
 
 \synthese{Sur deux nœuds, l'efficacité forte atteint 72,70\,\% sur le lot synthétique et 71,35\,\% sur le phage. Elle tombe à 4,59\,\% sur la paire carrée et à 13,70\,\% sur la paire large.}
@@ -44,7 +44,7 @@ L'expérience faible compare deux nœuds complets à un nœud complet, avec huit
  \frac{2W/T_{384}(2W)}{W/T_{192}(W)}=2E_{\mathrm{weak}}.
 \]
 Pour une paire, 1\,024 lignes sont conservées et la largeur vaut 256 ou 4\,096 colonnes par cœur. Pour le lot, les séquences comptent 8\,192 bases. Les 85 puis 120 séquences donnent respectivement \(85\times84/2=3\,570\) et \(120\times119/2=7\,140\) paires. Le travail total double dans les trois cas. Dans le lot, le nombre de cases par cœur est une moyenne sur les travailleurs.
-\chart{distributed/mpi_faible.png}{Sept blocs par configuration donnent les temps moyens et l'efficacité faible des deux décompositions MPI.}{fig:mpifaible}{bench/mpi/scaling.py}
+\chart{distributed/mpi_faible.png}{Au doublement du travail et du nombre de cœurs, sept blocs donnent les temps et l’efficacité faible. Les crochets délimitent les intervalles de confiance à 95\,\%.}{fig:mpifaible}{bench/mpi/scaling.py}
 Sur la figure~\ref{fig:mpifaible}, le passage à deux nœuds porte la durée du lot de \(691{,}97\pm7{,}28\) à \(890{,}94\pm3{,}47\)\,ms. Sur une paire, l'efficacité passe de 10,07 à 30,57\,\% lorsque le travail local par ligne est multiplié par seize. Le nombre de collectifs reste fixé à 1\,024.
 
 \synthese{Pour le lot indépendant, l'efficacité faible atteint \(77{,}67\pm0{,}76\)\,\%. Sur la paire large, l'IC à 95\,\% s'étend de 19,33 à 41,80\,\%. La dispersion sur un nœud limite la précision du rapport.}

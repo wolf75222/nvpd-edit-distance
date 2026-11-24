@@ -1,15 +1,20 @@
-\begin{tikzpicture}[font=\footnotesize\rmfamily,
- module/.style={fill=powderBlue!25,draw=powderBlue!55!black,rounded corners=1pt,text width=2.65cm,minimum height=9mm,
- align=center,inner sep=2pt}, flow/.style={-{Latex[length=1.6mm]},line width=.5pt}]
-\node[module] (f) at (0,0) {FASTA\par index FAI optionnel};
-\node[module,fill=powderTeal!42] (p) at (3.6,0) {paire, lot ou matrice};
-\node[module] (n) at (7.4,1.05) {DP et NvPD\par CPU, GPU, Kokkos};
-\node[module] (l) at (7.4,0) {bande, edlib, WFA2\par et BiWFA};
-\node[module] (m) at (7.4,-1.05) {MPI\par bandes ou paires};
-\node[module,fill=powderTeal!42] (o) at (11.2,0) {score, chemin\par ou matrice};
-\draw[flow] (f)--(p);
-\draw (p.east)--(5.55,0);
-\foreach \dest in {n,l,m}{\draw[flow] (5.55,0) |- (\dest.west);}
-\foreach \src in {n,l,m}{\draw (\src.east) -| (9.34,0);}
-\draw[flow] (9.34,0)--(o.west);
+\begin{tikzpicture}[font=\small\rmfamily,
+  block/.style={draw=black!65,rounded corners=1pt,align=center,
+    inner xsep=4pt,inner ysep=3pt,minimum height=9mm},
+  flow/.style={-{Latex[length=1.5mm]},draw=black!70,line width=.5pt}]
+\node[block,fill=powderGrey!18] (fasta) at (0,0) {FASTA};
+\node[block,fill=powderBlue!25] (local) at (2.9,.77) {\texttt{editdist}};
+\node[block,fill=powderBlue!25] (mpi) at (2.9,-.77) {\texttt{editdist-mpi}};
+\node[block,fill=powderGold!20,text width=5.2cm] (kernels) at (7.25,.77)
+  {DP, NvPD, edlib et fronts d'onde\\Calcul sur processeur ou accélérateur};
+\node[block,fill=powderGold!20,text width=5.2cm] (ranks) at (7.25,-.77)
+  {NvPD sur plusieurs rangs MPI\\Répartition des colonnes ou des paires};
+\node[block,fill=powderTeal!24,text width=3.0cm] (score) at (12.1,.77)
+  {Score, CIGAR\\ou matrice};
+\node[block,fill=powderTeal!24,text width=3.0cm] (scores) at (12.1,-.77)
+  {Score, liste de scores\\ou matrice};
+\draw[draw=black!70] (fasta.east)--(1.18,0) (1.18,.77)--(1.18,-.77);
+\foreach \id in {local,mpi}{\draw[flow] (1.18,0 |- \id.west)--(\id.west);}
+\draw[flow] (local)--(kernels); \draw[flow] (mpi)--(ranks);
+\draw[flow] (kernels)--(score); \draw[flow] (ranks)--(scores);
 \end{tikzpicture}

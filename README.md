@@ -133,6 +133,16 @@ Les autres politiques sont `static`, `cyclic`, `hilbert` et `steal`. L’option 
 
 Les noyaux et la ligne de commande se trouvent dans `src/`, les interfaces dans `include/chps/` et les tests dans `tests/`. Les outils de `scripts/` préparent les données et les arbres. Les bancs de `bench/` produisent les tables de `results/`. [Sources](src/) · [Tests](tests/) · [Résultats](results/)
 
-Pour régénérer les figures, utiliser Python 3.11, installer les dépendances du carnet et exécuter ses cellules dans l’ordre. [Dépendances](notebooks/requirements.txt) · [Carnet](notebooks/profil_nvpd.ipynb) · [Charte graphique](python/ct_plot.py)
+La [comparaison des temps](figures/comparison/synthese.png) couvre douze paires synthétiques. Chaque case donne le rapport NvPD/bibliothèque, son écart-type et l’intervalle de confiance à 95 % à paire fixée. La [répartition entre rangs](figures/distributed/concentration_rangs.png) montre qui exécute les cellules lorsque les paires ont des tailles inégales.
 
-Pour reconstruire les PDF, lancer `python3 report/figures/phylograms.py` à la racine, puis `tectonic rapport.tex` et `tectonic rapport-court.tex` depuis `report/`.
+Depuis la racine, les commandes suivantes régénèrent le carnet, les figures et les deux PDF avec Python 3.11 et Tectonic. La conversion du schéma TikZ en SVG utilise `pdftocairo` (Poppler).
+
+```sh
+python3.11 -m venv .venv-figures
+. .venv-figures/bin/activate
+python -m pip install -r notebooks/requirements.txt
+python report/figures/phylograms.py
+python report/figures/render_decision.py
+python -m jupyter nbconvert --to notebook --execute --inplace notebooks/profil_nvpd.ipynb
+(cd report && tectonic rapport.tex && tectonic rapport-court.tex)
+```

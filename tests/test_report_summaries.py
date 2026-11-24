@@ -1,4 +1,4 @@
-"""A single summary closes a section together with its last subsection."""
+"""Check the structure and cross-references of both LaTeX reports."""
 from pathlib import Path
 import re
 import unittest
@@ -13,7 +13,17 @@ def expand_sections(path):
                   path.read_text(encoding="utf-8"))
 
 
-class ReportSummaries(unittest.TestCase):
+class ReportStructure(unittest.TestCase):
+    def test_figures_and_algorithms_have_text_references(self):
+        for report in ("rapport.tex", "rapport-court.tex"):
+            text = expand_sections(REPORT / report)
+            label = r"\{((?:fig|alg):[\w-]+)\}"
+            references = set(re.findall(r"\\ref" + label, text))
+            labels = set(re.findall(label, re.sub(r"\\ref" + label, "", text)))
+            with self.subTest(report=report):
+                self.assertTrue(labels)
+                self.assertEqual(labels, references)
+
     def test_one_summary_per_closing_passage(self):
         for report in ("rapport.tex", "rapport-court.tex"):
             source = expand_sections(REPORT / report)
