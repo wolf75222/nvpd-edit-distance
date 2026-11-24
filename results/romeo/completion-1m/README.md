@@ -10,6 +10,19 @@ ROMEO a alloué 24 cœurs sur chacun de deux nœuds AMD EPYC 9654. Chaque vague 
 
 Le temps mesuré entoure l’appel complet au calcul de distance, après la lecture du FASTA. Il inclut la construction de l’index de NvPD. La référence a exactement 1 000 000 de bases. Les mutants vont de 999 542 à 1 000 699 bases. Le débit dense utilise les dimensions réelles de chaque paire, `m × n / (temps × 10⁹)`. La mémoire est le pic RSS du processus. Une étape distincte recalcule chaque distance avec edlib et WFA2. Le collecteur vérifie le SHA-256 du FASTA, les deux longueurs, la graine et la distance avec les deux résultats historiques et les deux nouveaux résultats de bibliothèque.
 
+## Résultats
+
+| Calcul, 8 threads | Taux | Temps médian (s) | Min.–max. (s) | Débit médian (GCUPS) | Pic RSS maximal (Mio) |
+|---|---:|---:|---:|---:|---:|
+| Anti-diagonales | 2 % | 190,29 | 190,11–190,46 | 5,256 | 16,36 |
+| Anti-diagonales | 5 % | 190,07 | 189,96–190,98 | 5,262 | 16,36 |
+| Anti-diagonales | 10 % | 190,04 | 189,81–191,03 | 5,260 | 16,36 |
+| NvPD initial | 2 % | 310,91 | 308,83–311,53 | 3,217 | 28,18 |
+| NvPD initial | 5 % | 309,96 | 309,20–312,15 | 3,227 | 27,13 |
+| NvPD initial | 10 % | 310,25 | 308,67–311,01 | 3,224 | 27,97 |
+
+Sur les quinze paires, le rapport médian des temps appariés NvPD initial / anti-diagonales atteint 1,628. Les six témoins se rapprochent des mesures historiques à 0,12–0,17 % près pour les anti-diagonales et à 1,41–2,90 % près pour NvPD. Les témoins ont tous pris moins de temps lors de la nouvelle exécution. Les cinq vagues de calcul, la compilation et les vérifications ont occupé l’allocation pendant 27 min 34 s.
+
 ## Fichiers
 
 - `trials.csv` contient les trente mesures à huit threads de cette campagne.
@@ -17,6 +30,7 @@ Le temps mesuré entoure l’appel complet au calcul de distance, après la lect
 - `coverage.tsv` joint les mesures historiques et nouvelles par algorithme et paire. Les six lignes témoins donnent le rapport du nouveau temps à l’ancien. Pour la réplique 1, le temps séquentiel historique permet aussi de calculer une accélération sur la même entrée.
 - `summary.csv` résume uniquement les cinq paires de la nouvelle série pour chaque algorithme et taux. L’écart type porte sur la variation entre entrées.
 - `placement.tsv` et `environment.txt` enregistrent l’affinité de chaque mesure OpenMP et les paramètres de compilation.
+- `accounting.tsv` conserve les états et durées Slurm de chaque étape. `source-check.txt` consigne le contrôle des sources et `benchmark.sha256` identifie les versions du lanceur et du collecteur utilisées par le job.
 
 Depuis la racine du dépôt, générer le corpus synthétique avec sa graine par défaut puis soumettre le job. Il extrait la révision initiale dans un répertoire temporaire et vérifie son manifeste de sources.
 

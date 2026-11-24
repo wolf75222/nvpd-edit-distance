@@ -1,0 +1,12 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Model name:                              AMD EPYC 9654 96-Core Processor
+Release -O3 -DNDEBUG -march=native
+original CLI revision 0cc2454b8c4778ddd8599e02d4f6e237c5e02650
+7a546533857e873fda4ca11185cba94c70561483977d4f81f2399c4fb8693c66  src/main.cpp
+eb8dd38c31d714c0477bc5479a8301b532c6bbfc71cf924738ca9ec57dc70dc1  src/dp.cpp
+28242b98ce45a329bdc94a54e7fec7cdde53a030ab407a171408466710e528f0  src/fasta.cpp
+fdaa6a749067428e0fc78685aac1de4202039f4ed300d331304dea550aaf0a1d  bench/matrix_omp.py
+467c619091d07b9bb77d70a0b81a294340d5cad569d032b14f7b10efb5e60d9a  bench/matrix_omp.sbatch
+f3ceb58cf61a9b722dee2ab8840354c14f8eddde8257d1b4b0bd43241e2a4d0c  intra
+16649b556c90a643cbe18f1f7eb0657042366242e38fcde37ca58acec2335dec  inter
