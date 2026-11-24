@@ -102,6 +102,25 @@ def main():
         result = read(empty, "--fai", index)
         if result.returncode or json.loads(result.stdout)["distance"] != 1:
             raise AssertionError(result.stderr or result.stdout)
+        # Samtools 1.21 omits the leading empty record and reports LINEWIDTH=2
+        # for this one-base final line even when the FASTA lacks its final LF.
+        index.write_text("b\t1\t6\t1\t2\n")
+        result = read(empty, "--fai", index)
+        if result.returncode or json.loads(result.stdout)["distance"] != 1:
+            raise AssertionError(result.stderr or result.stdout)
+        # Match across several omitted records and keep rejecting any omitted
+        # nonempty record, including after the last FAI line.
+        cohort = b">a\nA\n>b\n>c\n>d\nCC\n"
+        index.write_text(f"a\t1\t3\t1\t2\nd\t2\t{cohort.index(b'CC')}\t2\t3\n")
+        path.write_bytes(cohort)
+        matrix_args = [binary, "matrix", "--algorithm", "edlib", "--input", path]
+        if subprocess.check_output(matrix_args + ["--fai", index]) != subprocess.check_output(matrix_args):
+            raise AssertionError("matrix disagrees across omitted empty FASTA records")
+        for invalid in (cohort.replace(b">b\n", b">b\nA\n"), cohort + b">e\nA\n"):
+            path.write_bytes(invalid)
+            result = subprocess.run(matrix_args + ["--fai", index], capture_output=True, text=True)
+            if not result.returncode or "FAI" not in result.stderr:
+                raise AssertionError("indexed reader accepted missing nonempty record")
         vector_boundaries(binary, path, index)
     print("FASTA normalization, indexed pair/matrix, empty records, and stale/malformed index checks passed")
 

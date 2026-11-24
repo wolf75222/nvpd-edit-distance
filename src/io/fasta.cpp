@@ -50,12 +50,12 @@ bool is_upper_acgt(std::string_view line) {
     });
 }
 
-// Read one standard five-column FAI entry per FASTA header. Coordinates refer
-// to uncompressed bytes. Validate before reserving and while decoding.
+// FAI offsets refer to uncompressed bytes. Samtools can omit empty records.
 class FastaIndex {
     std::ifstream file_;
     std::uintmax_t file_size_;
     std::size_t remaining_ = 0, line_bases_ = 0, line_bytes_ = 0;
+    std::string pending_;
 
     static std::size_t number(std::string_view field) {
         std::size_t n = 0;
@@ -74,7 +74,11 @@ public:
     std::size_t next(std::string_view id, std::size_t offset) {
         if (remaining_) throw std::runtime_error("FAI length exceeds decoded sequence");
         std::string row;
-        if (!std::getline(file_, row)) throw std::runtime_error("missing FAI entry");
+        row.swap(pending_);
+        if (row.empty() && !std::getline(file_, row)) {
+            if (!file_.eof() || file_.bad()) throw std::runtime_error("FAI read failed");
+            return 0;
+        }
         if (!row.empty() && row.back() == '\r') row.pop_back();
         std::string_view rest(row);
         std::array<std::string_view, 5> fields;
@@ -85,9 +89,14 @@ public:
             rest.remove_prefix(tab + 1);
         }
         fields.back() = rest;
+        if (fields[0] != id) {
+            // Keep this entry for the next header. line() will reject any bases
+            // in the current record because its permitted length remains zero.
+            pending_.swap(row);
+            return 0;
+        }
         const auto length = number(fields[1]);
-        if (fields[0] != id || number(fields[2]) != offset)
-            throw std::runtime_error("FAI name or offset disagrees with FASTA");
+        if (number(fields[2]) != offset) throw std::runtime_error("FAI offset disagrees with FASTA");
         line_bases_ = number(fields[3]);
         line_bytes_ = number(fields[4]);
         if (offset > file_size_ || length > file_size_ - offset || line_bases_ > length ||
@@ -109,7 +118,7 @@ public:
     }
 
     void finish() {
-        if (remaining_ || file_.peek() != std::char_traits<char>::eof() || file_.bad())
+        if (remaining_ || !pending_.empty() || file_.peek() != std::char_traits<char>::eof() || file_.bad())
             throw std::runtime_error("FAI has incorrect length or extra entries");
     }
 };
