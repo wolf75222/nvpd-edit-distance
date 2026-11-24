@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build two homologous chr21 pairs and a whole-chromosome sparse-edit control."""
+"""Prepare homologous chromosome windows and whole human chromosome pairs."""
 import argparse
 import csv
 import gzip
@@ -10,6 +10,8 @@ import urllib.request
 from pathlib import Path
 
 REFS = {
+    "chm20v1": ("CP068258.1", "5b9b1e5d051827ad0b1e693d6868bf43edcbba553187aa09c1034decb2eaeb1e"),
+    "chm20v2": ("CP068258.2", "a115f944c3e4753444d189a5518e32c086bbd73e052a3f227f2a6ae6211f584f"),
     "hg38": ("NC_000021.9", "ff47a5bff4a148bc684e444e4c52eaceec1290cb6531b2d8c613becdebbad23c"),
     "hs1": ("NC_060945.1", "f210b99cc28cb8bf66a9aca6d0cd6ceaab1ef8a78ff135876f25644147e27481"),
 }
@@ -81,6 +83,7 @@ def main():
     parser.add_argument("--out", type=Path, default=Path("data/human"))
     parser.add_argument("--manifest", type=Path, default=Path("results/human/manifest.tsv"))
     parser.add_argument("--cache", type=Path, help="reuse downloaded reference files")
+    parser.add_argument("--whole-assemblies", action="store_true", help="also compare complete chromosome assemblies")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     args.manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -89,6 +92,8 @@ def main():
         cache.mkdir(parents=True, exist_ok=True)
         hg, hs = (chromosome(cache, alias) for alias in ("hg38", "hs1"))
         points = anchor_points(cache)
+        if args.whole_assemblies:
+            v1, v2 = (chromosome(cache, key) for key in ("chm20v1", "chm20v2"))
 
     rows = []
 
@@ -116,6 +121,11 @@ def main():
     mutant = b"G".join(hs[left:right] for left, right in zip(cuts, cuts[1:]))
     pair("chr21-full-insert64", hs_id, 0, len(hs), hs, hs_id, 0, len(hs), mutant,
          "insert G at 64 evenly spaced reference boundaries")
+    if args.whole_assemblies:
+        pair("chr20-assemblies", REFS["chm20v1"][0], 0, len(v1), v1, REFS["chm20v2"][0],
+             0, len(v2), v2, "T2T-CHM13 assemblies v1.0 and v2.0")
+        pair("chr21-assemblies", hg_id, 0, len(hg), hg, hs_id, 0, len(hs), hs,
+             "complete GRCh38.p14 and T2T-CHM13v2.0")
     with args.manifest.open("w", newline="") as output:
         writer = csv.DictWriter(output, rows[0].keys(), delimiter="\t", lineterminator="\n")
         writer.writeheader()

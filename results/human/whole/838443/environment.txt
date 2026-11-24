@@ -1,0 +1,5 @@
+romeo-c022
+Architecture:                            x86_64
+Model name:                              AMD EPYC 9654 96-Core Processor
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+bc6d9e4aca0ac1a355cb096869e9164a0c1c78291b5e7f5f4ef0d3cba0a10622  build-whole/editdist

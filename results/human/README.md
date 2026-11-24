@@ -38,3 +38,5 @@ Les dix-huit appels natifs ont tous donné la distance de référence. Les temps
 NvPD atteint respectivement 218,1 et 176,1 GCUPS sur les deux fenêtres. Il alloue 48 030 336 et 96 042 360 octets sur le GPU. Les pics RSS des processus CUDA sont de 216 et 252 Mio côté hôte. Sur chromosome entier, les pics RSS sont de 180 Mio pour edlib, 144 Mio pour WFA2 et 108 Mio pour la méthode en bande.
 
 Les étapes Slurm 838220.0 et 838220.1 ont terminé avec le code 0. L’étape facultative 838220.2 a échoué pendant la compilation de Kokkos 4.5.01 avec CUDA 13.0.2. Cette combinaison utilise des signatures CUDA devenues incompatibles pour les graphes et la gestion de mémoire. Le job global porte donc le code 2. [Comptabilité Slurm](838220/accounting.psv) · [Diagnostic compilateur](838220/kokkos-build-error.txt)
+
+Les [deux comparaisons entre chromosomes entiers](whole/) couvrent le chromosome 20 de CHM13 et le chromosome 21 de GRCh38 et CHM13.

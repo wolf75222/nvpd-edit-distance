@@ -1,0 +1,23 @@
+--- a/src/wavefront.cu
++++ b/src/wavefront.cu
+@@ -291,11 +291,17 @@
+     CUDA_CHECK_ERR;
+ 
+     if (print_cigars) {
++        this->h_cigars.copyIn(this->d_cigars);
+         for (int i=0; i<curr_batch_size; i++) {
+             const int curr_position = this->batch_idx * this->batch_size;
+-            edit_cigar_t* curr_cigar = this->h_cigars.generate_ascii_cigar(i);
+-            printf("%d: %s\n", this->initial_alignment + curr_position + i, curr_cigar);
+-            free(curr_cigar);
++            const edit_cigar_t* raw = this->h_cigars.get_cigar_ascii(i);
++            printf("raw %d %d ", this->initial_alignment + curr_position + i,
++                   this->h_cigars.get_backtraces(i)->distance);
++            for (size_t j=0; j<this->h_cigars.cigar_max_len && raw[j]; ++j) {
++                if (raw[j] < 0) printf("%dM", -int(raw[j]));
++                else putchar(raw[j]);
++            }
++            putchar('\n');
+         }
+     }
+ 
