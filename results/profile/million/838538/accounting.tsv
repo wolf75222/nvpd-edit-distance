@@ -1,0 +1,2 @@
+JobID|Partition|State|Elapsed|AllocCPUS|AllocNodes|NodeList|ExitCode
+838538|instant|COMPLETED|00:06:23|24|1|romeo-c022|0:0

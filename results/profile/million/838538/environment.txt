@@ -1,0 +1,8 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+flags=-std=c++20 -O3 -DNDEBUG -march=native -fopenmp
+initial=f08b4f6fcdf81de3a6ffcd60a8934cd1aca31c83 simd=4724f68bf7dbfb83b133422541b165b5c7124da1
+419c93c19f9e05ad318dcce09efe633f01ceaceaef4240d544cf39f3705a04f0  bench/million_pair.cpp
+ac0da4fbe05379c4fa1a54ab2243ce1c83154e9f57cee20511915929edc01e6e  bench/profile_million.sbatch
+06711e4b010cc9254e8b0f6f8e14fc7ff93afc522388e5b3110954b9e9e0eddb  src/dp_internal.hpp
+28242b98ce45a329bdc94a54e7fec7cdde53a030ab407a171408466710e528f0  src/fasta.cpp
