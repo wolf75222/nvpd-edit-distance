@@ -1,0 +1,4 @@
+case,fast_score,high_error_windows,final_cutoff,first_h,first_v,relative_v,relative_v_right,stored_words,score
+periodic512,128,1,128,511,447,63,-1,3,954
+periodic256-tail,128,1,128,255,191,63,-1,3,450
+identical512,0,0,0,,,,,,0

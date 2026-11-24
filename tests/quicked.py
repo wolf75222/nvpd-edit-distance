@@ -27,23 +27,25 @@ def main():
         # These periodic inputs exposed both an impossible and a plausible
         # suboptimal CIGAR score on QuickEd 1.2 with its default parameters.
         left, right = "A"*65 + "C"*64, "C"*64 + "A"*65
-        for n, padding in [(512, ""), (256, "G"*256)]:
-            a, b = (left*4)[:n] + padding, (right*4)[:n] + padding
+        witnesses = [((left*4)[:n] + tail, (right*4)[:n] + tail, 128)
+                     for n, tail in [(512, ""), (256, "G"*256)]]
+        x = ("A"*64 + "C"*64)*2
+        witnesses.append((x, x.translate(str.maketrans("AC", "CA")), 128))
+        x = "A"*64 + "C"*128 + "A"*128 + "C"*128 + "A"*64 + "G"*256
+        witnesses.append((x, x.translate(str.maketrans("AC", "CA")), 256))
+        for a, b, expected in witnesses:
             path.write_text(f">a\n{a}\n>b\n{b}\n")
             ref = json.loads(subprocess.check_output([editdist, "pair", "--algorithm", "seq", "--input", path]))
-            if ref["distance"] != 128:
+            if ref["distance"] != expected:
                 raise ValueError("periodic test oracle changed")
-            run = subprocess.run([quicked, path], text=True, capture_output=True, timeout=15)
-            if run.returncode == 0:
-                data = json.loads(run.stdout)
-                if data["distance"] != 128 or data["verified_by"] != "edlib":
-                    raise ValueError("accepted a suboptimal periodic alignment")
-            elif "QuickEd returned " not in run.stderr or "edlib returned 128" not in run.stderr or run.stdout:
-                raise ValueError(f"missing verification diagnostic: {run.stderr}")
+            data = json.loads(subprocess.check_output([quicked, path], timeout=15))
+            if (data["distance"], data["first_score"], data["source"], data["retries"]) != (
+                    expected, expected, "quicked-default", 0):
+                raise ValueError(f"boundary guard failed on periodic alignment: {data}")
         path.write_text(">a\nAACN\n>b\nAACG\n")
         if subprocess.run([quicked, path], capture_output=True).returncode == 0:
             raise ValueError("ambiguous input accepted")
-    print(f"{len(pairs)} QuickEd scores matched edlib, 2 periodic cases checked for verified output")
+    print(f"{len(pairs)} QuickEd scores matched edlib, 4 periodic regression cases passed")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,9 @@
+job 838762
+allocated_cpus 8
+active_threads 1
+romeo-c022
+Model name:                              AMD EPYC 9654 96-Core Processor
+Thread(s) per core:                      1
+pid 44553's current affinity list: 145
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+flags -O3 -DNDEBUG -march=native

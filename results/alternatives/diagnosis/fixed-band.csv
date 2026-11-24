@@ -1,0 +1,15 @@
+case,radius,constrained_distance,unconstrained_distance
+periodic512,0,508,128
+periodic512,16,412,128
+periodic512,32,316,128
+periodic512,48,220,128
+periodic512,63,133,128
+periodic512,64,128,128
+periodic512,128,128,128
+periodic256-tail,0,254,128
+periodic256-tail,16,222,128
+periodic256-tail,32,190,128
+periodic256-tail,48,158,128
+periodic256-tail,63,129,128
+periodic256-tail,64,128,128
+periodic256-tail,128,128,128

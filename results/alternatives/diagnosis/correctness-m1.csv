@@ -1,0 +1,7 @@
+platform,case,variant,score,exact,correct
+apple-m1-pro,periodic512,quicked-certified,128,128,1
+apple-m1-pro,periodic512,quicked-stock,954,128,0
+apple-m1-pro,periodic256-tail,quicked-certified,128,128,1
+apple-m1-pro,periodic256-tail,quicked-stock,450,128,0
+apple-m1-pro,identical512,quicked-certified,0,0,1
+apple-m1-pro,identical512,quicked-stock,0,0,1

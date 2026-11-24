@@ -15,6 +15,35 @@ def fasta_pair(path):
     return [s.decode("ascii") for s in read_pair(path)]
 
 
+def historical_cases(tmp):
+    # The generator can leave older seeds in pairs/. Only the manifest
+    # identifies the active inputs for this campaign.
+    manifest = Path("data/synthetic/manifest.tsv")
+    rates = ("0.02", "0.05", "0.1")
+    with manifest.open(newline="") as f:
+        selected = [r for r in csv.DictReader(f, delimiter="\t")
+                    if r["length"] == "20000" and r["rep"] == "1" and r["rate"] in rates]
+    inputs = {r["rate"]: r for r in selected}
+    if len(selected) != len(rates) or set(inputs) != set(rates):
+        raise ValueError("expected one 20k replicate per error rate in the synthetic manifest")
+    cases = [(f"20k-{rate}", manifest.parent / inputs[rate]["path"],
+              (20000, int(inputs[rate]["mutant_length"]))) for rate in rates]
+    a, b = fasta_pair(Path("data/human/chr21-2m.fa"))
+    if len(a) < 100000 or len(b) < 50000:
+        raise ValueError("human FASTA is too short for the specified windows")
+
+    def pair(name, x, y):
+        path = Path(tmp, name + ".fa")
+        path.write_text(f">a\n{x}\n>b\n{y}\n")
+        cases.append((name, path, (len(x), len(y))))
+    pair("chr21-50k", a[:50000], b[:50000])
+    # Human reference segment with a dispersed-within-block substitution control.
+    a = a[:100000]
+    core = a[49936:50064].translate(str.maketrans("ACGT", "CGTA"))
+    pair("chr21-center128", a, a[:49936] + core + a[50064:])
+    return cases
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build", type=Path, required=True)
@@ -33,31 +62,7 @@ def main():
         with pending.open("w", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=fields)
             writer.writeheader()
-            # The generator can leave older seeds in pairs/. Only the manifest
-            # identifies the active inputs for this campaign.
-            manifest = Path("data/synthetic/manifest.tsv")
-            rates = ("0.02", "0.05", "0.1")
-            with manifest.open(newline="") as f:
-                selected = [r for r in csv.DictReader(f, delimiter="\t")
-                            if r["length"] == "20000" and r["rep"] == "1" and r["rate"] in rates]
-            inputs = {r["rate"]: r for r in selected}
-            if len(selected) != len(rates) or set(inputs) != set(rates):
-                raise ValueError("expected one 20k replicate per error rate in the synthetic manifest")
-            cases = [(f"20k-{rate}", manifest.parent / inputs[rate]["path"],
-                      (20000, int(inputs[rate]["mutant_length"]))) for rate in rates]
-            a, b = fasta_pair(Path("data/human/chr21-2m.fa"))
-            if len(a) < 100000 or len(b) < 50000:
-                raise ValueError("human FASTA is too short for the specified windows")
-
-            def pair(name, x, y):
-                path = Path(tmp, name + ".fa")
-                path.write_text(f">a\n{x}\n>b\n{y}\n")
-                cases.append((name, path, (len(x), len(y))))
-            pair("chr21-50k", a[:50000], b[:50000])
-            # Human reference segment with a dispersed-within-block substitution control.
-            a = a[:100000]
-            core = a[49936:50064].translate(str.maketrans("ACGT", "CGTA"))
-            pair("chr21-center128", a, a[:49936] + core + a[50064:])
+            cases = historical_cases(tmp)
             for case, path, lengths in cases:
                 digest = hashlib.sha256(path.read_bytes()).hexdigest()
                 if tuple(map(len, read_pair(path))) != lengths:
