@@ -11,6 +11,7 @@ Le contrôle entier ajoute 64 bases à une copie des 45\,090\,682 bases de CHM13
 
 \input{sections/assemblages}
 \input{sections/panel-chm13}
+\input{sections/trace-chromosomes}
 
 \subsection{Construction des arbres de phage}
 NCBI Datasets, l'outil du National Center for Biotechnology Information, fournit les identifiants versionnés de chaque cohorte. La reconstruction mesure dans quelle proportion les chemins d'un arbre reproduisent les distances globales de 64 séquences de phage \(\phi\)X174. Une origine différente sur le génome circulaire peut modifier la distance entre les chaînes déposées. Une même édition observée peut aussi résulter de plusieurs événements évolutifs.
@@ -24,6 +25,12 @@ Dans NJ, la première branche mesure \(d_{ij}/2+(s_i-s_j)/(2(r-2))\), la seconde
 
 Les phylogrammes de la figure~\ref{fig:arbres} utilisent la longueur cumulée des branches comme abscisse. Les échelles horizontales sont propres à chaque panneau. La longueur patristique se calcule par \(t_{ij}=\sum_{e\in\operatorname{path}(i,j)}\ell_e\). Le choix du point de dessin initial de NJ laisse ces sommes invariantes.
 
+\begin{figure}[!tbp]\centering
+\resizebox{!}{.68\textheight}{\input{figures/arbres}}
+\caption{Les deux phylogrammes portent les identifiants des séquences et une barre horizontale de dix éditions pour chaque arbre.}\label{fig:arbres}\sourcefig{report/figures/phylograms.py}
+\end{figure}
+
+
 \synthese{Les 64 feuilles comprennent une paire d'accessions différentes de distance nulle. Les deux arbres conservent toutes les feuilles et comportent chacun trois arêtes de longueur nulle.}
 
 \subsection{Ajustement des arbres aux distances entre phages}
@@ -36,11 +43,6 @@ La figure~\ref{fig:phage} porte sur les \(\binom{64}{3}=41\,664\) triplets et \(
  \operatorname{RMSE}=\sqrt{\frac{1}{P}\sum_{i<j}(d_{ij}-t_{ij})^2},
 \]
 où \(P\) désigne le nombre de paires et \(t_{ij}\) la longueur du chemin entre les feuilles \(i\) et \(j\).
-
-\begin{figure}[H]\centering
-\resizebox{!}{.68\textheight}{\input{figures/arbres}}
-\caption{Les deux phylogrammes portent les identifiants des séquences et une barre horizontale de dix éditions pour chaque arbre.}\label{fig:arbres}\sourcefig{report/figures/phylograms.py}
-\end{figure}
 
 \chart[.70\linewidth]{biology/phylogenie.png}{Les écarts aux conditions d'ultramétrie et d'additivité sont comparés aux résidus entre distances d'édition et longueurs des chemins.}{fig:phage}{scripts/phylogeny/phylo_fit.py}
 \synthese{Sur 2\,016 paires, la racine de l'erreur quadratique moyenne vaut 14,89 éditions pour UPGMA et 3,56 pour NJ. Le meilleur ajustement moyen laisse subsister des écarts de plus de 60 éditions sur certaines paires.}

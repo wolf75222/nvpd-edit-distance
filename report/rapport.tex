@@ -3,7 +3,7 @@
 \begin{document}
 \doctitle{Calcul parallèle et phylogénies de distance}
 \begin{abstract}
-La distance d'édition globale compte les opérations nécessaires pour transformer une chaîne entière en une autre. Deux parcours denses, par anti-diagonales et par colonnes, servent de points de comparaison aux méthodes dont le travail dépend de la distance. Les essais sur EPYC et GH200 comparent les synchronisations par ligne à la répartition de paires entières. Deux versions du même génome humain diffèrent de 2\,587 éditions sur dix-huit chromosomes. Entre deux références humaines distinctes, un seul intervalle de 32 millions de bases atteint 266\,220 éditions. Cette différence détermine le choix de l’algorithme et la mémoire nécessaire à la restitution du chemin.
+La distance d'édition globale mesure le coût minimal de transformation de deux séquences. Sur EPYC, une borne sur le score limite les colonnes que NvPD doit visiter. Sur une fenêtre humaine de 250\,000 bases, ce calcul prend 97,65\,ms contre 25,12\,s pour NvPD dense. Sur le chromosome 1 de CHM13, des coupes vérifiées permettent de restituer les 176 éditions sans conserver la matrice entière. Sur deux nœuds, répartir 8\,128 paires par leur nombre de cellules porte le débit du parcours de Hilbert de 107 à 587\,GCUPS lorsque les entrées sont triées par longueur. Enfin, sur 64 génomes de surveillance, une bande de demi-largeur 323 restitue les partitions des deux arbres malgré deux distances surestimées.
 \end{abstract}
 \fullcontents
 \input{sections/introduction}
@@ -16,15 +16,20 @@ Les paires synthétiques fournissent une référence commune à tous les noyaux.
 \section{Parallélisme sur processeur}\label{sec:cpu}
 Sur un nœud ROMEO, deux processeurs EPYC~9654 réunissent 192 cœurs. La largeur des lignes, la vectorisation et le placement des travailleurs changent la façon dont ces cœurs utilisent les caches.
 \input{sections/profil}
+\input{sections/adaptatif}
 \section{Exécution sur accélérateur}\label{sec:gpu}
 Le GH200 associe un processeur Grace et un accélérateur Hopper. Pour une seule paire, le GPU doit lire les prédécesseurs et rendre les scores d'une ligne disponibles avant la suivante. Un lot ajoute les coûts de gestion des tampons entre appels.
 \input{sections/fronts}
+\input{sections/roofline-gpu}
 \section{Calcul distribué}\label{sec:mpi}
 Le protocole distribué utilise 24 rangs par nœud, chacun avec huit threads OpenMP. La même réservation peut partager les colonnes d'une paire ou répartir un ensemble de paires entières.
 \input{sections/distribue}
+\input{sections/ordonnancement}
+\input{sections/travailleurs-kokkos}
 \section{Applications génomiques}\label{sec:bio}
 Les assemblages humains permettent de comparer de longs intervalles dont les extrémités sont connues. Les collections de phages et de séquences de surveillance posent une autre question, celle de la représentation d'une matrice de distances par un arbre.
 \input{sections/chromosome}
+\input{sections/sensibilite-arbres}
 \section{Discussion et conclusion}\label{sec:conclusion}
 Le temps d'un alignement dépend du rectangle de calcul, de la distance et du résultat demandé. Sur une collection, le nombre de paires ajoute une dimension à la décision de parallélisation.
 \input{sections/synthese}

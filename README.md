@@ -67,7 +67,7 @@ python3 scripts/phylogeny/tree.py build/distances.tsv --method upgma --out build
 python3 scripts/phylogeny/tree.py build/distances.tsv --method nj --out build/nj.nwk
 ```
 
-Le TSV conserve les identifiants en ligne et en colonne. Ici, `gamma` est à trois éditions de chacune des deux autres séquences. UPGMA regroupe d’abord `alpha` et `beta`. Le dépôt fournit aussi les matrices et les arbres calculés sur les cohortes de 64 accessions de φX174 et de SARS-CoV-2. [Données et manifestes](data/README.md) · [Résultats phylogénétiques](results/phylogeny/README.md)
+Le TSV conserve les identifiants en ligne et en colonne. Ici, `gamma` est à trois éditions de chacune des deux autres séquences. UPGMA regroupe d’abord `alpha` et `beta`. Le dépôt fournit aussi les matrices et les arbres calculés sur les cohortes de 64 accessions de φX174 et de SARS-CoV-2. [Données et manifestes](data/README.md) · [Résultats phylogénétiques](results/phylogeny/README.md) · [Sensibilité des arbres à la bande](results/phylogeny/sensitivity/README.md)
 
 ## Générer des paires et mesurer le temps
 
@@ -93,9 +93,24 @@ Pour reproduire la comparaison entre les assemblages CHM13 v1.0 et v1.1, téléc
 ```sh
 python3 scripts/datasets/chm13_panel.py --cache build/t2t-cache --out data/human/chm13-panel
 build/editdist pair --algorithm wfa2 --input data/human/chm13-panel/chr1.fa
+build/editdist pair --algorithm nvpd-split --threads 8 --trace --input data/human/chm13-panel/chr1.fa
 ```
 
 Le score attendu est 176. Le jeu GRCh38–CHM13 compare deux références humaines distinctes sur le chromosome 21. Le banc fournit notamment les temps et la mémoire nécessaires pour restituer un chemin de 32 millions de bases. [Chromosomes complets](results/human/chromosome-panel/README.md) · [Fronts bidirectionnels](results/human/algorithms/README.md) · [Kokkos sur EPYC et GH200](results/kokkos/human/README.md) · [MPI à 192 et 384 cœurs](results/mpi/human/README.md)
+
+Sur un cœur EPYC, `nvpd-adaptive` ramène le temps de NvPD de 25,12 s à 97,65 ms sur la fenêtre de 250 000 bases. À un million de bases et 2 336 éditions, WFA2 reste plus rapide avec 7,07 ms contre 1,608 s. Sur le chromosome 1, `nvpd-split` vérifie six coupes et confie les deux fragments restants à BiWFA après élagage. Le CIGAR complet prend 11,81 ms en moyenne à huit cœurs, contre 183,11 ms pour WFA2 sur un cœur. Sur les chromosomes 18 et 20, deux fragments par paire utilisent le noyau NvPD. [Profils CPU](results/adaptive/README.md) · [CIGAR chromosomiques](results/trace/chromosomes/README.md) · [Mesures GH200](results/roofline/gpu/README.md)
+
+## Distribuer une matrice humaine
+
+Sur une allocation MPI, `--schedule` répartit les paires entre rangs. L’exemple suppose deux nœuds EPYC de 192 cœurs, le FASTA du panel humain et une compilation avec MPI et Kokkos/OpenMP.
+
+```sh
+mpirun -n 48 --map-by ppr:24:node:PE=8 --bind-to core build/editdist-mpi matrix \
+  --input data/mpi-schedules/length.fa --threads 8 --schedule hilbert-weighted \
+  --workers kokkos --grain 4 > distances.tsv
+```
+
+Les autres politiques sont `static`, `cyclic`, `hilbert` et `steal`. L’option `--workers openmp` sélectionne une équipe OpenMP directe. Sur les entrées triées par longueur, la pondération par cellules réduit le temps du parcours Hilbert d’un facteur 5,48 à 384 cœurs. [Construction du panel et mesures](results/mpi/schedules/README.md) · [Comparaison des travailleurs](results/mpi/workers/README.md)
 
 ## Choisir une implémentation
 
@@ -103,9 +118,11 @@ Le score attendu est 176. Le jeu GRCh38–CHM13 compare deux références humain
 | --- | --- |
 | `seq`, `diagonal`, `nvpd-omp` | Programmation dynamique séquentielle, parcours par anti-diagonales OpenMP ou calcul NvPD par ligne. `--threads` fixe la taille de l’équipe OpenMP. |
 | `edlib`, `wfa2`, `biwfa` | Edlib de Šošić et Šikić utilise le parallélisme sur bits. WFA2 de Marco-Sola et coll. suit des fronts de coût croissant. BiWFA des mêmes auteurs les propage depuis les deux extrémités. Les deux parcours WFA acceptent `--trace`. |
+| `nvpd-adaptive` | Score seul. Une borne sur le nombre d’éditions limite les colonnes NvPD. La bande s’élargit jusqu’à couvrir un chemin optimal. |
+| `nvpd-split` | Score ou CIGAR global. Des fragments indépendants partagent les cœurs. Des mots uniques vérifient les coupes et les intervalles restants sont réalignés. |
 | `banded`, `banded-trim` | Le calcul élargit la bande jusqu’à couvrir la distance. `banded-trim` retire d’abord le préfixe et le suffixe identiques. |
 | `hirschberg` | Reconstruit le chemin en mémoire linéaire. `--trace` fonctionne aussi avec edlib et, jusqu’à 20 000 bases par séquence, avec `seq` et NvPD. |
-| `-DCHPS_CUDA=ON` | Active `nvpd-cuda` avec un compilateur CUDA C++20. Sur GH200, ajouter `-DCMAKE_CUDA_ARCHITECTURES=90`. |
+| `-DCHPS_CUDA=ON` | Active `nvpd-cuda` et `nvpd-cuda-local` avec un compilateur CUDA C++20. Ce dernier calcule le halo nécessaire à chaque bloc de colonnes. Sur GH200, ajouter `-DCMAKE_CUDA_ARCHITECTURES=90`. |
 | `-DCHPS_KOKKOS=ON` | Active `nvpd-kokkos` avec Kokkos ≥ 4. Le mode score garde une équipe sur CPU et fusionne deux lignes sur GPU. |
 | `-DCHPS_MPI=ON` | Construit `editdist-mpi`. Le mode `pair` distribue une paire et le mode `pairs` distribue les paires successives du FASTA. |
 | `-DCHPS_QUICKED=ON` | Construit `editdist-quicked`, avec contrôle du score par edlib. |

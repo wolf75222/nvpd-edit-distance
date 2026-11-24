@@ -1,0 +1,22 @@
+\subsection{Ordonnancement des comparaisons de longueurs inégales}\label{sec:ordonnancement}
+
+Deux rangs peuvent recevoir autant de paires et terminer à des instants différents. Le coût du calcul dense pour la paire \((i,j)\) dépend du produit des longueurs \(m_i m_j\). Pour mesurer cet effet, seize loci du chromosome 21 fournissent chacun quatre fenêtres emboîtées dans GRCh38 et leurs homologues dans CHM13. Les bornes appartiennent à la chaîne UCSC utilisée à la section~\ref{sec:mpihumain}. Les 128 fragments ont entre 512 et 12\,746 bases. Le triangle complet contient 8\,128 comparaisons, dont 64 entre les fenêtres homologues de même taille nominale. Les 7\,680 comparaisons entre loci distincts servent à mesurer la répartition du calcul.
+
+Chaque rang emploie huit fils OpenMP. En ordre lexicographique, la politique par blocs attribue des intervalles consécutifs du triangle aux rangs. La politique cyclique distribue chaque paire au rang suivant. Le parcours de Hilbert~\cite{hilbert} trie les coordonnées \((i,j)\) par leur indice sur la courbe, puis partage la liste en blocs de même effectif. Pour la variante pondérée, soit \(w_k=m_i m_j\) le coût de la paire de rang \(k\) dans ce parcours. La frontière entre les rangs \(r-1\) et \(r\) minimise l’écart entre le préfixe \(\sum_{k<b}w_k\) et la cible \(\lfloor rW/P\rfloor\). Les mêmes séquences sont présentées dans deux ordres. Le premier regroupe les fragments de chaque locus. Le second les trie par longueur croissante. Les coordonnées sur la courbe changent donc entre ces deux essais.
+
+Le vol démarre avec les mêmes blocs lexicographiques que la première politique. Un fil réserve quatre paires dans la file locale. Un rang à court de paires interroge ses voisins successifs dans un anneau logique. Le propriétaire prélève jusqu’à 32 paires à l’autre extrémité de sa file et envoie leurs indices. Le rang qui reçoit le lot le répartit entre ses huit fils. Chaque rang conserve le FASTA, de sorte que les messages de vol transportent uniquement les bornes de l’intervalle. Le numéro canonique de chaque paire détermine sa case de sortie pour les cinq politiques.
+
+Le travail, le déséquilibre entre les \(P\) rangs et la fraction du temps des \(C\) cœurs passée à traiter des paires s’écrivent
+\[
+  W=\sum_{i<j}m_i m_j,\qquad
+  I=\frac{\max_r W_r}{W/P},\qquad
+  U=\frac{\sum_{t=1}^{C} b_t}{C\,T}.
+\]
+Ici \(b_t\) mesure les intervalles où le fil \(t\) traite ses lots. Le maximum \(T\) des durées de rang inclut le parcours du triangle, les demandes de travail et la réduction des scores. L’efficacité forte rapporte le gain de temps à le doublement du nombre de cœurs, \(E=T_{192}/(2T_{384})\). Les cinq blocs indépendants utilisent le même nœud pour les essais à 192 cœurs et les deux mêmes nœuds pour les essais à 384 cœurs. Edlib et WFA2 contrôlent chacune des 8\,128 distances. Chaque lancement reproduit la matrice complète à travers le réordonnancement.
+
+\chart{distributed/ordonnancement.png}{Débit et déséquilibre sur deux nœuds, temps occupé des fils et efficacité forte. L'ordre des enregistrements change entre les deux séries, à travail constant.}{fig:ordonnancement}{bench/mpi/schedules/measure.py}
+Les panneaux a) et b) de la figure~\ref{fig:ordonnancement} montrent l'effet du tri par longueur sur deux nœuds. Sans pondération, le rang le plus chargé reçoit \(6{,}830\) fois le travail moyen. La pondération ramène ce rapport à \(1{,}038\) et porte le débit de \(107{,}2\pm0{,}4\) à \(587{,}4\pm11{,}4\)\,GCUPS. La fraction du temps de cœur occupée par les paires passe de \(13{,}6\) à \(76{,}0\,\%\) (panneau c). Avec le vol, \(1\,192\pm245\) paires changent de nœud par matrice et le débit atteint \(185{,}2\pm13{,}0\)\,GCUPS. La mesure inclut les demandes entre rangs sans isoler leur coût.
+
+Sur les entrées groupées par locus, le cyclique atteint \(451{,}7\pm5{,}2\)\,GCUPS devant Hilbert pondéré, à \(420{,}8\pm5{,}5\)\,GCUPS. La charge en cellules par rang explique donc une partie des écarts. Sur le FASTA trié par longueur, l'efficacité forte de Hilbert pondéré vaut \(98{,}3\,\%\), avec un IC à 95\,\% de \(95{,}7\) à \(100{,}9\,\%\) (panneau d). Cette mesure concerne les deux nœuds et les 128 fragments de cette campagne.
+
+\synthese{À deux nœuds, pondérer le même parcours Hilbert divise le temps par \(5{,}48\) lorsque les fragments sont triés par longueur (IC à 95\,\% de \(5{,}33\) à \(5{,}63\)). Le gain tombe à \(1{,}05\) en ordre de locus.}

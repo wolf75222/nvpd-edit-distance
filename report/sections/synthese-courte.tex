@@ -7,7 +7,8 @@ Pour deux longueurs \(m,n\) et des coûts unitaires,
 \]
 \synthese{Deux chaînes d'un million de bases définissent près de \(10^{12}\) cases. Les méthodes denses les visitent toutes, tandis que le nombre de fronts nécessaires dépend du score atteint.}
 
-\section{Temps d'une paire et débit d'une collection}
+\section{Coût d’une paire et débit d’une collection}
+Une paire permet de mesurer le travail par cellule. Une collection ajoute le coût de la répartition des paires entre travailleurs.
 \subsection{Longueur et divergence}
 Edlib de Šošić et Šikić code plusieurs différences de scores dans un mot binaire~\cite{edlib}. WFA2 de Marco-Sola et ses coauteurs garde la position la plus avancée sur chaque diagonale à coût fixé~\cite{wfa}. Sur GH200, Kokkos calcule deux lignes de NvPD par lancement. Pour une fenêtre humaine de 524\,288 bases, cette fusion ramène le temps de \(2{,}520\pm0{,}034\) à \(1{,}345\pm0{,}018\)\,s (cinq processus après échauffement).
 \chart{comparison/synthese.png}{Le temps d'une paire est comparé au débit d'un lot de taille fixe. Les barres d'incertitude de chaque panneau portent sur ses unités expérimentales.}{fig:short-work}{notebooks/profil_nvpd.ipynb}
@@ -15,24 +16,20 @@ La figure~\ref{fig:short-work} compare les régimes de calcul sur les mêmes jeu
 
 \synthese{Les trois taux injectés, 2, 5 et 10\,\%, laissent l'aire du rectangle presque constante. Ils modifient pourtant assez le temps de WFA2 pour inverser son classement face au calcul dense sur GH200.}
 
-\subsection{Communication entre nœuds}
-Avec MPI, les rangs peuvent partager une paire en bandes verticales ou traiter des paires indépendantes. Sur une paire humaine de 131\,072 bases et deux nœuds, échanger le bord par paquets de 128 lignes ramène le temps de \(6{,}672\pm0{,}182\)\,s à \(0{,}117\pm0{,}001\)\,s. Sur un lot, les rangs conservent leurs scores jusqu'à la réduction finale. L'efficacité pour un travail fixe vaut \(E=T_{192}/(2T_{384})\). Les temps proviennent de cinq blocs avec un échauffement par configuration.
-\synthese{Pour 768 paires homologues du chromosome 21, NvPD atteint 80,8\,\% d'efficacité forte sur 384 cœurs par rapport à 192 cœurs. L'efficacité faible, corrigée du travail réel, vaut 80,9\,\%.}
+\subsection{Ordonnancement entre nœuds}
+Dans une matrice hétérogène, une paire de longueurs \(m_i,m_j\) coûte \(m_i m_j\) cellules à NvPD. Les rangs MPI reçoivent des intervalles sur une courbe de Hilbert. Les bornes peuvent répartir le nombre de paires ou équilibrer la somme de ces coûts. Le même noyau à colonnes SIMD traite chaque paire sur un travailleur.
+\chart{distributed/ordonnancement.png}{Les effets du poids des paires et de l'ordre des entrées sont mesurés sur la même matrice humaine à un et deux nœuds.}{fig:short-mpi}{bench/mpi/schedules/measure.py}
+\synthese{Pour 8\,128 paires triées par longueur, pondérer les coupes porte le débit de 107,2 à 587,4\,GCUPS sur 384 cœurs (figure~\ref{fig:short-mpi}). Sur les mêmes entrées en ordre de locus, le partage cyclique atteint 451,7\,GCUPS.}
 
-\section{Assemblages humains}
-Deux versions de CHM13 diffèrent de 2\,587 éditions sur dix-huit chromosomes entiers, soit 2,644 milliards de bases de référence. Sur les deux entrées du chromosome~1, le score vaut 176. La lecture seule prend \(0{,}657\pm0{,}005\)\,s sur un cœur EPYC avec préallocation par l'index FASTA (neuf processus).
-\chart{comparison/bras_chromosome_biwfa.png}{Les temps de calcul et les pics résidents mesurés sur le bras long du chromosome humain dépendent du score et de la restitution du chemin.}{fig:short-chrom}{bench/human/algorithms/arm.py}
-La figure~\ref{fig:short-chrom} porte sur GRCh38 et CHM13, deux références distinctes. Les fenêtres de 8 à 32 millions de bases partagent la même borne gauche. BiWFA de Marco-Sola et ses coauteurs propage deux fronts opposés et reconstruit le chemin de part et d'autre de leur jonction optimale~\cite{biwfa}. Sa mémoire de travail est en \(O(d)\) en plus des entrées et du chemin rendu.
-\synthese{Sur l'intervalle de 32 millions de bases, les 266\,220 éditions demandent \(45{,}62\pm0{,}22\)\,s pour le score BiWFA et \(89{,}77\pm0{,}11\)\,s pour le chemin sur un cœur EPYC.}
+\subsection{Reconstruction du chemin sur les chromosomes}
+BiWFA de Marco-Sola et ses coauteurs rencontre deux fronts pour restituer un chemin avec une mémoire de travail proportionnelle au score~\cite{biwfa}. Le solveur par fragments cherche des coupes dans de longues régions identiques. Si la somme des scores des fragments vaut \(U\), plus de \(U\) mots disjoints et uniques de chaque côté de la coupe suffisent à la conserver sur un chemin optimal. Les intervalles qui perdent une coupe sont réalignés.
+\chart{comparison/trace_chromosomes.png}{Les temps du score, du CIGAR et la mémoire résidente sont comparés sur trois chromosomes CHM13 et un intervalle entre deux références distinctes.}{fig:short-trace}{bench/cpu/chromosome-trace/measure.py}
+\synthese{Sur le chromosome 1 de CHM13, le CIGAR de 176 éditions prend \(11{,}81\pm1{,}23\)\,ms avec huit travailleurs et \(183{,}11\pm5{,}14\)\,ms avec WFA2 sur un cœur (figure~\ref{fig:short-trace}). Le solveur par fragments utilise BiWFA sur les deux intérieurs qui subsistent.}
 
 \section{Conclusion}
-La distance guide le choix des fronts ou du calcul dense. Pour les 64 phages, une fois les scores calculés, l'erreur entre la distance d'édition \(d_{ij}\) et la longueur du chemin dans l'arbre \(t_{ij}\) mesure la perte associée à la reconstruction,
-\[
- \sqrt{\frac{1}{2\,016}\sum_{i<j}(d_{ij}-t_{ij})^2}
- = \begin{cases}14{,}89\ \text{éditions} & \text{(UPGMA)},\\
-                  3{,}56\ \text{éditions} & \text{(Neighbor-Joining)}.\end{cases}
-\]
-\synthese{Sur les 64 phages, NJ réduit l'erreur quadratique moyenne des chemins, mais son écart absolu maximal atteint 63,86 éditions. Une distance d'édition exacte peut donc être imparfaitement représentée par un arbre.}
+La réduction du travail dépend du résultat demandé. Une bande de calcul assez large peut suffire au score optimal. Une bande fixée à l'avance peut rendre certaines paires inaccessibles ou surestimer leur coût. La figure~\ref{fig:short-rf} mesure l'effet sur les partitions d'un arbre de 64 feuilles. Le quotient \(R=|S_1\triangle S_2|/(|S_1|+|S_2|)\) compare les groupes enracinés pour UPGMA et les bipartitions sans racine pour Neighbor-Joining.
+\chart{biology/sensibilite_arbres.png}{La sensibilité des arbres à la bande est comparée sur le panel de surveillance et sur huit collections synthétiques.}{fig:short-rf}{scripts/phylogeny/band_sensitivity.py}
+\synthese{À demi-largeur 323, toutes les paires du panel sont accessibles. Deux distances dépassent leur valeur de référence de 5 et 19 éditions. Les partitions des deux arbres coïncident pourtant avec celles obtenues par alignement global.}
 
 \FloatBarrier
 \begin{thebibliography}{4}
