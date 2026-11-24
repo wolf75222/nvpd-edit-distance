@@ -3,6 +3,9 @@
 /data/**/*.fa
 /data/**/*.fna
 /data/**/*.zip
+/data/**/*.gz
+/data/**/*.2bit
+/data/**/*.chain
 /data/sars_metadata-current.tsv
 /results/romeo/logs/
 /CHPS1001_*.pdf

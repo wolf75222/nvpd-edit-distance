@@ -7,7 +7,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq libopenmpi-dev openmpi-bin
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCHPS_MPI=ON -DCHPS_QUICKED=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
+      - run: python3 bench/mpi_checks.py --binary build/editdist-mpi --oracle build/editdist --launcher 'mpiexec --oversubscribe -n 4'
       - run: python3 -m unittest discover -s tests

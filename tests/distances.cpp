@@ -1,4 +1,8 @@
 #include "chps/baselines.hpp"
+#include "chps/banded.hpp"
+#ifdef CHPS_KOKKOS
+#include "chps/kokkos.hpp"
+#endif
 #include <omp.h>
 #include <charconv>
 #include <iostream>
@@ -35,7 +39,13 @@ static void replay(std::string_view a, std::string_view b, const Result& result)
 static void check(const std::string& a, const std::string& b) {
     int reference = sequential(a, b, false).distance;
     std::vector<Result> costs{antidiagonal(a,b), nvpd_omp(a,b), edlib_distance(a,b), wfa_distance(a,b)};
+    costs.push_back(banded(a,b));
+    costs.push_back(banded_trim(a,b));
     std::vector<Result> traces{sequential(a,b,true), nvpd_omp(a,b,true)};
+#ifdef CHPS_KOKKOS
+    costs.push_back(nvpd_kokkos(a,b));
+    traces.push_back(nvpd_kokkos(a,b,true));
+#endif
 #ifdef CHPS_CUDA
     costs.push_back(nvpd_cuda(a,b));
     traces.push_back(nvpd_cuda(a,b,true));
@@ -48,6 +58,9 @@ static void check(const std::string& a, const std::string& b) {
 
 int main() {
     omp_set_num_threads(3);
+#ifdef CHPS_KOKKOS
+    KokkosSession session(3);
+#endif
     std::vector<std::string> words{"", "A", "AA", "G", "GA", "N", "AN", "AGT", "TTTT", "ACGTN", "RYNN"};
     for (const auto& a : words) for (const auto& b : words) check(a,b);
     std::mt19937 rng(2026);
@@ -76,6 +89,15 @@ int main() {
         if (nvpd_omp("R", absent).distance != length)
             throw std::runtime_error("wrong NvPD distance for absent symbol");
     }
+#ifdef CHPS_CUDA
+    for (int spacing : {4, 64, 65}) {
+        std::string target(400003, 'A');
+        for (std::size_t j = 0; j < target.size(); j += spacing) target[j] = 'C';
+        std::string query = "AACAAACAAAAACACAA";
+        if (nvpd_cuda(query, target).distance != edlib_distance(query, target).distance)
+            throw std::runtime_error("wrong CUDA distance at wide block or halo boundary");
+    }
+#endif
     if (sequential("GATTACA", "GCATGCU").distance != 4) return 1;
     std::cout << "196 differential pairs with traceback replay and 9 NvPD column widths\n";
 }

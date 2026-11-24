@@ -1,4 +1,9 @@
 #include "chps/baselines.hpp"
+#include "chps/banded.hpp"
+#ifdef CHPS_KOKKOS
+#include "chps/kokkos.hpp"
+#include <optional>
+#endif
 #include "chps/fasta.hpp"
 #include <omp.h>
 #include <sys/resource.h>
@@ -16,10 +21,10 @@ using namespace chps;
 using View = std::string_view;
 using Kernel = Result (*)(View, View, bool);
 constexpr View help =
-    "editdist {pair|matrix} --algorithm {seq|diagonal|nvpd-omp|nvpd-cuda|edlib|wfa2}\n"
+    "editdist {pair|matrix} --algorithm {seq|diagonal|nvpd-omp|nvpd-cuda|nvpd-kokkos|banded|banded-trim|edlib|wfa2}\n"
     "         --input FILE.fa [--threads N] [--trace]\n"
     "pair: two FASTA records, JSON output. matrix: square labeled TSV.\n"
-    "--trace: pair mode with seq, nvpd-omp or nvpd-cuda, lengths <= 20000.\n";
+    "--trace: pair mode with seq or an NvPD backend, lengths <= 20000.\n";
 
 struct Options {
     std::string mode, algorithm, path;
@@ -46,7 +51,7 @@ Options parse(int argc, char** argv) {
     }
     if (o.path.empty() || o.algorithm.empty()) throw std::invalid_argument("input and algorithm required");
     if (o.trace && (o.mode != "pair" || (o.algorithm != "seq" && o.algorithm != "nvpd-omp"
-                                            && o.algorithm != "nvpd-cuda")))
+                                            && o.algorithm != "nvpd-cuda" && o.algorithm != "nvpd-kokkos")))
         throw std::invalid_argument("unsupported traceback mode");
     return o;
 }
@@ -54,6 +59,15 @@ Options parse(int argc, char** argv) {
 Kernel resolve(View name) {
     if (name == "seq") return sequential;
     if (name == "nvpd-omp") return nvpd_omp;
+    if (name == "banded" || name == "banded-trim")
+        return name == "banded" ? banded : banded_trim;
+    if (name == "nvpd-kokkos") {
+#ifdef CHPS_KOKKOS
+        return nvpd_kokkos;
+#else
+        throw std::invalid_argument("Kokkos backend requires -DCHPS_KOKKOS=ON");
+#endif
+    }
     if (name == "diagonal") return [](View a, View b, bool) { return antidiagonal(a, b); };
     if (name == "edlib") return [](View a, View b, bool) { return edlib_distance(a, b); };
     if (name == "wfa2") return [](View a, View b, bool) { return wfa_distance(a, b); };
@@ -88,6 +102,10 @@ void run_pair(const Options& o, Kernel kernel, const std::vector<Record>& record
               << "\",\"distance\":" << result.distance << ",\"m\":" << a.size() << ",\"n\":" << b.size()
               << ",\"seconds\":" << elapsed.count() << ",\"peak_rss_kib\":" << peak_rss_kib()
               << ",\"device_bytes\":" << result.device_bytes;
+#ifdef CHPS_KOKKOS
+    if (o.algorithm == "nvpd-kokkos")
+        std::cout << ",\"execution_space\":\"" << kokkos_execution_space() << '\"';
+#endif
     if (o.trace) std::cout << ",\"cigar\":\"" << result.cigar << '"';
     std::cout << "}\n";
 }
@@ -96,7 +114,8 @@ void run_matrix(const Options& o, Kernel kernel, const std::vector<Record>& reco
     const auto n = records.size();
     std::vector<std::vector<int>> distances(n, std::vector<int>(n));
     // Serial kernels parallelize over independent rows. OpenMP kernels own their team.
-    const bool across = o.threads > 1 && (o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "seq");
+    const bool across = o.threads > 1 && (o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "seq" ||
+                                          o.algorithm == "banded" || o.algorithm == "banded-trim");
     std::exception_ptr failure;
     auto row = [&](std::size_t i) {
         for (std::size_t j = i + 1; j < n; ++j)
@@ -136,6 +155,10 @@ int main(int argc, char** argv) {
                 throw std::length_error("sequence exceeds the 32-bit alignment index range");
         omp_set_dynamic(0);
         omp_set_num_threads(o.threads);
+#ifdef CHPS_KOKKOS
+        std::optional<chps::KokkosSession> session;
+        if (o.algorithm == "nvpd-kokkos") session.emplace(o.threads);
+#endif
         if (o.mode == "pair") run_pair(o, kernel, records);
         else run_matrix(o, kernel, records);
         return 0;
