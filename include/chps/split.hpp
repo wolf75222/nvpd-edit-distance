@@ -22,6 +22,7 @@ private:
 };
 
 Result nvpd_split(std::string_view a, std::string_view b, bool trace = false);
+Result nvpd_sparse(std::string_view a, std::string_view b, bool trace = false);
 enum class SplitPolicy { require_all, retain_verified, single_piece };
 Result nvpd_split_profile(std::string_view a, std::string_view b, bool trace, SplitStats& stats,
                           SplitPolicy policy = SplitPolicy::retain_verified,

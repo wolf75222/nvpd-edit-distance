@@ -41,7 +41,7 @@ if [[ $mode == local || $mode == classes ]]; then
     measure=(--local)
     if [[ $mode == classes ]]; then
         python3 "$base/instrument_classes.py" src/cuda "$tmp"
-        nvcc -std=c++20 -O3 -arch=sm_90 -Xcompiler=-fopenmp -Iinclude -Isrc/cpu -I"$tmp" -I"$base" \
+        nvcc -std=c++20 -O3 -arch=sm_90 -Xcompiler=-fopenmp -Iinclude -Isrc/cpu -I"$tmp" -I"$base" -Isrc/cuda \
             -Dnvpd_cuda=class_global -Dnvpd_cuda_local=class_local -DCudaWorkspace=ClassWorkspace \
             -c "$tmp/class.cu" -o "$tmp/class.o"
         sources+=("$tmp/class.o")

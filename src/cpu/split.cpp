@@ -1,6 +1,7 @@
 #include "chps/split.hpp"
 #include "chps/baselines.hpp"
 #include "dp_internal.hpp"
+#include "sparse_frontier.hpp"
 
 #include <algorithm>
 #include <charconv>
@@ -60,7 +61,7 @@ Size common_end(View a, View b, bool reverse) {
     return k;
 }
 
-Piece align_piece(View a, View b, bool trace) {
+Piece align_piece(View a, View b, bool trace, bool sparse) {
     const Size prefix = common_end(a, b, false);
     a.remove_prefix(prefix); b.remove_prefix(prefix);
     const Size suffix = common_end(a, b, true);
@@ -72,8 +73,13 @@ Piece align_piece(View a, View b, bool trace) {
         p.dense = true;
         p.result = nvpd_omp(a, b, trace);
     } else {
-        p.wavefront = true;
-        p.result = biwfa(a, b, trace);
+        const int frontier = sparse && !trace ? detail::sparse_frontier(a, b, 128) : -1;
+        if (frontier >= 0) {
+            p.result = {frontier, {}, 0};
+        } else {
+            p.wavefront = true;
+            p.result = biwfa(a, b, trace);
+        }
     }
     if (trace) {
         Runs runs;
@@ -165,8 +171,8 @@ bool certified_cut(View a, View b, const std::vector<Cut>& cuts, Size k, Size bo
     return clearance(cuts, k) >= 2*span && witnesses(a, b, cuts[k], bound, span);
 }
 
-Piece align_range(View a, View b, Cut first, Cut last, bool trace) {
-    return align_piece(a.substr(first.i, last.i-first.i), b.substr(first.j, last.j-first.j), trace);
+Piece align_range(View a, View b, Cut first, Cut last, bool trace, bool sparse) {
+    return align_piece(a.substr(first.i, last.i-first.i), b.substr(first.j, last.j-first.j), trace, sparse);
 }
 } // namespace
 
@@ -183,13 +189,13 @@ std::size_t SplitComposition::lower_bound(const SplitComposition& other) const {
     return std::max(surplus, deficit);
 }
 
-Result nvpd_split_profile(View a, View b, bool trace, SplitStats& stats,
-                          SplitPolicy policy, Size lower_bound) {
+static Result split_impl(View a, View b, bool trace, SplitStats& stats,
+                         SplitPolicy policy, Size lower_bound, bool sparse) {
     detail::validate(a, b, false);
     stats = {};
     const Size imbalance = std::max(a.size(), b.size()) - std::min(a.size(), b.size());
     auto single = [&] {
-        auto p = align_piece(a, b, trace);
+        auto p = align_piece(a, b, trace, sparse);
         stats.dense_pieces = p.dense;
         stats.wavefront_pieces = p.wavefront;
         return std::move(p.result);
@@ -220,7 +226,7 @@ Result nvpd_split_profile(View a, View b, bool trace, SplitStats& stats,
     #pragma omp parallel for if(pieces.size()>1 && !omp_in_parallel()) schedule(static)
     for (int k=0; k<static_cast<int>(pieces.size()); ++k) {
         try {
-            pieces[k] = align_range(a, b, cuts[k], cuts[k+1], trace);
+            pieces[k] = align_range(a, b, cuts[k], cuts[k+1], trace, sparse);
         } catch (...) {
             #pragma omp critical(chps_split_error)
             { if (!failure) failure = std::current_exception(); }
@@ -251,7 +257,7 @@ Result nvpd_split_profile(View a, View b, bool trace, SplitStats& stats,
             ++stats.accepted_cuts;
         }
         if (last != first + 1) {
-            pieces[first] = align_range(a, b, cuts[first], cuts[last], trace);
+            pieces[first] = align_range(a, b, cuts[first], cuts[last], trace, sparse);
             stats.dense_pieces += pieces[first].dense;
             stats.wavefront_pieces += pieces[first].wavefront;
         }
@@ -262,6 +268,16 @@ Result nvpd_split_profile(View a, View b, bool trace, SplitStats& stats,
     stats.global_retry = stats.accepted_cuts == 0;
     path.flush();
     return {distance,std::move(path.data),0};
+}
+
+Result nvpd_split_profile(View a, View b, bool trace, SplitStats& stats,
+                          SplitPolicy policy, Size lower_bound) {
+    return split_impl(a, b, trace, stats, policy, lower_bound, false);
+}
+
+Result nvpd_sparse(View a, View b, bool trace) {
+    SplitStats stats;
+    return split_impl(a, b, trace, stats, SplitPolicy::retain_verified, 0, true);
 }
 
 Result nvpd_split(View a, View b, bool trace) {

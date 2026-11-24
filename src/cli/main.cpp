@@ -2,6 +2,8 @@
 #include "chps/banded.hpp"
 #include "chps/adaptive.hpp"
 #include "chps/split.hpp"
+#include "chps/packed.hpp"
+#include <unordered_map>
 #ifdef CHPS_CUDA
 #include "chps/cuda.hpp"
 #endif
@@ -26,15 +28,16 @@ using namespace chps;
 using View = std::string_view;
 using Kernel = Result (*)(View, View, bool);
 constexpr View help =
-    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-adaptive|nvpd-split|nvpd-cuda|nvpd-cuda-local|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
-    "         --input FILE.fa [--fai FILE.fa.fai] [--threads N] [--trace]\n"
-    "pair: two FASTA records, JSON output. matrix: square labeled TSV.\n"
-    "--trace: pair with edlib, wfa2, biwfa, nvpd-split, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n";
+    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-adaptive|nvpd-split|nvpd-sparse|packed-wfa|nvpd-cuda|nvpd-cuda-local|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
+    "         --input FILE.fa [--fai FILE.fa.fai] [--threads N] [--trace] [--unique]\n"
+    "pair: two FASTA records, JSON output. matrix: square labeled TSV. --unique groups identical matrix inputs.\n"
+    "--trace: pair with edlib, wfa2, biwfa, packed-wfa, nvpd-sparse, nvpd-split, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n"
+    "packed-wfa computes scores on packed DNA. Its --trace option uses BiWFA for the complete alignment.\n";
 
 struct Options {
     std::string mode, algorithm, path, fai;
     int threads = 1;
-    bool trace = false;
+    bool trace = false, unique = false;
 };
 Options parse(int argc, char** argv) {
     if (argc < 2) throw std::invalid_argument("missing mode");
@@ -44,6 +47,7 @@ Options parse(int argc, char** argv) {
     for (int i = 2; i < argc; ++i) {
         View arg = argv[i];
         if (arg == "--trace") { o.trace = true; continue; }
+        if (arg == "--unique" && o.mode == "matrix") { o.unique = true; continue; }
         if (++i == argc) throw std::invalid_argument("missing value for " + std::string(arg));
         View value = argv[i];
         if (arg == "--algorithm") o.algorithm = value;
@@ -61,7 +65,8 @@ Options parse(int argc, char** argv) {
     if (o.path.empty() || o.algorithm.empty()) throw std::invalid_argument("input and algorithm required");
     const bool supports_trace = o.algorithm == "seq" || o.algorithm == "hirschberg" ||
                                 o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-cuda" || o.algorithm == "nvpd-cuda-local" ||
-                                o.algorithm == "nvpd-kokkos" || o.algorithm == "nvpd-split" || o.algorithm == "edlib" ||
+                                o.algorithm == "nvpd-kokkos" || o.algorithm == "nvpd-split" || o.algorithm == "nvpd-sparse" ||
+                                o.algorithm == "packed-wfa" || o.algorithm == "edlib" ||
                                 o.algorithm == "wfa2" || o.algorithm == "biwfa";
     if (o.trace && (o.mode != "pair" || !supports_trace))
         throw std::invalid_argument("unsupported traceback mode");
@@ -72,6 +77,8 @@ Kernel resolve(View name) {
     if (name == "seq") return sequential;
     if (name == "hirschberg") return hirschberg;
     if (name == "nvpd-adaptive") return nvpd_adaptive;
+    if (name == "packed-wfa") return packed_wavefront;
+    if (name == "nvpd-sparse") return nvpd_sparse;
     if (name == "nvpd-split") return nvpd_split;
     if (name == "nvpd-omp") return nvpd_omp;
     if (name == "banded" || name == "banded-trim")
@@ -128,12 +135,25 @@ void run_pair(const Options& o, Kernel kernel, const std::vector<Record>& record
 
 template <typename Score>
 void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& records) {
-    const auto n = records.size();
+    std::vector<std::string_view> sequences;
+    std::vector<std::size_t> group_of;
+    std::unordered_map<std::string_view, std::size_t> by_bases;
+    for (const auto& r : records) {
+        if (o.unique) {
+            const auto [it, added] = by_bases.emplace(r.bases, sequences.size());
+            group_of.push_back(it->second);
+            if (!added) continue;
+        } else {
+            group_of.push_back(sequences.size());
+        }
+        sequences.push_back(r.bases);
+    }
+    const auto n = sequences.size();
     std::vector<std::vector<int>> distances(n, std::vector<int>(n));
     const auto team = static_cast<std::size_t>(o.threads);
-    const bool grouped = o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-adaptive" || o.algorithm == "nvpd-split";
+    const bool grouped = o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-adaptive" || o.algorithm == "nvpd-split" || o.algorithm == "nvpd-sparse";
     const bool pair_parallel = grouped && team > 1 && n * (n - 1) / 2 >= team;
-    const bool library = o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "biwfa";
+    const bool library = o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "biwfa" || o.algorithm == "packed-wfa";
     const bool across = pair_parallel || (team > 1 &&
         (library || o.algorithm == "seq" ||
          o.algorithm == "banded" || o.algorithm == "banded-trim" || o.algorithm == "hirschberg"));
@@ -144,15 +164,28 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
     std::vector<SplitComposition> composition;
     if (o.algorithm == "nvpd-split" && n > 2) {
         composition.reserve(n);
-        for (const auto& record : records) composition.emplace_back(record.bases);
+        for (auto seq : sequences) composition.emplace_back(seq);
     }
     std::exception_ptr failure;
+    std::vector<PackedSequence> packed;
+    if (o.algorithm == "packed-wfa") {
+        packed.resize(n);
+        #pragma omp parallel for schedule(static) if(n > 1)
+        for (std::size_t i = 0; i < n; ++i) {
+            try { packed[i] = PackedSequence(sequences[i]); }
+            catch (...) {
+                #pragma omp critical
+                { if (!failure) failure = std::current_exception(); }
+            }
+        }
+        if (failure) std::rethrow_exception(failure);
+    }
     auto row = [&](std::size_t i, std::size_t group) {
         for (std::size_t j = i + 1 + group; j < n; j += groups) {
-            const auto& a = records[i].bases;
-            const auto& b = records[j].bases;
+            const auto a = sequences[i], b = sequences[j];
             int distance;
-            if (composition.empty()) distance = kernel(a, b, false).distance;
+            if (!packed.empty()) distance = packed_score(packed[i], packed[j]);
+            else if (composition.empty()) distance = kernel(a, b, false).distance;
             else {
                 SplitStats stats;
                 distance = nvpd_split_profile(a, b, false, stats, SplitPolicy::retain_verified,
@@ -184,9 +217,9 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
     std::cout << "id";
     for (const auto& r : records) std::cout << '\t' << r.id;
     std::cout << '\n';
-    for (std::size_t i = 0; i < n; ++i) {
+    for (std::size_t i = 0; i < records.size(); ++i) {
         std::cout << records[i].id;
-        for (int distance : distances[i]) std::cout << '\t' << distance;
+        for (auto j : group_of) std::cout << '\t' << distances[group_of[i]][j];
         std::cout << '\n';
     }
 }

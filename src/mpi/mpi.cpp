@@ -339,7 +339,7 @@ int main(int argc, char** argv) {
                 distance = distributed_pair(records[0].bases, records[1].bases, rank, ranks, team, o.pipeline_rows, workers);
             else if (!o.schedule.empty()) {
                 matrix = chps::mpi::scheduled_matrix(records,o.schedule,rank,ranks,team,o.grain,hosts,work,o.kokkos_workers,o.score,o.algorithm == "nvpd-indexed",o.length_bound);
-                workers = static_cast<int>(std::min<unsigned long long>(team,work.pairs));
+                workers = work.active_workers;
             } else matrix = batch(records, rank, ranks, team, o.mode == "pairs", workers);
             double elapsed = MPI_Wtime() - start, slowest = 0;
             MPI_Reduce(&elapsed, &slowest, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);

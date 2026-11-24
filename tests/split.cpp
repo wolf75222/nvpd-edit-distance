@@ -1,4 +1,7 @@
 #include "chps/baselines.hpp"
+#include "../src/cpu/sparse_frontier.hpp"
+#include <algorithm>
+#include <vector>
 #include "chps/split.hpp"
 #include "cigar_replay.hpp"
 #include <omp.h>
@@ -9,7 +12,8 @@ chps::SplitStats check(std::string_view a, std::string_view b) {
     auto result = chps::nvpd_split_profile(a, b, true, stats);
     replay(a, b, result);
     if (result.distance != chps::edlib_distance(a, b).distance ||
-        result.distance != chps::nvpd_split(a, b, false).distance)
+        result.distance != chps::nvpd_split(a, b, false).distance ||
+        result.distance != chps::nvpd_sparse(a, b, false).distance)
         throw std::runtime_error("split distance differs from reference");
     return stats;
 }
@@ -30,6 +34,24 @@ chps::SplitStats check_filter(std::string_view a, std::string_view b) {
 }
 
 int main() {
+    std::vector<std::string> words{""};
+    for (std::size_t k = 0; k < words.size(); ++k) {
+        if (words[k].size() == 5) break;
+        for (char x : std::string_view("AN")) words.push_back(words[k] + x);
+    }
+    for (const auto& a : words) for (const auto& b : words) {
+        const int d = chps::edlib_distance(a,b).distance;
+        for (int limit : {0, std::max(0,d-1), d, d+1})
+            if (chps::detail::sparse_frontier(a,b,limit) != (d <= limit ? d : -1))
+                throw std::runtime_error("bounded frontier differs from the global oracle");
+    }
+    for (int edits : {127,128,129}) {
+        const std::string a(1000,'A');
+        auto b = a;
+        b.replace(100, edits, std::string(edits,'N'));
+        if (chps::detail::sparse_frontier(a,b,128) != (edits <= 128 ? edits : -1))
+            throw std::runtime_error("sparse budget boundary differs from expected result");
+    }
     omp_set_num_threads(2);
     check("", ""); check("A", ""); check("NRY", "YN"); check("CAT", "ATC");
     std::mt19937 rng(42);

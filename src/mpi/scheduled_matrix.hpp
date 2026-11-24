@@ -75,6 +75,7 @@ inline std::vector<long long> weighted_cuts(const std::vector<Task>& tasks,
 
 struct RankWork {
     unsigned long long pairs = 0, cells = 0, stolen = 0, cross_node = 0, certified = 0;
+    int active_workers = 0;
     double busy_seconds = 0;
 };
 
@@ -260,6 +261,7 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
     if (steal) queues.finish();
     if (failure) std::rethrow_exception(failure);
     for (const auto& r : per_worker) {
+        work.active_workers += r.pairs > 0;
         work.pairs+=r.pairs; work.cells+=r.cells; work.stolen+=r.stolen; work.cross_node+=r.cross_node;
         work.certified+=r.certified; work.busy_seconds+=r.busy_seconds;
     }

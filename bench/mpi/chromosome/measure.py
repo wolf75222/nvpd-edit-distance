@@ -18,6 +18,7 @@ def examine(matrix, lengths):
         raise ValueError("matrix labels or order disagree")
     values = [[int(x) for x in r[1:]] for r in rows[1:]]
     fractions = []
+    eligible = certified = 0
     for i, label in enumerate(labels):
         if len(values[i]) != len(labels) or values[i][i] != 0:
             raise ValueError("invalid matrix dimensions or diagonal")
@@ -26,19 +27,27 @@ def examine(matrix, lengths):
             a, b = lengths[label], lengths[labels[j]]
             if d != values[j][i] or not abs(a-b) <= d <= max(a,b):
                 raise ValueError("matrix violates a metric bound")
+            if max(a, b) // 3 >= min(a, b):
+                eligible += 1
+                certified += d == abs(a-b)
             fractions.append(d/max(a,b))
-    return median(fractions)
+    return median(fractions), eligible, certified
 
 
-def run(binary, data, output, tmp):
-    sequences = (data / "chr1.fa").read_text().splitlines()
-    pairs = list(zip(sequences[::2], sequences[1::2]))
+def configurations():
     algorithms = ["nvpd-omp", "nvpd-indexed", "edlib", "wfa2"]
     configs = [(k, nodes, a, "hilbert-weighted") for k, nodes in ((544,1),(768,1),(768,2))
                for a in algorithms]
     configs.extend((768, 2, "nvpd-indexed", policy) for policy in ("static", "steal"))
     configs = [(*c, False) for c in configs]
     configs.extend((768, 2, a, "hilbert-weighted", True) for a in ("nvpd-indexed", "edlib", "wfa2"))
+    return configs
+
+
+def run(binary, data, output, tmp):
+    sequences = (data / "chr1.fa").read_text().splitlines()
+    pairs = list(zip(sequences[::2], sequences[1::2]))
+    configs = configurations()
     order = []
     for block in range(1, 6):
         random.Random(2207 + block).shuffle(configs)
@@ -69,11 +78,11 @@ def run(binary, data, output, tmp):
             proc = run_rank_zero(launch(nodes,24,8), args, tmp)
             digest = hashlib.sha256(proc.stdout.encode()).hexdigest()
             if size in verified:
-                expected,relative = verified[size]
+                expected,relative,oracle_count = verified[size]
                 if expected != digest: raise ValueError(f"{algorithm} disagrees on {size} loci")
             else:
-                relative = examine(proc.stdout, lengths[size])
-                verified[size] = digest,relative
+                relative, _, oracle_count = examine(proc.stdout, lengths[size])
+                verified[size] = digest,relative,oracle_count
             diags = [json.loads(line) for line in proc.stderr.splitlines() if line.startswith("{")]
             timing = [r for r in diags if "mode" in r]
             if len(timing) != 1: raise ValueError("incomplete trial series")
@@ -82,12 +91,19 @@ def run(binary, data, output, tmp):
             for t in timing:
                 ranks = [r for r in diags if r.get("trial") == t["trial"] and "rank" in r]
                 npairs = sum(r["pairs"] for r in ranks)
+                reported = sum(r["certified_pairs"] for r in ranks)
+                if (sorted(r["rank"] for r in ranks) != list(range(nodes*24))
+                        or t["ranks"] != nodes*24 or t["threads_per_rank"] != 8):
+                    raise ValueError("missing rank or worker-team diagnostics")
+                if reported != (oracle_count if certificate else 0):
+                    raise ValueError(f"{algorithm} reported {reported} certificates; expected "
+                                     f"{oracle_count if certificate else 0}")
                 if (t["algorithm"] != algorithm or t["sampled_physical_cores"] != 192*nodes
                     or npairs != size*(size-1)//2 or sum(r["cells"] for r in ranks) != area):
                     raise ValueError(f"incomplete allocation or matrix: {t}, {npairs}")
                 w.writerow((size,nodes,algorithm,policy,int(certificate),block,t["sampled_physical_cores"],npairs,area,
                             t["seconds"],t["max_rank_rss_kib"],sum(r["stolen_pairs"] for r in ranks),
-                            sum(r["cross_node_pairs"] for r in ranks),sum(r["certified_pairs"] for r in ranks),relative,digest))
+                            sum(r["cross_node_pairs"] for r in ranks),reported,relative,digest))
             out.flush()
             print(size,nodes,algorithm,policy,"bound" if certificate else "direct",timing[-1]["seconds"],flush=True)
 

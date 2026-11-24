@@ -3,6 +3,11 @@
 #include "chps/cuda.hpp"
 #include "dp_internal.hpp"
 #include "local_tiles.cuh"
+#include "packed_match.cuh"
+
+#ifndef CHPS_CUDA_PACKED_MATCHES
+#define CHPS_CUDA_PACKED_MATCHES 0
+#endif
 
 #include <algorithm>
 #include <stdexcept>
@@ -115,6 +120,7 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
     const bool consider_local = halo_ == CudaHalo::local && !trace && m >= tile_rows && reach > max_halo_step;
     int columns = threads;
     detail::LocalTilePlan plan;
+    bool pack = false;
     if (reach <= max_halo_step || consider_local) {
         int device, multiprocessors;
         check(cudaGetDevice(&device), "get CUDA device");
@@ -128,11 +134,18 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
             check(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlock, device),
                   "get CUDA shared memory limit");
             plan = detail::make_local_plan(matches, n, columns, shared_limit / (2 * sizeof(int)));
+            pack = CHPS_CUDA_PACKED_MATCHES && !plan.left.empty() && matches.entries.size() == 4 * stride
+                && plan.pitch <= shared_limit / (3 * static_cast<int>(sizeof(int)));
         }
     }
     if (!plan.left.empty()) {
-        boundaries_.resize(plan.left.size());
-        check(cudaMemcpy(boundaries_.data, plan.left.data(), boundaries_.bytes, cudaMemcpyHostToDevice),
+        boundaries_.resize(plan.left.size() + (pack ? stride : 0));
+        if (pack) {
+            auto words = detail::pack_match_offsets(matches, n);
+            check(cudaMemcpy(boundaries_.data + plan.left.size(), words.data(), stride * sizeof(unsigned),
+                             cudaMemcpyHostToDevice), "copy compact match offsets");
+        }
+        check(cudaMemcpy(boundaries_.data, plan.left.data(), plan.left.size() * sizeof(int), cudaMemcpyHostToDevice),
               "copy local tile boundaries");
     }
     if (reach <= max_halo_step || !plan.left.empty()) {
@@ -147,6 +160,11 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
                 const auto bytes = 2 * (columns + (count - 1) * reach) * sizeof(int);
                 row_tile<<<tile_blocks, threads, bytes>>>(prev, curr, indices.data, symbols,
                                                           i, count, n, reach, columns);
+            } else if (pack) {
+                const auto bytes = 3 * plan.pitch * sizeof(int);
+                const auto words = reinterpret_cast<const unsigned*>(boundaries_.data + plan.left.size());
+                detail::packed_local_tile<<<tile_blocks, threads, bytes>>>(prev, curr, indices.data,
+                    boundaries_.data, words, symbols, i, count, n, columns, plan.pitch);
             } else {
                 const auto bytes = 2 * plan.pitch * sizeof(int);
                 detail::local_row_tile<<<tile_blocks, threads, bytes>>>(prev, curr, indices.data,

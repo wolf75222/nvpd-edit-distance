@@ -5,7 +5,11 @@
 #include <algorithm>
 
 namespace chps::detail {
-inline constexpr int local_tile_rows = 8;
+#ifndef CHPS_CUDA_TILE_ROWS
+#define CHPS_CUDA_TILE_ROWS 8
+#endif
+inline constexpr int local_tile_rows = CHPS_CUDA_TILE_ROWS;
+static_assert(local_tile_rows >= 1 && local_tile_rows <= 32);
 
 // Row r is produced for [left[r], end] in each block. k_s(j), the last
 // occurrence of symbol s at or before j, is nondecreasing once it exists.

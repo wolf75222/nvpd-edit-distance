@@ -1,0 +1,5 @@
+if(PROJECT_NAME STREQUAL "chps_edit_distance" AND NOT TARGET chromosome_trial)
+    add_executable(chromosome_trial "${CMAKE_CURRENT_LIST_DIR}/trial.cpp" "${CMAKE_SOURCE_DIR}/src/io/fasta.cpp")
+    target_link_libraries(chromosome_trial PRIVATE distances)
+    set_target_properties(chromosome_trial PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+endif()
