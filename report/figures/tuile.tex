@@ -3,9 +3,9 @@
   \node[anchor=east] at (1.14,-\r) {\nom};
   \foreach \c in {\start,...,11} {
     \ifnum\c<8\relax
-      \draw[fill=black!11] (\c-.46,-\r-.32) rectangle (\c+.46,-\r+.32);
+      \draw[fill=powderGold!55] (\c-.46,-\r-.32) rectangle (\c+.46,-\r+.32);
     \else
-      \draw[fill=white] (\c-.46,-\r-.32) rectangle (\c+.46,-\r+.32);
+      \draw[fill=powderBlue!30] (\c-.46,-\r-.32) rectangle (\c+.46,-\r+.32);
     \fi
     \node at (\c,-\r) {\c};
   }
@@ -13,6 +13,6 @@
 \draw[decorate,decoration={brace,mirror,amplitude=3pt}] (7.54,-3.55)--(11.46,-3.55)
   node[midway,below=4pt] {colonnes écrites par le bloc};
 \node[anchor=west,align=left,text width=50mm] at (12.3,-1.25)
-  {Halo à gauche (gris)\par lu à l’entrée, recalculé aux lignes intermédiaires.\par
-   \smallskip Colonnes de sortie en blanc.};
+  {Halo à gauche (ocre)\par lu à l’entrée, recalculé aux lignes intermédiaires.\par
+   \smallskip Colonnes de sortie en bleu.};
 \end{tikzpicture}

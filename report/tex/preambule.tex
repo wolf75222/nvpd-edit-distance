@@ -1,0 +1,50 @@
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[english,french]{babel}
+\usepackage{tex/popsnotes}
+\selectcolormodel{natural}
+\usepackage{algpseudocode,placeins,needspace,multicol}
+\floatstyle{ruled}
+\newfloat{algorithm}{htbp}{loa}
+\floatname{algorithm}{Algorithme}
+\algrenewcommand\algorithmicrequire{\textbf{Input}}
+\algrenewcommand\algorithmicensure{\textbf{Output}}
+\geometry{left=22mm,right=22mm,top=20mm,bottom=21mm,headsep=4mm}
+\setlength{\headwidth}{\textwidth}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{2}
+\addto\captionsfrench{\renewcommand{\contentsname}{Sommaire}\renewcommand{\figurename}{Figure}}
+\titleformat{\section}{\normalfont\rmfamily\bfseries\Large}{\thesection}{.65em}{}[{\vspace{1pt}\titlerule[.35pt]}]
+\titleformat{\subsection}{\normalfont\rmfamily\bfseries\large}{\thesubsection}{.65em}{}[{\vspace{.5pt}\titlerule[.2pt]}]
+\pretocmd{\section}{\FloatBarrier\Needspace{4\baselineskip}}{}{}
+\pretocmd{\subsection}{\Needspace{5\baselineskip}}{}{}
+\newcommand{\DocHeader}{Distance d'édition sur ROMEO}
+\newcommand{\reposource}[1]{\href{https://github.com/wolf75222/nvpd-edit-distance/blob/main/#1}{\nolinkurl{#1}}}
+\newcommand{\sourcefig}[1]{\par\vspace{1pt}{\raggedright\footnotesize Code\,: \reposource{#1}\par}}
+\newcommand{\chart}[5][.94\linewidth]{\begin{figure}[!htbp]\centering
+  \includegraphics[width=#1,height=.35\textheight,keepaspectratio]{../figures/#2}
+  \caption{#3}\label{#4}\sourcefig{#5}\end{figure}}
+\newcommand{\schema}[4]{\begin{figure}[!htbp]\centering
+  \input{figures/#1}\caption{#2}\label{#3}\sourcefig{#4}\end{figure}}
+\captionsetup{font=small,labelfont=bf,labelsep=period,skip=4pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setcounter{topnumber}{3}\setcounter{bottomnumber}{2}\setcounter{totalnumber}{5}
+\renewcommand{\topfraction}{.9}\renewcommand{\bottomfraction}{.85}
+\renewcommand{\floatpagefraction}{.64}\renewcommand{\textfraction}{.09}
+\newcommand{\doctitle}[1]{\thispagestyle{firstpage}\begin{center}
+ {\LARGE\bfseries Parallel Edit Distance for Genomic Sequences\par}
+ \vspace{4pt}{\large #1\par}\vspace{4pt}
+ Master CHPS \enspace$\cdot$\enspace Université de Reims Champagne-Ardenne \enspace$\cdot$\enspace 24 novembre 2026
+ \end{center}}
+\hypersetup{pdftitle={Parallel Edit Distance for Genomic Sequences},pdfsubject={Alignement global sur ROMEO}}
+
+\makeatletter
+\newcommand{\fullcontents}{\section*{\contentsname}\begin{multicols}{2}
+  \small\setlength{\parskip}{0pt}\setlength{\columnsep}{7mm}\@starttoc{toc}
+\end{multicols}}
+\makeatother
+
+\newcommand{\synthese}[1]{\par\smallskip\begingroup\interlinepenalty=10000
+  \noindent\textbf{Synthèse.}\enspace#1\par\endgroup}
+\newcommand{\synthesesection}[1]{\par\medskip\begingroup\interlinepenalty=10000
+  \noindent\textbf{Synthèse.}\enspace#1\par\endgroup}

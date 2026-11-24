@@ -1,0 +1,9 @@
+\subsection{Régimes de calcul et portée des mesures}
+Le choix de la décomposition dépend du travail par paire et du nombre de paires disponibles. Pour NvPD synchronisé à chaque ligne, sur une paire de \(m\) lignes et \(n\) colonnes réparties entre \(p\) unités, un modèle de durée sépare le calcul des synchronisations,
+\[
+ T_{\rm dense}\simeq \frac{mn}{p\,v_p}+m\,\tau_p,
+ \qquad W_{\mathrm{band}}=O(\max(m,n)(d+1)).
+\]
+Le débit local \(v_p\) comprend les effets de la mémoire et \(\tau_p\) désigne le coût moyen d'une synchronisation. Le premier terme suppose des colonnes équilibrées. La seconde expression borne le travail d'une bande doublée jusqu'à couvrir la distance \(d\). Pour des paires indépendantes, la somme des travaux individuels remplace \(mn\) et une réduction termine le lot.
+\chart{comparison/synthese.png}{La comparaison associe le coût des méthodes sur une paire à la variation du débit quand les deux nœuds se partagent un lot de taille fixe.}{fig:bilan}{notebooks/profil_nvpd.ipynb}
+Le panneau a) de la figure~\ref{fig:bilan} porte sur une paire fixée par taux et cinq blocs après échauffement sur Grace et GH200. Au taux de 2\,\%, la tuile CUDA prend \(3{,}570\pm0{,}009\)\,s et WFA2 sur un cœur Grace \(0{,}767\pm0{,}006\)\,s. À 10\,\%, les temps atteignent respectivement \(3{,}591\pm0{,}011\) et \(9{,}835\pm0{,}023\)\,s. Le rapport apparié des temps NvPD/WFA2 passe de \(4{,}655\pm0{,}042\) à \(0{,}3651\pm0{,}0005\). Dans le panneau b), le travail reste fixe sur un puis deux nœuds EPYC et chaque thread OpenMP d'un rang MPI traite sa paire jusqu'au bout.

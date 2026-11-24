@@ -1,0 +1,10 @@
+Pour un accès logique \(l\) d'un warp \(w\) de 32 fils, les adresses \(a\) des fils actifs se regroupent en secteurs de 32 octets. Le volume demandé par case se calcule par
+\[
+ B=\frac{32}{mn}\sum_{w,l}\bigl|\{\lfloor a/32\rfloor : a\in A_{wl}\}\bigr|
+ \quad [\mathrm{bytes/cell}].
+\]
+Le modèle énumère les adresses de l'index, les lectures de scores et les écritures à partir du placement réel des bases. Deux instructions qui accèdent au même secteur comptent séparément. L'accès aux compteurs L1 et L2 du GH200 est restreint sur cette allocation. Le trafic qui atteint la mémoire HBM reste indéterminé.
+\chart{gpu/localite_gpu.png}{Le volume de secteurs demandé par case dépend de la portée des prédécesseurs et du nombre de lignes conservées en mémoire partagée.}{fig:secteurs}{bench/gpu/locality/gpu_sectors.cu}
+Sur la paire de portée 30, la figure~\ref{fig:secteurs} donne 22,48 octets par case pour le noyau par ligne et 10,62 pour la tuile. Lorsque la portée atteint 169, le sélecteur reprend le noyau par ligne.
+
+\synthese{Sur le rectangle de 32 lignes, la tuile réduit de 64,2\,\% le volume de secteurs demandés. Ce modèle porte sur les adresses émises et laisse ouverte la part des demandes finalement servies par la mémoire HBM.}

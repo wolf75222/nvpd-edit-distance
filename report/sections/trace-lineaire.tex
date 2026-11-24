@@ -1,0 +1,10 @@
+\subsection{Reconstruction en mémoire linéaire}
+Une trace optimale passe par une colonne de la ligne médiane \(h=\lfloor m/2\rfloor\). Le principe de coupe de Hirschberg~\cite{hirschberg}, initialement formulé pour une plus longue sous-séquence commune, s'applique aux coûts unitaires d'édition. Une passe avant calcule \(F_j=d(A_{1:h},B_{1:j})\). Une passe en sens inverse calcule \(G_{n-j}=d(A_{h+1:m},B_{j+1:n})\). En coupant un chemin optimal à la ligne \(h\), puis en concaténant deux solutions optimales pour cette coupe, on obtient
+\[
+ d(A,B)=\min_{0\le j\le n}(F_j+G_{n-j}).
+\]
+Le noyau retient une colonne minimisante et résout récursivement les deux rectangles. Il place la plus courte chaîne en colonnes et réutilise les deux mêmes tableaux dans les appels enfants. Les scores occupent \(8(\min(m,n)+1)\) octets, auxquels s'ajoutent la pile de profondeur logarithmique et le CIGAR de sortie. À chaque niveau, la somme des aires décroît avec les hauteurs des rectangles. Le travail reste en \(O(mn)\).
+\chart{cpu/trace_lineaire.png}{Durées et mémoire résidente pour la reconstruction de la trace sur un cœur EPYC. Chaque méthode et chaque préfixe fournissent 31 processus après échauffement.}{fig:trace}{bench/repeated/measure.py}
+La figure~\ref{fig:trace} utilise des préfixes d'une même paire. À 2\,000 bases, la matrice complète prend \(5{,}778\pm0{,}281\)\,ms et Hirschberg \(8{,}907\pm0{,}039\)\,ms. À 8\,000 bases, les deux chemins coûtent 203 éditions. Les temps passent à \(99{,}406\pm0{,}571\) et \(141{,}898\pm0{,}510\)\,ms. Les maxima du RSS sur les 31 processus sont respectivement 253\,424 et 6\,940\,Kio.
+
+\synthese{À 25\,000 bases, Hirschberg reconstruit un chemin de 531 éditions en \(1{,}38331\pm0{,}00107\)\,s. Les coupes évitent de conserver toute la matrice au prix de passes supplémentaires sur les préfixes.}

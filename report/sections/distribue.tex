@@ -1,0 +1,52 @@
+\subsection{Décomposition du travail sur deux nœuds}
+Le calcul distribué compare le coût d'un échange par ligne à celui d'une réduction en fin de lot. Pour une seule paire, chaque rang possède une bande verticale. Au début de la ligne \(i\), il connaît le rang et la colonne de la dernière occurrence antérieure de \(A_i\). Le bord droit de la ligne \(i-1\) permet aussi de traiter le cas où cette occurrence se trouve en première colonne d'une bande.
+L'algorithme~\ref{alg:mpi} décrit les deux scalaires dont chaque rang a besoin pour poursuivre sa bande locale.
+\begin{algorithm}[!htbp]
+\caption{Décomposition MPI d'une paire par bandes de colonnes}\label{alg:mpi}
+\begin{algorithmic}[1]
+\Require Strings \(A,B\), \(r\) MPI ranks and one column interval per rank
+\Ensure The terminal score \(d(A,B)\) on every rank
+\State Index the last occurrence of each symbol in each column interval
+\For{each row \(i=1,\ldots,m\)}
+  \State Exchange each previous right edge and the score before the last local match using \texttt{MPI\_Allgather}
+  \State Update the local interval using Algorithm~\ref{alg:nvpd} and swap score rows
+\EndFor
+\State Broadcast the terminal score from its owning rank
+\end{algorithmic}
+\end{algorithm}
+\schema{mpi}{Les rangs échangent deux scores par ligne pour une paire, tandis qu'une seule réduction rassemble les scores d'un lot.}{fig:comm}{src/mpi/mpi.cpp}
+Pour \(r\) rangs, chaque rang reçoit \(2r\) entiers par ligne. Dans le lot de la figure~\ref{fig:comm}, le rang \(q\) prend les paires d'indices \(q,q+r,\ldots\). Chaque fil traite une paire en SIMD. Le temps mesuré est le maximum des temps de rang, hors lecture du FASTA.
+\chart{distributed/echelle_mpi.png}{À charge fixe, le passage de vingt-quatre à quarante-huit rangs de huit fils change le temps d'une paire et celui d'une matrice.}{fig:mpifort}{bench/mpi/scaling.py}
+La figure~\ref{fig:mpifort} donne la moyenne de sept blocs indépendants après deux échauffements. L’ordre des essais est randomisé. Chaque configuration réserve un ou deux nœuds entiers, soit 192 ou 384 cœurs. Sur la paire de 20\,000 lignes, le temps passe de \(91{,}49\pm0{,}78\) à \(997{,}1\pm12{,}5\)\,ms. Le temps du lot synthétique de 2\,016 paires passe de \(768{,}17\pm3{,}62\) à \(528{,}33\pm0{,}93\)\,ms.
+
+\synthese{Sur deux nœuds, l'efficacité forte atteint 72,70\,\% sur le lot synthétique et 71,35\,\% sur le phage. Elle tombe à 4,59\,\% sur la paire carrée et à 13,70\,\% sur la paire large.}
+
+\subsection{Temps passé dans les échanges collectifs}\label{sec:collectives}
+L'interface de profilage PMPI, définie par le MPI Forum, permet d'entourer un appel MPI d'un chronomètre. Après deux échauffements, sept blocs comparent le même calcul avec et sans sonde. Le rang critique est celui qui détermine la durée du calcul. Pour chaque essai instrumenté, la part du collectif est le rapport de son temps cumulé dans \texttt{MPI\_Allgather} à sa durée totale. Le temps ainsi attribué au collectif comprend l'attente des autres rangs.
+
+\chart{distributed/collectives_mpi.png}{Temps du collectif sur le rang critique, coût de l'instrumentation et gain du pipeline de voisinage sur les mêmes deux nœuds.}{fig:collectives}{bench/mpi/collectives/probe.c}
+Sur la paire carrée de la figure~\ref{fig:collectives}, les 20\,000 collectifs occupent \(70{,}41\pm1{,}35\)\,\% de ce temps sur un nœud et \(97{,}10\pm0{,}10\)\,\% sur deux. Sur la matrice large, les 1\,024 collectifs en occupent respectivement \(26{,}13\pm1{,}11\) et \(87{,}94\pm0{,}16\)\,\%. L'écart-type porte sur les sept rapports. Pour le carré à deux nœuds, activer la sonde change le temps de \(-4{,}95\pm10{,}07\)\,\% par rapport au témoin apparié. La dispersion empêche d'attribuer cette différence à la seule instrumentation.
+
+Le panneau c) de la figure~\ref{fig:collectives} mesure une version qui transmet le bord droit d'une bande au rang voisin par paquets de \(H\) lignes. Dans une bande dont la colonne locale \(x\) correspond à la colonne globale \(s+x\), posons \(P_x=D_{i-1,s+x}\) et \(C_x=D_{i,s+x}\). Le voisin de gauche fournit \(C_0\). Si \(k\) désigne la dernière occurrence locale de \(A_i\) à gauche de \(x\), y compris \(x\), la récurrence devient
+\[
+ C_x=\min\bigl\{P_x+1,\,P_{x-1}+1,\,C_0+x,\,P_{k-1}+x-k\bigr\}.
+\]
+Le dernier terme disparaît en l'absence de correspondance locale. Le terme \(C_0+x\) couvre le chemin qui entre dans la ligne par le bord et se poursuit par \(x\) insertions. Avec \(r\) bandes non vides, les rangs échangent \((r-1)\lceil m/H\rceil\) messages de voisinage. La sonde confirme que les mises à jour n'appellent plus \texttt{MPI\_Allgather}.
+
+La comparaison repose sur sept blocs appariés, deux échauffements et le même placement que le témoin. Sur deux nœuds, le carré demande \(996{,}89\pm14{,}98\)\,ms avec le collectif par ligne et \(13{,}074\pm0{,}425\)\,ms avec \(H=32\). Sur la paire large, les temps passent de \(51{,}925\pm0{,}570\) à \(5{,}815\pm0{,}103\)\,ms avec \(H=8\). Ce gain à ressources fixées se distingue du passage d'un nœud à deux. Le rapport de temps du pipeline seul vaut alors 0,871 pour le carré et 1,372 pour la paire large. Sur cette dernière, \(H=32\) ne produit que 32 paquets pour remplir 48 bandes, contre 128 paquets à \(H=8\).
+
+\synthese{À deux nœuds, le gain apparié sur le témoin atteint 76,30 sur le carré (IC à 95\,\% de 74,52 à 78,07) et 8,93 sur la paire large (8,77 à 9,09). La hauteur la plus rapide dépend de la forme du rectangle.}
+
+\subsection{Efficacité à charge par cœur constante}
+L'expérience faible compare deux nœuds complets à un nœud complet, avec huit fils par rang. Soit \(W\) le nombre de cases traitées sur le premier nœud. En doublant le travail, l'efficacité faible et le gain de débit valent
+\[
+ E_{\mathrm{weak}}=\frac{T_{192}(W)}{T_{384}(2W)},\qquad
+ \frac{2W/T_{384}(2W)}{W/T_{192}(W)}=2E_{\mathrm{weak}}.
+\]
+Pour une paire, 1\,024 lignes sont conservées et la largeur vaut 256 ou 4\,096 colonnes par cœur. Pour le lot, les séquences comptent 8\,192 bases. Les 85 puis 120 séquences donnent respectivement \(85\times84/2=3\,570\) et \(120\times119/2=7\,140\) paires. Le travail total double dans les trois cas. Dans le lot, le nombre de cases par cœur est une moyenne sur les travailleurs.
+\chart{distributed/mpi_faible.png}{Sept blocs par configuration donnent les temps moyens et l'efficacité faible des deux décompositions MPI.}{fig:mpifaible}{bench/mpi/scaling.py}
+Sur la figure~\ref{fig:mpifaible}, le passage à deux nœuds porte la durée du lot de \(691{,}97\pm7{,}28\) à \(890{,}94\pm3{,}47\)\,ms. Sur une paire, l'efficacité passe de 10,07 à 30,57\,\% lorsque le travail local par ligne est multiplié par seize. Le nombre de collectifs reste fixé à 1\,024.
+
+\synthese{Pour le lot indépendant, l'efficacité faible atteint \(77{,}67\pm0{,}76\)\,\%. Sur la paire large, l'IC à 95\,\% s'étend de 19,33 à 41,80\,\%. La dispersion sur un nœud limite la précision du rapport.}
+
+\synthesesection{Doubler le nombre de cœurs, de 192 à 384, augmente le débit d'un lot dont les scores peuvent être rassemblés à la fin. Sur une paire, le pipeline de voisinage réduit le temps observé face aux collectifs de la version initiale.}

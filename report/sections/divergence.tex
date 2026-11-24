@@ -1,0 +1,31 @@
+\subsection{Effet de la divergence à grande longueur}
+Le générateur applique des éditions à une chaîne de référence et conserve la graine de chaque paire. Le taux injecté compte les opérations du générateur. La distance \(d\) minimise le coût parmi tous les chemins et peut être inférieure à ce nombre. Au score \(s\), WFA conserve la plus grande colonne \(F_s(k)\) atteinte sur la diagonale \(k=j-i\). Prolonger une correspondance ne consomme aucun point de score~\cite{wfa}.
+L'algorithme~\ref{alg:wfa} explicite le cas des coûts unitaires de WFA2-lib.
+\begin{algorithm}[!htbp]
+\caption{Progression d'un front à coûts unitaires}\label{alg:wfa}
+\begin{algorithmic}[1]
+\Require Strings \(A[1:m],B[1:n]\)
+\Ensure Unit-cost global edit distance \(d(A,B)\)
+\State \(s\gets0\); extend the common prefix on diagonal \(k=0\)
+\While{the current front does not reach \((m,n)\)}
+  \State \(s\gets s+1\)
+  \ForAll{valid diagonals \(k\) with \(|k|\le s\)}
+    \State Choose the furthest valid insertion, deletion or substitution predecessor
+    \State Extend matching letters and store the final column in \(F_s(k)\)
+  \EndFor
+\EndWhile
+\State \Return \(s\)
+\end{algorithmic}
+\end{algorithm}
+Pour les prédécesseurs intérieurs, les trois colonnes candidates valent \(F_{s-1}(k-1)+1\), \(F_{s-1}(k+1)\) et \(F_{s-1}(k)+1\). Chaque mouvement reste dans le rectangle des préfixes. Au plus \(2s+1\) diagonales sont actives au score \(s\), soit \(O((d+1)^2)\) entrées de front jusqu'au score final, auxquelles s'ajoutent les comparaisons des lettres égales.
+\chart{comparison/temps_distance.png}{Les durées sont rapportées à la longueur et à la divergence. À gauche, le deuxième appel de chaque processus porte sur la première paire à 5\,\% de chaque longueur. À droite, cinq paires distinctes par taux sont mesurées à froid.}{fig:temps}{bench/campaign/run.py}
+À longueur fixée, NvPD parcourt toujours \(mn\) cases. La figure~\ref{fig:temps} montre que le temps de WFA2 augmente avec la divergence. Le débit dense \(mn/(10^9 T)\) compte des milliards de cases utiles par seconde pour NvPD, hors recalcul des halos. Pour un front, le même quotient est un débit équivalent.
+Pour les longueurs 5\,000, 20\,000, 100\,000 et un million, le panneau a) compte respectivement neuf, neuf, cinq et cinq processus par méthode. À un million de bases, le parcours séquentiel prend \(1\,294{,}72\pm83{,}01\), \(1\,291{,}85\pm80{,}46\) et \(1\,264{,}36\pm82{,}90\)\,s à 2, 5 et 10\,\% d'éditions injectées. Les cinq processus de chaque taux travaillent simultanément sur des cœurs distincts, chacun après un alignement d'échauffement. À 5\,\%, l'IC à 95\,\% s'étend de 1\,191,95 à 1\,391,76\,s. La demi-largeur relative atteint 7,7 à 8,1\,\% selon le taux. Les durées se répartissent entre deux groupes de cœurs, sans mesure isolant l'origine matérielle de cet écart.
+
+Sur les cinq paires distinctes de chaque taux à un million de bases, la moyenne et l'écart-type pour WFA2 passent de \(0{,}610\pm0{,}009\) à \(11{,}638\pm0{,}063\)\,s entre 2 et 10\,\% d'éditions injectées. Sur les mêmes groupes, edlib passe de \(1{,}706\pm0{,}006\) à \(6{,}024\pm0{,}005\)\,s.
+
+\synthese{À longueur fixée, le passage de 2 à 10\,\% d'éditions injectées multiplie le temps moyen de WFA2 par environ dix-neuf. La largeur des fronts rend la divergence déterminante pour cette bibliothèque.}
+
+\input{sections/million}
+
+\synthesesection{Les 30 scores du comparatif OpenMP concordent avec les bibliothèques. L'égalité des résultats permet ainsi d'étudier séparément les effets de la décomposition dense et ceux de la distance sur les fronts.}

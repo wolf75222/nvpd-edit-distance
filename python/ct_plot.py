@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from uuid import uuid4
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.ticker import NullLocator, ScalarFormatter
 
 
@@ -86,9 +87,74 @@ def legend_above(figure, axes, ncol):
                   ncol=ncol, columnspacing=1.25, handlelength=1.7, fontsize=7)
 
 
+def estimate(axis, position, result, color, *, marker="o", label=None, horizontal=False,
+             hollow=False):
+    """Tracer la moyenne, la dispersion observée (trait épais) et l’IC (trait fin).
+
+    Les barres disparaissent lorsque leur estimation n'est pas définie.
+    Le marqueur reste visible pour une mesure isolée.
+    """
+    mean = result["mean"]
+    center = (mean, position) if horizontal else (position, mean)
+    key = "xerr" if horizontal else "yerr"
+    for half, width, cap, alpha in ((result["high95"] - mean, .85, 2.4, 1),
+                                    (result["sd"], 3.2, 0, .52)):
+        if np.isfinite(half) and half > 0:
+            axis.errorbar(*center, **{key: half}, fmt="none", ecolor=color,
+                          elinewidth=width, capsize=cap, alpha=alpha, zorder=2)
+    axis.plot(*center, marker=marker, ls="none", color=color,
+              markerfacecolor=PAPER if hollow else color, markeredgecolor=INK,
+              markeredgewidth=.45, label=label, zorder=3)
+
+
+def join(axis, positions, values, color, *, horizontal=False):
+    """Relier les mesures de la même série ou les deux extrémités d'une paire."""
+    x, y = (values, positions) if horizontal else (positions, values)
+    axis.plot(x, y, color=color, linewidth=.85, zorder=1.4)
+
+
+def value_label(axis, x, y, value, digits=2, *, horizontal=False):
+    """Annoter une valeur isolée avec la virgule décimale française."""
+    text = f"{value:.{digits}f}".replace(".", ",")
+    offset = (4, 0) if horizontal else (0, 4)
+    axis.annotate(text, (x,y), xytext=offset, textcoords="offset points",
+                  ha="left" if horizontal else "center", va="center" if horizontal else "bottom",
+                  fontsize=7, zorder=4)
+
+
+def comparison(axis, row, estimates, *, annotate=True, digits=2):
+    """Comparer deux ou plusieurs méthodes dans une seule ligne catégorielle.
+
+    Chaque entrée est un quadruplet (résumé, couleur, marqueur, légende).
+    Les valeurs imprimées utilisent les mêmes unités que l'axe.
+    """
+    means = [record["mean"] for record, _, _, _ in estimates]
+    if len(means) > 1:
+        join(axis, [row, row], [min(means), max(means)], INK, horizontal=True)
+    for record, color, marker, label in estimates:
+        center = record["mean"]
+        estimate(axis, row, record, color, marker=marker, label=label, horizontal=True)
+        if annotate:
+            # Des extrémités presque égales gardent leurs deux valeurs lisibles.
+            left = len(means) > 1 and center == min(means)
+            text = f"{center:.{digits}f}".replace(".", ",")
+            axis.annotate(text, (center, row), xytext=(-2 if left else 2, 5),
+                          textcoords="offset points", ha="right" if left else "left",
+                          va="bottom", fontsize=6.8, color=INK, zorder=5)
+
+
+def category_rows(axis, labels, xlabel):
+    """Resserrer la hauteur autour des catégories et conserver la grille des valeurs."""
+    axis.set(yticks=np.arange(len(labels)), yticklabels=labels, xlabel=xlabel,
+             ylim=(len(labels) - .55, -.56))
+    axis.grid(False, axis="y")
+    axis.margins(x=.15)
+
+
 @contextmanager
 def atomic_png(destination):
     """Remplacer le PNG seulement après la fermeture d'un fichier temporaire voisin."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(f".{destination.name}.{uuid4().hex}.tmp")
     stream = temporary.open("xb")
     try:

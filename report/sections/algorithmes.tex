@@ -1,0 +1,87 @@
+\subsection{Distance globale entre séquences}
+La distance de Levenshtein~\cite{levenshtein} est le nombre minimal d'éditions qui transforment la chaîne entière \(A\) en la chaîne entière \(B\). Une substitution, une insertion ou une délétion d'une base coûte une unité. Pour deux préfixes de longueurs \(i,j\), Wagner et Fischer~\cite{wagner} fondent leur programmation dynamique sur la dernière opération du chemin. La récurrence est
+\[
+ D_{ij}=\min\{D_{i-1,j}+1,\ D_{i,j-1}+1,\ D_{i-1,j-1}+[A_i\ne B_j]\},
+ \qquad D_{i0}=i,\quad D_{0j}=j.
+\]
+Les deux premières cases prédécesseures correspondent à une délétion et à une insertion. La troisième consomme deux lettres et facture leur différence. Une suite d'éditions qui mène de \(A\) à \(B\) peut être inversée, d'où la symétrie. L'écart de longueur donne la borne inférieure \(\lvert m-n\rvert\) et les substitutions suivies de l'ajustement de longueur donnent la borne supérieure \(\max(m,n)\).
+
+Sadiq et coll.~\cite{sadiq} remplacent la lecture de gauche par la dernière position \(k\) de \(A_i\) dans \(B_{1:j}\). Si \(k>0\), une correspondance en \(k\) suivie de \(j-k\) insertions coûte \(P_{k-1}+j-k\), où \(P_j=D_{i-1,j}\). Si \(k=0\), le terme de remplacement \(P_0+j\) vaut \(i-1+j\), au moins \(\max(i,j)\) pour \(i,j\ge1\). Il laisse donc le minimum inchangé.
+Cette réduction découle de \(P_v\le P_u+v-u\) pour \(v\ge u\), car des insertions suffisent pour allonger le préfixe de \(B\). Considérons la dernière opération qui consomme \(A_i\), suivie d'insertions. Si elle supprime \(A_i\) en colonne \(t\), son coût total est au moins \(P_j+1\). Si elle substitue une lettre en \(t\), il est au moins \(P_{j-1}+1\). Pour une correspondance, \(P_{t-1}+j-t\) décroît au sens large avec \(t\). La dernière occurrence réalise donc le minimum de cette troisième famille de chemins.
+\schema{dependances}{Pour \texttt{A} et \texttt{AC}, les deux récurrences donnent le coût de la case terminale à partir des valeurs indiquées.}{fig:dep}{src/cpu/dp.cpp}
+La figure~\ref{fig:dep} montre l'insertion terminale. Dans le calcul classique, elle exige la valeur de la case voisine sur la même ligne. Dans NvPD, sa contribution se lit sur la ligne précédente.
+L'algorithme~\ref{alg:nvpd} maintient deux lignes de scores. L'index \(K\) remplace la dépendance à gauche par une lecture dans la ligne précédente.
+\begin{algorithm}[!htbp]
+\caption{Mise à jour de NvPD par colonnes indépendantes}\label{alg:nvpd}
+\begin{algorithmic}[1]
+\Require Strings \(A[1:m], B[1:n]\)
+\Ensure Unit-cost global edit distance \(d(A,B)\)
+\State Build \(K[c,j]=\max(\{t\le j:B_t=c\}\cup\{0\})\) for symbols \(c\) in \(A\)
+\State \(P[0:n]\gets (0,1,\ldots,n)\)
+\For{\(i=1,\ldots,m\)}
+  \State \(Q[0]\gets i\)
+  \ForAll{\(j=1,\ldots,n\) in parallel}
+    \State \(k\gets K[A_i,j]\)
+    \State \(Q[j]\gets\min\{1+\min(P[j-1],P[j]),\,P[\max(0,k-1)]+j-k\}\)
+  \EndFor
+  \State Synchronize workers and swap \(P,Q\)
+\EndFor
+\State \Return \(P[n]\)
+\end{algorithmic}
+\end{algorithm}
+
+\synthese{Dans l'exemple \texttt{A} et \texttt{AC}, une insertion suffit. La dernière occurrence permet de retrouver ce coût à partir d'une seule ligne précédente et lève la dépendance entre colonnes voisines.}
+
+\subsection{Architecture des noyaux d’alignement}
+La disposition des prédécesseurs détermine la mémoire à conserver et la fréquence des synchronisations. La programmation dynamique (DP, \emph{dynamic programming}) séquentielle avance par lignes dans deux tableaux. Sur l'anti-diagonale \(i+j=s\), les valeurs d'entrée appartiennent aux niveaux \(s-1\) et \(s-2\). Trois tableaux tournants suffisent et chacune des \(m+n-1\) anti-diagonales intérieures comporte au plus \(\min(m,n)\) cases. NvPD avance en \(m\) lignes de \(n\) colonnes. Le mode coût seul place la chaîne courte sur les lignes. Toutes ces méthodes traitent \(mn\) cases.
+\schema{architecture}{Le lecteur FASTA alimente le calcul d'une paire ou du triangle supérieur d'une matrice, puis le programme écrit le score ou la matrice étiquetée.}{fig:arch}{src/cli/main.cpp}
+Le lecteur de la figure~\ref{fig:arch} fournit les mêmes chaînes à tous les noyaux. Kokkos est la bibliothèque C++ de portabilité de performance présentée par Edwards, Trott et Sunderland~\cite{kokkos}. Son espace d'exécution sélectionne un processeur ou un GPU. Edlib, de Martin Šošić et Mile Šikić, adapte l'algorithme en vecteurs de bits de Myers~\cite{edlib,myers}. WFA2-lib, développée par Santiago Marco-Sola et ses collaborateurs, avance par fronts de coût croissant~\cite{wfa}. QuickEd, de Doblas et ses coauteurs, utilise des fenêtres pour estimer une borne puis calcule un alignement en bande~\cite{quicked}. A*PA2, de Groot Koerkamp, combine calcul en bits et borne inférieure sur le coût restant~\cite{astar}. Aguado-Puig et ses coauteurs ont porté le calcul par fronts sur GPU dans eWFA-GPU~\cite{wfagpu}. Les adaptateurs edlib et WFA2 demandent un coût global. QuickEd dispose d'un exécutable séparé et reconstruit aussi l'alignement. Les pilotes A*PA2 et eWFA-GPU appellent les implémentations des auteurs. Le mode trace des noyaux denses conserve \((m+1)(n+1)\) entiers. Il remonte depuis \((m,n)\) et écrit les opérations dans l'ordre de transformation de \(A\) en \(B\).\footnote{Un CIGAR indique la longueur et le type des opérations. Les tests le rejouent pour vérifier les bases consommées et le coût.} Le lecteur FASTA traite les symboles ambigus littéralement, de sorte que \texttt{N} et \texttt{A} coûtent une substitution.
+
+Les mesures principales de WFA2-lib utilisent la révision amont épinglée. Une comparaison indépendante examine deux correctifs de portabilité, l'un pour les lectures de huit octets, l'autre pour le curseur de l'allocateur. Sur EPYC, GCC~11.5 produit le même code machine pour l'extension du front et un objet différent pour l'allocateur. Les 800 appels des deux versions restituent les scores attendus. Sur la paire de 20\,000 bases à 10\,\%, le rapport apparié du temps portable au temps amont vaut 0,997 (IC à 95\,\% [0,992\,; 1,002]). Les cinq intervalles contiennent 1. Les mesures et leurs incertitudes figurent dans \reposource{results/alternatives/wfa-portability/838814/summary.csv}.
+\schema{execution}{Les dépendances d'une paire et les temps moyens d'une matrice illustrent les deux niveaux de parallélisme OpenMP.}{fig:execution}{src/cpu/dp_internal.hpp}
+Pour le noyau \texttt{nvpd-omp}, lorsque le triangle contient au moins autant de paires que de fils, la commande \texttt{matrix} distribue ces paires entre les fils et limite le noyau de chacune à un travailleur. Sur le lot synthétique de la figure~\ref{fig:execution}, le gain moyen des cinq blocs appariés est de \(5{,}25\pm0{,}04\) (écart-type). Voir les \href{https://github.com/wolf75222/nvpd-edit-distance/blob/main/results/profile/matrix-omp/838652/trials.csv}{mesures sur EPYC}.
+
+\synthese{À huit cœurs, distribuer les 120 paires réduit le temps de processus d'un facteur proche de cinq. Pour une seule paire, la mémoire de trace peut devenir déterminante avant le débit de calcul.}
+
+\input{sections/trace-lineaire}
+\subsection{Domaine exploré et divergence des séquences}
+Une borne sur le nombre d'éditions permet de limiter le nombre de diagonales explorées. Chaque insertion ou délétion déplace le chemin d'une diagonale. Un chemin de coût au plus \(k\) reste donc dans \(\lvert i-j\rvert\le k\). Le programme double le seuil jusqu'au premier score admissible, suivant le principe du calcul en bande~\cite{ukkonen}. Pour \(L=\max(m,n)\) et une distance finale \(d\), la somme des largeurs donne \(O(L(d+1))\) opérations et \(O(d+1)\) cases de mémoire.
+L'algorithme~\ref{alg:band} élargit la bande jusqu'à ce que son bord cesse de contraindre le score terminal.
+\begin{algorithm}[!htbp]
+\caption{Alignement global par élargissement de bande}\label{alg:band}
+\begin{algorithmic}[1]
+\Require Strings \(A,B\), optional common-end trimming
+\Ensure Unit-cost global edit distance \(d(A,B)\)
+\State Trim common ends if requested and return the other length if one string is empty
+\State \(m\gets |A|,\; n\gets |B|,\; L\gets\max(m,n),\; k\gets\max(1,|m-n|)\)
+\Loop
+  \State Fill two DP rows over \(\max(0,i-k)\le j\le\min(n,i+k)\) using out-of-band sentinels
+  \If{the terminal cell is reachable and \(D_{mn}\le k\)} \State \Return \(D_{mn}\) \EndIf
+  \State \(k\gets\min(2k,L)\)
+\EndLoop
+\end{algorithmic}
+\end{algorithm}
+Avec des coûts unitaires, supprimer un préfixe ou un suffixe identique conserve \(d\). Dans le calcul bit-parallèle de Myers, un mot machine contient les différences de plusieurs scores successifs. WFA2 visite les diagonales qu’un front de faible coût peut atteindre.
+\chart{comparison/methodes_exactes.png}{Temps d'appel sur un cœur EPYC. Les séries distinguent les calculs du score et les méthodes qui reconstruisent aussi la trace.}{fig:methodes}{bench/repeated/bands.py}
+A*PA2~\cite{astar} combine des blocs de DP en bits avec une borne sur le coût restant. La version simple utilise le déséquilibre de longueur. La version complète ajoute une heuristique fondée sur des correspondances entre fragments. Les deux appels reconstruisent le chemin. Sur la paire synthétique de 20\,000 bases à 10\,\% d'éditions injectées, les temps moyens valent \(0{,}875\pm0{,}008\)\,ms pour le mode simple, \(1{,}534\pm0{,}008\)\,ms pour le mode complet et \(3{,}736\pm0{,}022\)\,ms pour WFA2 en coût seul. Chacun des huit processus mesure dix appels chauds. L'écart-type décrit les huit moyennes de processus.
+
+
+Sassy, de Beeloo et Groot Koerkamp, recherche un motif approximatif dans un texte par calcul SIMD~\cite{sassy}. Cette recherche autorise un début et une fin libres dans le texte. Le motif \texttt{ACG} apparaît dans \texttt{TTACGTT} avec un coût de recherche nul. La distance globale de ces chaînes vaut quatre.
+
+La figure~\ref{fig:methodes} compare les temps sur ces entrées. Les 128 positions modifiées au centre de la chaîne humaine de 100\,000 bases se ramènent à 72 éditions. Sur EPYC, le temps de la bande passe de \(54{,}661\pm0{,}055\) à \(0{,}1038\pm0{,}0011\)\,ms après retrait des extrémités de ce contrôle. Sur les fenêtres homologues de 50\,000 bases, les écarts sont répartis dans l'intervalle. Les temps sont alors \(230{,}599\pm0{,}046\) et \(229{,}420\pm0{,}067\)\,ms. Huit processus fournissent chacun la moyenne de dix appels après échauffement.
+
+\synthese{Sur le contrôle humain, les 128 positions modifiées au centre coûtent 72 éditions après alignement optimal. Retirer les extrémités identiques concentre alors le travail sur le segment que ces opérations affectent.}
+
+\subsection{Certification du résultat de QuickEd}\label{sec:quicked}
+Le mode par défaut de QuickEd construit une trace en interne. Il estime d'abord une borne par fenêtres, puis transmet une borne de coût à la reconstruction de Hirschberg. Une bande géométrique peut écarter tous les chemins optimaux. Deux témoins périodiques de 512 bases ont une distance globale de 128. En imposant \(\lvert i-j\rvert\le63\) à une DP scalaire indépendante, les deux scores deviennent 133 et 129. Une largeur de 64 suffit pour retrouver 128 dans chaque cas.
+
+Sur le M1 Pro, la version amont de QuickEd~1.2 renvoie 954 et 450 pour ces mêmes témoins. La borne transmise à Hirschberg vaut déjà 128 dans les deux cas. Le défaut observé vient de la remontée du chemin au bord d'un bloc, où un prédécesseur se trouve hors des bits stockés. Sur EPYC avec GCC~11 en compilation native, la première estimation vaut 130. Les deux scores amont valent alors 128. Lors de la remontée, le contrôle d'indice vérifie que chaque prédécesseur appartient au bloc avant de lire son bit.
+
+Dans QuickEd avec contrôle du chemin, l'adaptateur rejoue le CIGAR et compare son coût au score global d'edlib. En cas d'écart, il relance Hirschberg avec une bande plus large. Si la dernière tentative échoue, il renvoie le score d'edlib en indiquant son origine. Sur deux autres témoins EPYC, QuickEd amont renvoie 506 au lieu de 128 et 760 au lieu de 256, dans chacun des 80 appels par témoin. Pour les dix entrées chronométrées, le contrôle du chemin réussit dès la première tentative. Un test qui impose artificiellement une première bande de 1\,\% provoque une reprise réelle et ramène le candidat de 896 à la distance vérifiée 384.
+
+\chart{comparison/quicked.png}{Scores et durées sur témoins contrôlés et entrées génomiques. Les 80 appels par méthode et par entrée sont répartis entre huit processus.}{fig:quicked}{bench/quicked/measure.py}
+La figure~\ref{fig:quicked} rapproche les témoins d'exactitude et le coût de la protection. Sur les paires de 20\,000 bases à 2, 5 et 10\,\%, les temps moyens avec contrôle du chemin sont respectivement \(2{,}375\pm0{,}008\), \(2{,}996\pm0{,}010\) et \(4{,}521\pm0{,}011\)\,ms. Les vérifications du coût et du chemin font partie du chronométrage.
+
+\synthese{Sur EPYC, le rejeu des 800 CIGAR consomme les deux chaînes et retrouve le score de référence. La reprise à bande élargie couvre aussi le cas où la première bande exclut le chemin optimal.}
+
+\synthesesection{Deux scores identiques peuvent résulter de parcours très différents. À 8\,000 bases, la trace par coupe utilise au plus 6\,940\,Kio sur les processus mesurés. Le choix entre score seul et restitution du chemin intervient dès l'interface.}

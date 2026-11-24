@@ -1,5 +1,5 @@
 \begin{tikzpicture}[font=\footnotesize\rmfamily, align=center,
- boite/.style={draw=black!65,rounded corners=1pt,minimum height=5mm,minimum width=21mm},
+ boite/.style={fill=powderBlue!28,draw=powderBlue!55!black,rounded corners=1pt,minimum height=5mm,minimum width=21mm},
  lien/.style={-{Latex[length=1.4mm]},line width=.45pt}]
 \foreach \x/\t in {0/{a) Une paire},7.1/{b) Lot de paires}}{
   \node[anchor=west,font=\footnotesize\bfseries\rmfamily] at (\x,1.21) {\t};}
@@ -8,8 +8,8 @@
 \draw[lien] (a.east) -- (b.west);
 \draw[lien] ([yshift=-1.2mm]b.west) -- ([yshift=-1.2mm]a.east);
 \node[font=\scriptsize\rmfamily] at (2.58,-.18) {échange à chaque ligne};
-\node[boite] (c) at (8.25,.45) {lot 0};
-\node[boite] (d) at (11.10,.45) {lot 1};
-\node[boite,fill=black!5] (r) at (9.675,-.54) {réduction};
+\node[boite,fill=powderTeal!32] (c) at (8.25,.45) {lot 0};
+\node[boite,fill=powderTeal!32] (d) at (11.10,.45) {lot 1};
+\node[boite,fill=powderGold!48] (r) at (9.675,-.54) {réduction};
 \draw[lien] (c.south) |- (r.west);\draw[lien] (d.south) |- (r.east);
 \end{tikzpicture}

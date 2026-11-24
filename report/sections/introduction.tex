@@ -1,0 +1,26 @@
+\section{Introduction}\label{sec:intro}
+La distance d'édition globale compte les substitutions, les insertions et les délétions d'un alignement optimal, y compris aux extrémités des chaînes. Pour deux longueurs \(m\) et \(n\), la programmation dynamique classique calcule \(mn\) cases intérieures. À un million de bases par chaîne, ce produit atteint mille milliards. Sadiq et ses coauteurs ont proposé NvPD pour calculer en parallèle les cases d'une même ligne~\cite{sadiq}. Cette réorganisation conserve le score exact et modifie les lectures en mémoire ainsi que les synchronisations entre fils.
+
+Sur une paire, l'étude compare la récurrence classique, son parcours en anti-diagonales, NvPD et les algorithmes dont le travail dépend du score. Une collection fournit un autre niveau de parallélisme, car les paires s’alignent indépendamment. Les noyaux en C++20 utilisent OpenMP, la spécification de l'OpenMP Architecture Review Board, pour la mémoire partagée. CUDA, l'interface de NVIDIA, exécute les noyaux sur GPU. MPI, normalisé par le MPI Forum, transporte les données entre processus.
+
+Au format FASTA, chaque chaîne est précédée d’une ligne d’identification. Les essais associent paires synthétiques de longueur et de divergence contrôlées, fenêtres homologues de chromosomes humains et deux collections de 64 génomes. Pour ces dernières, les 2\,016 scores sont des observations exactes sur les chaînes déposées. Les arbres de la section~\ref{sec:bio} permettent de mesurer ce qui se perd lorsqu'on remplace une distance d'édition par la longueur d'un chemin sur un arbre.
+
+\subsection{Mesures et unités expérimentales}\label{sec:protocol}
+Le centre de calcul ROMEO de l'Université de Reims Champagne-Ardenne fournit les nœuds AMD EPYC~9654 et les accélérateurs NVIDIA GH200. Slurm, l'ordonnanceur développé à l'origine au Lawrence Livermore National Laboratory, réserve les ressources et lance les étapes sur les nœuds de calcul. Les séries de temps présentées proviennent de ROMEO. Le diagnostic d'exactitude de QuickEd inclut aussi les deux témoins observés sur Apple M1 Pro. Le temps noyau, le temps de l'appel complet et le temps du processus sont indiqués séparément quand ils sont disponibles. Le pic de mémoire résidente (RSS) inclut le programme, ses entrées et les allocations hôtes. Les octets explicitement réservés sur le GPU mesurent une autre quantité.
+
+Le tableau~\ref{tab:scope} précise le chronomètre et l'unité expérimentale des principales campagnes. Il distingue la variabilité entre chaînes de celle des mesures répétées sur une même entrée.
+\begin{table}[!htbp]\centering\small
+\caption{Périmètre des mesures de durée.}\label{tab:scope}
+\begin{tabular}{@{}lll@{}}\toprule
+Expérience & Observation chronométrée & Unité de dispersion \\\midrule
+Paires synthétiques initiales & Appel sur chaque FASTA & Paire distincte à taux fixé \\
+Répétitions sur entrée fixée & Appel après échauffement & Processus ou bloc apparié \\
+Profil du GPU & Domaine temporel de la capture & Processus profilé \\
+MPI entre nœuds & Maximum des durées de rang & Bloc de lancements \\\bottomrule
+\end{tabular}\end{table}
+
+Pour des répétitions indépendantes \(T_1,\ldots,T_r\), les statistiques rapportées sont la moyenne \(\bar T\), l'écart-type expérimental \(s\) avec le diviseur \(r-1\), et l'intervalle de Student à 95\,\%, \(\bar T\pm t_{0.975,r-1}s/\sqrt r\). Pour des essais appariés, le rapport se calcule dans chaque bloc avant l'agrégation. La demi-largeur de l'intervalle divisée par \(\bar T\) indique si la précision relative de 5\,\% est atteinte. Lorsque les cinq observations sont cinq paires différentes, leur dispersion inclut la variabilité des entrées. Les appels chauds d'un même processus sont d'abord regroupés dans ce processus. Les figures de temps indiquent l’intervalle à 95\,\% et les valeurs écrites sous la forme \(\bar T\pm s\) donnent l’écart-type. Pour un effectif unique, seule la durée observée est disponible. Un décompte de cellules ou de lancements est déterministe. Un calcul interrompu à son échéance fournit une durée censurée.
+
+\synthese{Cinq paires de séquences renseignent la dispersion entre entrées. Plusieurs appels chauds du même processus ne créent qu'une unité pour l'intervalle entre processus. Cette distinction détermine la portée de chaque barre d'incertitude.}
+
+\synthesesection{À un million de bases par chaîne, le parcours dense compte \(10^{12}\) cases. Sur 64 séquences, les 2\,016 alignements indépendants offrent une autre façon de répartir cette charge entre les travailleurs.}

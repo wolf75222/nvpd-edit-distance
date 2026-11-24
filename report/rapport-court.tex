@@ -1,15 +1,13 @@
 \documentclass[10pt,a4paper]{article}
-\input{preambule}
+\input{tex/preambule}
+\renewcommand{\chart}[4]{\begin{figure}[!htbp]\centering
+  \includegraphics[width=.80\linewidth,height=.215\textheight,keepaspectratio]{../figures/#1}
+  \caption{#2}\label{#3}\sourcefig{#4}\end{figure}}
+\titlespacing*{\section}{0pt}{9pt plus 1pt}{4pt}
+\titlespacing*{\subsection}{0pt}{7pt plus 1pt}{3pt}
+\setlength{\parskip}{2pt plus .5pt}\setlength{\intextsep}{5pt}\setlength{\textfloatsep}{6pt}
 \begin{document}
-\thispagestyle{firstpage}
-\begin{center}
-{\Large\bfseries Parallel Edit Distance for Genomic Sequences\par}
-\vspace{4pt}\hrule\vspace{8pt}
-Synthèse des mesures sur ROMEO \quad 24 novembre 2026
-\end{center}
-\begingroup
-\renewcommand{\chapitre}[1]{\section{#1}}
-\input{synthese}
-\endgroup
-\input{assemblages}
+\doctitle{Synthèse des mesures sur ROMEO}
+{\small\setlength{\parskip}{0pt}\tableofcontents}
+\input{sections/synthese-courte}
 \end{document}

@@ -1,22 +1,33 @@
 \documentclass[10pt,a4paper]{article}
-\input{preambule}
+\input{tex/preambule}
 \begin{document}
-\thispagestyle{firstpage}
-\begin{center}
-{\Large\bfseries Parallel Edit Distance for Genomic Sequences\par}
-\vspace{4pt}\hrule\vspace{8pt}
-Master CHPS \quad Université de Reims Champagne-Ardenne\par
-CHPS1001 \quad 24 novembre 2026
-\end{center}
-\noindent\textbf{Résumé.} La distance d'édition globale compte les opérations qui transforment une séquence entière en une autre. NvPD répartit les colonnes d'une même ligne entre cœurs ou fils GPU. Pour une collection, les paires indépendantes offrent un second niveau de parallélisme. Les mesures sur EPYC et GH200 relient le temps de calcul aux synchronisations et à la divergence des séquences. Les applications portent sur des assemblages humains et des arbres de distance.
-{\small\setlength{\parskip}{0pt}\tableofcontents}
-\input{algorithmes}
-\input{divergence}
-\input{profil}
-\input{fronts}
-\input{distribue}
-\input{chromosome}
-\input{synthese}
-\clearpage
-\input{references}
+\doctitle{Calcul parallèle et phylogénies de distance}
+\begin{abstract}
+La distance d'édition globale compte les opérations nécessaires pour transformer une chaîne entière en une autre. Deux parcours denses, par anti-diagonales et par colonnes, servent de points de comparaison aux méthodes dont le travail dépend de la distance. Les mesures sur EPYC et GH200 distinguent le coût des synchronisations, des accès mémoire et des lancements. Les assemblages humains et les matrices de 64 génomes mettent ces mesures à l'épreuve sur des données déposées.
+\end{abstract}
+\fullcontents
+\input{sections/introduction}
+\section{Algorithmes d'alignement global}\label{sec:algorithms}
+Le score donne le coût minimal entre deux chaînes. Un chemin optimal indique aussi les opérations qui réalisent ce coût. La matrice d'une collection demande seulement un score par paire.
+\input{sections/algorithmes}
+\section{Dimension, distance et coût de calcul}\label{sec:experiments}
+Les paires synthétiques fournissent une référence commune à tous les noyaux. À longueur fixée, le taux d'édition modifie la distance observée et donc le travail des algorithmes qui avancent par fronts.
+\input{sections/divergence}
+\section{Parallélisme sur processeur}\label{sec:cpu}
+Sur un nœud ROMEO, deux processeurs EPYC~9654 réunissent 192 cœurs. La largeur des lignes, la vectorisation et le placement des travailleurs changent la façon dont ces cœurs utilisent les caches.
+\input{sections/profil}
+\section{Exécution sur accélérateur}\label{sec:gpu}
+Le GH200 associe un processeur Grace et un accélérateur Hopper. Pour une seule paire, le GPU doit lire les prédécesseurs et rendre les scores d'une ligne disponibles avant la suivante. Un lot ajoute les coûts de gestion des tampons entre appels.
+\input{sections/fronts}
+\section{Calcul distribué}\label{sec:mpi}
+Le protocole distribué utilise 24 rangs par nœud, chacun avec huit threads OpenMP. La même réservation peut partager les colonnes d'une paire ou répartir un ensemble de paires entières.
+\input{sections/distribue}
+\section{Applications génomiques}\label{sec:bio}
+Les assemblages humains permettent de comparer de longs intervalles dont les extrémités sont connues. Les collections de phages et de séquences de surveillance posent une autre question, celle de la représentation d'une matrice de distances par un arbre.
+\input{sections/chromosome}
+\section{Discussion et conclusion}\label{sec:conclusion}
+Le temps d'un alignement dépend du rectangle de calcul, de la distance et du résultat demandé. Sur une collection, le nombre de paires ajoute une dimension à la décision de parallélisation.
+\input{sections/synthese}
+\input{sections/conclusion}
+\FloatBarrier\input{tex/references}
 \end{document}

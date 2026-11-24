@@ -1,0 +1,33 @@
+\subsection{Vectorisation des colonnes sur processeur}
+La boucle interne de NvPD calcule une ligne à partir de la table des dernières occurrences. L'instruction SIMD applique une même opération à plusieurs valeurs (\emph{single instruction, multiple data}). Le branchement sur \(k=0\), \(k=j\) ou \(0<k<j\) peut être remplacé par le minimum de l'algorithme~\ref{alg:nvpd}. Quand \(k=j\), le second terme vaut \(P_{j-1}\), le coût d'une correspondance. Le cas sans correspondance suit la borne établie pour l'algorithme~\ref{alg:nvpd}. Une instruction SIMD peut alors traiter plusieurs colonnes qui choisissent des prédécesseurs différents.
+\chart{cpu/variantes_cpu.png}{Les rapports de temps comparent les noyaux sur des paires identiques à largeur de ligne et nombre de cœurs fixés.}{fig:simd}{bench/cpu/openmp/profile_cpu_driver.cpp}
+Les essais de la figure~\ref{fig:simd} utilisent GCC~11.5 avec \texttt{-O3 -march=native} sur EPYC~9654. La moyenne des rapports \(T_\mathrm{initial}/T_\mathrm{SIMD}\) porte sur trois répétitions appariées. Le compilateur vectorise la boucle sur 32 octets, soit huit entiers par instruction vectorielle. À un cœur, le gain vaut \(5{,}852\pm0{,}009\) sur la forme \(256\times10^6\). Le panneau b) de la figure~\ref{fig:million} compare ensuite la boucle initiale et la boucle SIMD dans cinq blocs appariés, sur les mêmes huit cœurs et la même entrée par taux. À 2\,\%, le temps passe de \(321{,}572\pm0{,}385\) à \(51{,}655\pm0{,}368\)\,s. Sur \(10^6\times1\,000\,033\) cases, le débit moyen du noyau SIMD atteint \(19{,}36\pm0{,}14\)\,GCUPS. Pour 2, 5 et 10\,\% d'éditions injectées, les gains appariés valent \(6{,}226\pm0{,}043\), \(6{,}192\pm0{,}038\) et \(6{,}206\pm0{,}049\).
+\chart{cpu/cout_instructions.png}{Les compteurs de l'EPYC rapportent les instructions retirées et les erreurs de prédiction au nombre de cases des trois matrices.}{fig:instructions}{bench/cpu/openmp/profile_cpu.py}
+L'outil de profilage \texttt{perf} du noyau Linux lit les compteurs matériels de l'EPYC. La figure~\ref{fig:instructions} rapporte ces compteurs au travail dense \(W=mn\). Sur un seul cœur et \(20\,000^2\) cases, la reformulation ramène les instructions retirées de 21,76 à 2,13 par case. Les cycles comprennent aussi les dépendances de données et les attentes mémoire.
+
+\synthese{Sur le carré de 20\,000 bases, le gain de la boucle vectorisée atteint \(2{,}62\pm0{,}53\) sur un cœur. La baisse des instructions retirées accompagne ce gain, même si les lectures indirectes restent présentes.}
+
+\subsection{Empreinte de l’index et localité sur processeur}
+La taille de l'index détermine la part du jeu de données qui tient en cache. Pour \(q\) lettres distinctes et \(n\) colonnes, l'index et les deux lignes du noyau de coût seul occupent
+\[
+ M_{\mathrm{NvPD}}=4(q+2)(n+1)\quad [\mathrm{bytes}].
+\]
+Les deux lignes sont contiguës. Le dernier prédécesseur varie avec la lettre. Le prototype compact code l'écart dans un octet lorsque sa valeur et les sentinelles tiennent dans cette représentation. La conversion garde provisoirement l'index entier. Sur ces processeurs, huit cœurs partagent 32\,Mio de cache L3. Chaque cœur dispose de 32\,Kio de L1 de données et de 1\,Mio de L2.
+\chart{cpu/memoire_cpu.png}{Le pic de mémoire et les défauts L1 de lecture sont comparés aux mêmes dimensions de matrice sur huit cœurs.}{fig:mem}{bench/cpu/openmp/profile_cpu.py}
+Sur la forme \(64\times4\,194\,304\), la figure~\ref{fig:mem} distingue le maximum d'espace de travail, qui passe de 96 à 80\,Mio, du RSS maximal observé parmi les processus. Sur ce grand rectangle à huit cœurs, les défauts L1 de données passent de 200,12 à 158,81 pour mille cases entre la version SIMD et sa variante compacte (deux processus de comptage par point). Un défaut L1 peut être servi par le L2 ou le L3.
+
+\synthese{Sur la forme la plus large, l'index compact ramène le maximum des RSS observés de 101,6 à 85,5\,Mio. L'économie de mémoire dépend de la représentation et ne suffit pas à prédire la vitesse d'une ligne.}
+
+\subsection{Passage à l’échelle en mémoire partagée}
+Le passage à l'échelle forte répartit un travail constant entre \(p\) cœurs. Le passage à l'échelle faible garde le nombre de cases par cœur constant~\cite{amdahl,gustafson}. Pour une matrice de travail \(W\), les indicateurs valent
+\[
+ S_p=\frac{T_1(W)}{T_p(W)},\qquad E_p=\frac{S_p}{p},\qquad
+ E_p^{\mathrm{weak}}=\frac{T_1(W_1)}{T_p(pW_1)}.
+\]
+La série forte utilise \(20\,000^2\) cases. La série faible conserve 4\,096 lignes pour \(4\,096p\) colonnes. Elle fixe donc le travail à 16\,777\,216 cases par cœur et élargit les tableaux avec \(p\).
+\chart{cpu/echelle_cpu.png}{Les courbes donnent l'accélération forte et l'efficacité faible de NvPD selon le nombre de cœurs physiques de l'EPYC.}{fig:echellecpu}{bench/cpu/openmp/profile_cpu.sbatch}
+À taille fixe, huit cœurs prennent \(27{,}96\pm0{,}09\)\,ms contre \(31{,}28\pm0{,}17\)\,ms à seize sur la figure~\ref{fig:echellecpu}. Au dernier placement, les cœurs occupent deux groupes de cache et deux domaines NUMA.\footnote{La distance entre les cœurs et les contrôleurs mémoire dépend du domaine NUMA auquel chacun appartient.} Les synchronisations entre lignes et les accès mémoire interviennent dans le même temps mesuré.
+
+\synthese{Sur le carré fixe, le rapport des temps moyens à un et huit cœurs donne 73,8\,\% d'efficacité forte. Passer à seize cœurs étend le placement entre groupes de cache et allonge le temps mesuré.}
+
+\synthesesection{La vectorisation sur 32 octets regroupe huit entiers de score. Cette largeur appartient au noyau, tandis que le gain observé dépend également de la forme et du placement des threads.}
