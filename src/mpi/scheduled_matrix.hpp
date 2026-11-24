@@ -2,6 +2,9 @@
 #include "chps/dp.hpp"
 #include "chps/fasta.hpp"
 #include <mpi.h>
+#ifdef CHPS_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
 #include <omp.h>
 #include <algorithm>
 #include <atomic>
@@ -160,7 +163,7 @@ public:
 
 inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const std::string& schedule,
                                           int rank, int ranks, int team, int grain,
-                                          const std::vector<int>& host, RankWork& work) {
+                                          const std::vector<int>& host, RankWork& work, bool kokkos_workers) {
     const auto n = static_cast<long long>(data.size());
     const auto count = n * (n-1) / 2;
     if (count > INT_MAX) throw std::length_error("triangle exceeds MPI reduction count");
@@ -186,9 +189,8 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
     const auto stride = cyclic ? ranks : 1;
     const auto size = weighted ? cuts[rank+1]-begin :
                       cyclic ? (count+ranks-1-rank)/ranks : count*(rank+1)/ranks-begin;
-    #pragma omp parallel num_threads(team)
-    {
-        auto& local = per_worker[omp_get_thread_num()];
+    auto run_worker = [&](int worker) {
+        auto& local = per_worker[worker];
         for (;;) {
             Range chunk;
             if (steal) {
@@ -218,6 +220,21 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
             }
             local.busy_seconds+=omp_get_wtime()-start;
         }
+    };
+    if (kokkos_workers) {
+#if defined(CHPS_KOKKOS) && defined(KOKKOS_ENABLE_OPENMP)
+        using Policy = Kokkos::RangePolicy<Kokkos::OpenMP, Kokkos::Schedule<Kokkos::Static>>;
+        Kokkos::OpenMP execution;
+        if (execution.concurrency() != team)
+            throw std::runtime_error("Kokkos OpenMP pool size differs from the MPI rank team");
+        Kokkos::parallel_for("matrix workers", Policy(execution, 0, team).set_chunk_size(1), run_worker);
+        execution.fence();
+#else
+        throw std::invalid_argument("Kokkos workers require a Kokkos OpenMP build");
+#endif
+    } else {
+        #pragma omp parallel num_threads(team)
+        run_worker(omp_get_thread_num());
     }
     if (steal) queues.finish();
     if (failure) std::rethrow_exception(failure);

@@ -1,6 +1,10 @@
 #include "chps/dp.hpp"
 #include "chps/fasta.hpp"
 #include "dp_internal.hpp"
+#ifdef CHPS_KOKKOS
+#include "chps/kokkos.hpp"
+#include <optional>
+#endif
 #include <mpi.h>
 #include <omp.h>
 #include <algorithm>
@@ -27,6 +31,7 @@ struct Options {
     int threads = 1, trials = 1, warmups = 0, pipeline_rows = 0;
     bool report_rss = false;
     std::string schedule;
+    bool kokkos_workers = false;
     int grain = 1;
 };
 
@@ -38,6 +43,11 @@ Options parse(int argc, char** argv) {
         if (i + 1 >= argc) throw std::invalid_argument("missing argument value");
         std::string_view key = argv[i], value = argv[i+1];
         if (key == "--input") { o.input = value; continue; }
+        if (key == "--workers" && o.mode == "matrix") {
+            if (value != "openmp" && value != "kokkos") throw std::invalid_argument("expected openmp or kokkos");
+            o.kokkos_workers = value == "kokkos";
+            continue;
+        }
         if (key == "--schedule" && o.mode == "matrix") {
             if (value != "static" && value != "cyclic" && value != "hilbert" && value != "hilbert-weighted" && value != "steal")
                 throw std::invalid_argument("expected static, cyclic, hilbert, hilbert-weighted or steal");
@@ -56,6 +66,7 @@ Options parse(int argc, char** argv) {
         else if (key == "--warmups" && n >= 0) o.warmups = n;
         else throw std::invalid_argument("unknown option or invalid value: " + std::string(key));
     }
+    if (o.kokkos_workers && o.schedule.empty()) throw std::invalid_argument("Kokkos workers require --schedule");
     if (o.input.empty()) throw std::invalid_argument("--input is required");
     return o;
 }
@@ -297,6 +308,12 @@ int main(int argc, char** argv) {
         omp_set_num_threads(o.threads);
         int team = 1;
         const int physical = placement(o.threads,team);
+#if defined(CHPS_KOKKOS) && defined(KOKKOS_ENABLE_OPENMP)
+        std::optional<chps::KokkosSession> kokkos;
+        if (o.kokkos_workers) kokkos.emplace(team);
+#else
+        if (o.kokkos_workers) throw std::invalid_argument("Kokkos workers require a Kokkos OpenMP build");
+#endif
         const auto hosts = o.schedule.empty() ? std::vector<int>{} : chps::mpi::node_leaders(rank,ranks);
         int distance = 0;
         std::vector<int> matrix;
@@ -310,7 +327,7 @@ int main(int argc, char** argv) {
             if (o.mode == "pair")
                 distance = distributed_pair(records[0].bases, records[1].bases, rank, ranks, team, o.pipeline_rows, workers);
             else if (!o.schedule.empty()) {
-                matrix = chps::mpi::scheduled_matrix(records,o.schedule,rank,ranks,team,o.grain,hosts,work);
+                matrix = chps::mpi::scheduled_matrix(records,o.schedule,rank,ranks,team,o.grain,hosts,work,o.kokkos_workers);
                 workers = static_cast<int>(std::min<unsigned long long>(team,work.pairs));
             } else matrix = batch(records, rank, ranks, team, o.mode == "pairs", workers);
             double elapsed = MPI_Wtime() - start, slowest = 0;
@@ -340,6 +357,7 @@ int main(int argc, char** argv) {
                           << ",\"sampled_physical_cores\":" << physical
                           << ",\"pipeline_rows\":" << o.pipeline_rows
                           << ",\"assigned_workers\":" << total_workers << ",\"seconds\":" << slowest;
+                if (!o.schedule.empty()) std::cerr << ",\"worker_backend\":\"" << (o.kokkos_workers ? "kokkos" : "openmp") << '"';
                 if (o.report_rss) std::cerr << ",\"max_rank_rss_kib\":" << max_rss_kib;
                 std::cerr << "}\n";
             }

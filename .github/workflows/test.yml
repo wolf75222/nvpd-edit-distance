@@ -20,5 +20,7 @@ jobs:
       - run: ctest --test-dir build --output-on-failure
       - run: python3 bench/mpi/mpi_checks.py --binary build/editdist-mpi --oracle build/editdist --launcher 'mpiexec --oversubscribe -n 4'
       - run: python3 bench/mpi/human/checks.py build/editdist-mpi --launcher 'mpiexec --oversubscribe -n 2'
+      - run: python3 bench/mpi/schedules/checks.py build/editdist-mpi build/editdist
+      - run: python3 bench/mpi/schedules/checks.py build/editdist-mpi build/editdist --workers kokkos
       - run: python3 tests/fasta_cli.py build/editdist
       - run: python3 -m unittest discover -s tests
