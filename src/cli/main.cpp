@@ -133,16 +133,33 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
     const auto team = static_cast<std::size_t>(o.threads);
     const bool grouped = o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-adaptive" || o.algorithm == "nvpd-split";
     const bool pair_parallel = grouped && team > 1 && n * (n - 1) / 2 >= team;
+    const bool library = o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "biwfa";
     const bool across = pair_parallel || (team > 1 &&
-        (o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "biwfa" || o.algorithm == "seq" ||
+        (library || o.algorithm == "seq" ||
          o.algorithm == "banded" || o.algorithm == "banded-trim" || o.algorithm == "hirschberg"));
     // Split long triangular rows into independent groups. This also exposes
     // enough work when there are fewer rows than workers but enough pairs.
-    const std::size_t groups = pair_parallel ? std::min(team, n - 1) : 1;
+    const bool split_rows = across && n > 1 && (grouped || library);
+    const std::size_t groups = split_rows ? std::min(team, n - 1) : 1;
+    std::vector<SplitComposition> composition;
+    if (o.algorithm == "nvpd-split" && n > 2) {
+        composition.reserve(n);
+        for (const auto& record : records) composition.emplace_back(record.bases);
+    }
     std::exception_ptr failure;
     auto row = [&](std::size_t i, std::size_t group) {
-        for (std::size_t j = i + 1 + group; j < n; j += groups)
-            distances[j][i] = distances[i][j] = kernel(records[i].bases, records[j].bases, false).distance;
+        for (std::size_t j = i + 1 + group; j < n; j += groups) {
+            const auto& a = records[i].bases;
+            const auto& b = records[j].bases;
+            int distance;
+            if (composition.empty()) distance = kernel(a, b, false).distance;
+            else {
+                SplitStats stats;
+                distance = nvpd_split_profile(a, b, false, stats, SplitPolicy::retain_verified,
+                                              composition[i].lower_bound(composition[j])).distance;
+            }
+            distances[j][i] = distances[i][j] = distance;
+        }
     };
     if (across) {
         #pragma omp parallel

@@ -1,0 +1,9 @@
+\subsection{Contribution des symboles indéterminés à la distance}
+Un \texttt{N} peut signaler une base dont l'identité reste inconnue. Sa présence influe sur une comparaison littérale entre deux séquences déposées. Si \(\nu(x)\) désigne l'effectif de \texttt{N} dans \(x\), chaque édition modifie cet effectif d'au plus un. Pour une paire de distance positive, le rapport
+\[
+ r(x,y)=\frac{|\nu(x)-\nu(y)|}{d(x,y)}\quad\text{vérifie}\quad 0\le r(x,y)\le1.
+\]
+La figure~\ref{fig:ambiguite} donne la proportion des paires dont le rapport atteint chaque seuil. Les effectifs sont ceux de la cohorte entière. Plusieurs paires partagent une même accession.
+\chart{biology/borne_ambiguite.pdf}{La proportion de paires au-dessus d'un seuil de borne relative est calculée séparément entre lignages, au sein d'un lignage et pour les paires contenant Wuhan-Hu-1. Les points marquent le seuil de moitié.}{fig:ambiguite}{python/studies/surveillance.py}
+La médiane de \(r\) vaut 0,463 entre lignages et 0,279 au sein d'un lignage. Deux séquences peuvent compter autant de \texttt{N} à des positions différentes. Dans ce cas, la borne vaut zéro même si la position des ambiguïtés influe sur le score. La section suivante examine une autre source d'écart, la restriction du chemin à une bande.
+\synthese{L'écart du nombre de \texttt{N} impose au moins la moitié de la distance pour 801 des 1\,701 paires entre lignages et pour 89 des 252 paires au sein d'un même lignage.}

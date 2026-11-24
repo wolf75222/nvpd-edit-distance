@@ -2,7 +2,9 @@
 
 `editdist` calcule la distance de Levenshtein globale entre deux séquences d’ADN. Chaque insertion, suppression ou substitution coûte une unité. NvPD utilise la dernière occurrence de chaque symbole pour calculer en parallèle les colonnes d’une ligne. Le projet compare son coût sur CPU et GPU, puis utilise les distances pour construire des arbres. [Article de Sadiq et coll.](https://doi.org/10.1007/s10586-019-02962-w)
 
-[Rapport complet](report/rapport.pdf) · [Synthèse courte](report/rapport-court.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Planche des figures](figures/montage.png)
+[Rapport complet](report/rapport.pdf) · [Synthèse courte](report/rapport-court.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
+
+Sur ROMEO, NvPD sur GH200 devance edlib et WFA2-lib sur un cœur Grace pour une des douze paires synthétiques chronométrées à chaud. Cette paire compte un million de bases de référence et 10 % d’éditions injectées. En cinq répétitions, NvPD prend 3,591 ± 0,011 s, edlib 5,903 ± 0,060 s et WFA2-lib 9,835 ± 0,023 s (moyenne ± écart-type). [Mesures sur GH200](results/repeated/gh200/summary.csv)
 
 ## Compiler et tester sur CPU
 
@@ -67,7 +69,11 @@ python3 scripts/phylogeny/tree.py build/distances.tsv --method upgma --out build
 python3 scripts/phylogeny/tree.py build/distances.tsv --method nj --out build/nj.nwk
 ```
 
-Le TSV conserve les identifiants en ligne et en colonne. Ici, `gamma` est à trois éditions de chacune des deux autres séquences. UPGMA regroupe d’abord `alpha` et `beta`. Le dépôt fournit aussi les matrices et les arbres calculés sur les cohortes de 64 accessions de φX174 et de SARS-CoV-2. [Données et manifestes](data/README.md) · [Résultats phylogénétiques](results/phylogeny/README.md) · [Sensibilité des arbres à la bande](results/phylogeny/sensitivity/README.md)
+Le TSV conserve les identifiants en ligne et en colonne. Ici, `gamma` est à trois éditions de chacune des deux autres séquences. UPGMA regroupe d’abord `alpha` et `beta`.
+
+La cohorte SARS-CoV-2 réunit Wuhan-Hu-1 et neuf génomes complets de chacun des sept lignages retenus, soit 64 accessions versionnées. Avec la commande NCBI `datasets` installée, `python3 scripts/datasets/ncbi_sars.py` reconstitue leur FASTA dans `data/sars/cohort.fa`. Le dépôt contient les 2 016 distances et les deux arbres. Une bande fixe de demi-largeur 323 surestime deux distances de 5 et 19 éditions. La distance de Robinson-Foulds entre l’arbre contraint et l’arbre de référence vaut zéro pour UPGMA comme pour Neighbor-Joining. [Données et manifestes](data/README.md) · [Matrices des cohortes SARS-CoV-2 et φX174](results/phylogeny/README.md) · [Effet de la bande](results/phylogeny/sensitivity/README.md)
+
+Sur 32 cœurs EPYC, subdiviser les rangées de cette matrice ramène Edlib de 1,645 à 0,343 s et WFA2 de 3,616 à 0,775 s. Pour l’hybride NvPD/BiWFA, un filtre sur les effectifs de lettres réduit le temps du noyau de 584 à 448 ms. WFA-GPU, l’aligneur affine sur CUDA d’Aguado-Puig et coll., confie 15 paires de cette cohorte au GPU et 2 001 à WFA2 sur CPU. Avec quatre travailleurs CPU, le temps total atteint 6,844 s pour l’hybride et 6,874 s pour WFA2 seule. [Temps et dispersion sur ROMEO](results/phylogeny/sars-romeo/README.md) · [Ablation du filtre](results/phylogeny/sars-ablation/README.md) · [WFA-GPU](results/wfa-gpu/README.md)
 
 ## Générer des paires et mesurer le temps
 
@@ -82,7 +88,7 @@ python3 bench/campaign/summarize.py build/mesures.csv > build/resume.csv
 
 Avec la graine par défaut (2026), les neuf mesures donnent une distance de 245 pour 250 éditions injectées. Pour répéter le banc, choisir un nouveau nom pour `--output`.
 
-Sans option, le générateur écrit 60 paires dans `data/synthetic/`. Il combine quatre longueurs de 5 000 à 1 000 000 nt, trois taux (2, 5 et 10 %) et cinq tirages par configuration.
+Sans option, le générateur écrit 60 paires dans `data/synthetic/`. Les références de 5 000, 20 000, 100 000 et 1 000 000 nt suivent une loi uniforme sur A, C, G et T. Pour chaque taux (2, 5 et 10 %), il produit cinq paires par longueur. Il tire les positions sans remise et choisit indépendamment chaque type d’édition avec probabilité 1/3. À 1 Mnt, le calcul séquentiel utilise la première paire de chaque taux. La commande `python3 bench/campaign/check_course_corpus.py` régénère les FASTA et vérifie leurs empreintes et les scores archivés. [Manifeste synthétique](data/synthetic/manifest.tsv) · [Couverture des campagnes ROMEO](results/romeo/README.md)
 
 Le résumé de cette campagne donne le temps médian et l’accélération par rapport au séquentiel sur la même paire. Pour une méthode dense, le débit en GCUPS vaut $mn/(10^9 T)$, avec $T$ en secondes. Les mesures répétées du rapport utilisent des processus préchauffés et publient les moyennes, les écarts-types et les intervalles de confiance. [Soumission Slurm sur ROMEO](bench/README.md) · [Mesures répétées](results/repeated/README.md)
 
@@ -110,7 +116,7 @@ mpirun -n 48 --map-by ppr:24:node:PE=8 --bind-to core build/editdist-mpi matrix 
   --workers kokkos --grain 4 > distances.tsv
 ```
 
-Les autres politiques sont `static`, `cyclic`, `hilbert` et `steal`. L’option `--workers openmp` sélectionne une équipe OpenMP directe. Sur les entrées triées par longueur, la pondération par cellules réduit le temps du parcours Hilbert d’un facteur 5,48 à 384 cœurs. [Construction du panel et mesures](results/mpi/schedules/README.md) · [Comparaison des travailleurs](results/mpi/workers/README.md)
+Les autres politiques sont `static`, `cyclic`, `hilbert` et `steal`. L’option `--workers openmp` sélectionne une équipe OpenMP directe. À 384 cœurs, la pondération par cellules divise par 5,48 le temps du parcours de Hilbert sur les entrées triées par longueur. Son efficacité forte de 192 à 384 cœurs vaut 98,3 % (IC à 95 % de 95,7 à 100,9 %). Sur une autre allocation, le rapport des temps OpenMP/Kokkos atteint 0,998 pour cette politique (IC à 95 % de 0,969 à 1,027). [Construction du panel et mesures](results/mpi/schedules/README.md) · [Comparaison des travailleurs](results/mpi/workers/README.md)
 
 ## Choisir une implémentation
 
@@ -127,11 +133,11 @@ Les autres politiques sont `static`, `cyclic`, `hilbert` et `steal`. L’option 
 | `-DCHPS_MPI=ON` | Construit `editdist-mpi`. Le mode `pair` distribue une paire et le mode `pairs` distribue les paires successives du FASTA. |
 | `-DCHPS_QUICKED=ON` | Construit `editdist-quicked`, avec contrôle du score par edlib. |
 
-`build/editdist --help` affiche les modes et les options. A*PA2 de Groot Koerkamp associe un parcours en blocs SIMD à une heuristique de coût restant. Le banc EPYC le compare à BiWFA et à QuickEd de Doblas et coll., qui utilise un alignement en bande. [Comparaison sur le chromosome 21](results/alternatives/human/README.md) · [Étude du traceback de QuickEd](results/alternatives/README.md)
+`build/editdist --help` affiche les modes et les options. A*PA2 de Groot Koerkamp associe un parcours en blocs SIMD à une heuristique de coût restant. QuickEd de Doblas et coll. estime une borne pour reconstruire l’alignement en bande par parallélisme sur bits. Si tous les chemins optimaux sortent de la bande, le meilleur alignement accessible peut coûter davantage. Une erreur distincte de lecture au bord d’un mot de bits affecte deux témoins sur EPYC. L’adaptateur protège ce bord, rejoue le chemin et élargit la recherche si son coût diffère de celui d’edlib. [Comparaison sur le chromosome 21](results/alternatives/human/README.md) · [Comparaison avec QuickEd d’origine](results/alternatives/README.md)
 
 ## Se repérer dans le dépôt
 
-Les noyaux et la ligne de commande se trouvent dans `src/`, les interfaces dans `include/chps/` et les tests dans `tests/`. Les outils de `scripts/` préparent les données et les arbres. Les bancs de `bench/` produisent les tables de `results/`. [Sources](src/) · [Tests](tests/) · [Résultats](results/)
+Les noyaux et la ligne de commande se trouvent dans `src/`, les interfaces dans `include/chps/` et les tests dans `tests/`. Les outils de `scripts/` préparent les données et les arbres. Les bancs de `bench/` produisent les tables de `results/`. Le carnet dans `notebooks/` utilise les fonctions de tracé de `python/`. Les figures de `figures/` alimentent le rapport et sa synthèse courte, qui se compile depuis `report/rapport-court.tex` ou `report/tldr.tex`. [Sources](src/) · [Tests](tests/) · [Résultats](results/)
 
 La [comparaison des temps](figures/comparison/synthese.png) couvre douze paires synthétiques. Chaque case donne le rapport NvPD/bibliothèque, son écart-type et l’intervalle de confiance à 95 % à paire fixée. La [répartition entre rangs](figures/distributed/concentration_rangs.png) montre qui exécute les cellules lorsque les paires ont des tailles inégales.
 

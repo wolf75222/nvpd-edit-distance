@@ -1,0 +1,10 @@
+romeo-a058
+Architecture:                            aarch64
+Model name:                              Neoverse-V2
+Core(s) per socket:                      72
+Socket(s):                               4
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+name, driver_version
+NVIDIA GH200 120GB, 590.48.01
+cc6077be76209c6501e57240536a5c60638167977b4b06acd73e0a84b24f04a5
+fbd30e08c38b4ac27fd2d3222ab374b230fb6a3f49f6bd1bbba0a3626c252076

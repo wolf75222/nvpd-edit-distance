@@ -1,0 +1,2 @@
+JobID|State|ExitCode|Elapsed|AllocCPUS|AllocTRES|NodeList
+839287|COMPLETED|0:0|00:01:07|4|billing=4,cpu=4,gres/gpu=1,mem=12G,node=1|romeo-a058

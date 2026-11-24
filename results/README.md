@@ -1,0 +1,14 @@
+# Résultats du projet CHPS1001
+
+La matrice de référence et les bancs ROMEO ci-dessous répondent au sujet de parallélisation de la distance d’édition. Un même FASTA peut servir à une vérification de score, à une mesure de temps ou à une reconstruction du chemin. Les fichiers de chaque campagne précisent l’unité mesurée.
+
+| Objet du sujet | Contrôle réalisé | Données et résultats |
+|---|---|---|
+| Paires synthétiques | Quatre longueurs, trois taux, cinq paires distinctes par combinaison. La graine 2026 fixe les bases uniformes et les éditions de trois types équiprobables. | [Manifeste des 60 paires](../data/synthetic/manifest.tsv) · [Régénération et contrôle des scores](../bench/campaign/check_course_corpus.py) |
+| Cohorte de surveillance | Wuhan-Hu-1 et neuf génomes complets par lignage, avec contrôle des accessions versionnées et de l’égalité littérale des symboles IUPAC. | [Manifeste Pango](ncbi/sars_metadata.tsv) · [Effectifs de N et empreintes](ncbi/sars_content.tsv) · [Téléchargement NCBI Datasets](../scripts/datasets/ncbi_sars.py) |
+| Calcul de référence et traceback | La référence scalaire en deux lignes couvre 48 paires, dont une seule par taux à 1 Mnt. La matrice complète produit un chemin à 20 knt. Hirschberg le reconstruit au-delà. | [Couverture à 1 Mnt](romeo/completion-1m/README.md) · [Contrôle à 20 knt dans chaque dimension](traceback/README.md) · [Écritures du CIGAR](alternatives/wfa-portability/README.md) |
+| Méthodes obligatoires | Anti-diagonales OpenMP, NvPD OpenMP, NvPD CUDA, Edlib et WFA2 donnent le même score sur les 60 FASTA. Les essais répétés isolent le temps à paire fixée. | [Scores par empreinte](romeo/README.md) · [Temps, mémoire et dispersion](repeated/README.md) · [Figure des empreintes mémoire](../figures/comparison/memoire_synthetique.pdf) |
+| Performances | Le débit dense compte les cellules de la récurrence. Le débit équivalent rapporte le même rectangle au temps des méthodes qui en évitent une partie. Les efficacités utilisent la référence et le nombre de cœurs de chaque campagne. | [Compteurs CPU](profile/) · [Modèle de débit sur GH200](roofline/gpu/README.md) · [Passages à l’échelle](mpi/README.md) |
+| Application à la cohorte complète | Les méthodes du projet et les bibliothèques reproduisent le triangle de 2 016 scores sur ROMEO. Les deux arbres et l’analyse de Robinson-Foulds utilisent cette matrice. | [Mesures ROMEO](phylogeny/sars-romeo/README.md) · [Matrice et Newick](phylogeny/sars-edit/) · [Effet de la bande](phylogeny/sensitivity/README.md) |
+
+Les extensions portent sur le routage CPU/GPU des fronts affines, la sélection des fragments de l’hybride et la répartition des paires entre rangs MPI. La comparaison des ordonnanceurs comprend le vol de tâches et deux parcours de Hilbert sur deux nœuds EPYC. [WFA-GPU](wfa-gpu/README.md) · [Ablation NvPD/BiWFA](phylogeny/sars-ablation/README.md) · [MPI et Kokkos](mpi/workers/README.md)

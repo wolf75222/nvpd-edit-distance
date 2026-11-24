@@ -33,11 +33,12 @@ Une matrice de \(N\) séquences contient \(P=N(N-1)/2\) paires non ordonnées. L
 \]
 Cette expression suppose des entrées non vides et le traitement sériel des paires dans leur ordre de lecture.
 \chart{gpu/allocations_cuda.png}{Pour chaque lot, le gain de temps est apparié sur trois blocs. Les deux nombres à gauche indiquent les appels à \texttt{cudaMalloc} avant et avec réutilisation.}{fig:alloc}{bench/gpu/allocation/allocator_measure.py}
-Pour les 64 phages de la figure~\ref{fig:alloc}, la sonde compte 4\,032 puis 250 allocations physiques. Le pic reste de 150\,892 octets. Les temps et leur dispersion distinguent le coût d'allocation sur les petits lots de celui des mises à jour de la matrice.
+Pour les 64 phages de la figure~\ref{fig:alloc}, la sonde compte 4\,032 puis 250 allocations physiques. Le pic reste de 150\,892 octets. Dans la sonde après chauffe, le temps passe de 13,346 à 8,527\,s, soit un rapport apparié de 1,563.
 
-\synthese{Sur le lot de phages, les trois processus passent de \(23{,}32\pm1{,}26\) à \(9{,}35\pm0{,}22\)\,s avec la réutilisation des tampons. Leur durée de vie réduit les allocations sans changer le pic mémoire du lot.}
+\synthese{Dans l’allocation distincte 838238, le temps du CLI complet sur ce lot passe de \(23{,}32\pm1{,}26\) à \(9{,}35\pm0{,}22\)\,s avec la réutilisation des tampons. Leur durée de vie réduit les allocations sans changer le pic mémoire du lot.}
 
 \input{sections/front-ondes}
+\input{sections/wfa-gpu}
 \subsection{Portage de la récurrence par Kokkos}
 Les espaces d'exécution et de mémoire de Kokkos appliquent l'algorithme~\ref{alg:nvpd} à la même représentation des scores sur EPYC et GH200. Deux \texttt{View} portent l'index et les lignes de DP. Dans le parcours par ligne, une même instance d'exécution ordonne un premier \texttt{parallel\_for} d'initialisation puis \(m\) appels de mise à jour. Une clôture précède la lecture du score. Le noyau natif OpenMP garde son équipe entre les lignes et le natif CUDA peut fusionner plusieurs lignes.
 \chart{distributed/portage_kokkos.png}{Sur chaque architecture, une allocation fournit la moyenne de trois processus après échauffement. Les intervalles portent sur trois allocations.}{fig:kokkos}{bench/kokkos/kokkos_trial.cpp}

@@ -23,4 +23,13 @@ jobs:
       - run: python3 bench/mpi/schedules/checks.py build/editdist-mpi build/editdist
       - run: python3 bench/mpi/schedules/checks.py build/editdist-mpi build/editdist --workers kokkos
       - run: python3 tests/fasta_cli.py build/editdist
+      - name: Regenerate the course corpus and compare ROMEO scores
+        run: python3 bench/campaign/check_course_corpus.py
+      - name: Check the hybrid traceback under UBSan
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/ubsan" -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_C_FLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined" \
+            -DCMAKE_CXX_FLAGS="-fsanitize=undefined -fno-sanitize-recover=undefined"
+          cmake --build "$RUNNER_TEMP/ubsan" --parallel 2 --target check_split check_wfa_packed_cigar
+          ctest --test-dir "$RUNNER_TEMP/ubsan" --output-on-failure -R '^(split|wfa_packed_cigar)$'
       - run: python3 -m unittest discover -s tests

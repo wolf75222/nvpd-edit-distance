@@ -1,0 +1,10 @@
+NodeName=romeo-c022
+CoresPerSocket=96
+CPUTot=192
+Sockets=2
+ThreadsPerCore=1
+NodeName=romeo-a058
+CoresPerSocket=72
+CPUTot=288
+Sockets=4
+ThreadsPerCore=1

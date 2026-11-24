@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from bench_stats import sample
-from ct_plot import COLORS, GUIDE, INK, legend_above, use_style
+from ct_plot import COLORS, GUIDE, INK, PAPER, legend_above, use_style
 
 
 def concentration(raw):
@@ -45,8 +45,9 @@ def make_figure(curves):
         ax.plot(table.index, mean, color=color, label=label, linewidth=1.8)
         y = mean.loc[12]
         ax.plot(12, y, marker, color=color, markeredgecolor=INK, markersize=5)
-        ax.annotate(f"{y:.1f} %".replace(".", ","), (12, y), xytext=(8, -13),
-                    textcoords="offset points", fontsize=9)
+        ax.annotate(f"{y:.1f} %".replace(".", ","), (12, y), xytext=(8, -12),
+                    textcoords="offset points", fontsize=9,
+                    bbox={"facecolor": PAPER, "edgecolor": "none", "pad": 1})
     ax.set(xlabel="Effectif cumulé par charge décroissante [rangs]",
            ylabel="Part cumulée des cellules [%]", xticks=[0, 12, 24, 36, 48],
            yticks=[0, 25, 50, 75, 100], xlim=(0, 48), ylim=(0, 100))

@@ -1,0 +1,15 @@
+--- a/bench/gpu/wfa_gpu/run.sbatch
++++ b/bench/gpu/wfa_gpu/run.sbatch
+@@ -53,11 +53,7 @@
+     echo "edlib ec2310eda1841ab48c14cd3d866778a4f5eb1491; WFA2-lib bcf473a6561fa297934a80eaa7c04b4ee412360c"
+ } > "$out/environment.txt"
+ sha256sum "$runner"/{batch.cpp,targets.cmake,measure.py,run.sbatch} scripts/datasets/synthetic.py src/{cuda/cuda.cu,libraries/baselines.cpp,libraries/wfa2/wfa_adapter.c} > "$out/source.sha256"
+-if [[ ${1:-} == --sars ]]; then
+-    (($# == 2)) && ((SLURM_CPUS_PER_TASK >= 5)) || { echo 'require --sars FASTA and five cores' >&2; exit 2; }
+-    sha256sum "$runner/sars_cohort.py" results/ncbi/sars_content.tsv results/phylogeny/sars-edit/matrix.tsv >> "$out/source.sha256"
+-    srun --mpi=none --cpu-bind=cores python3 "$runner/sars_cohort.py" "$work" "$out" "$2"
+-elif (($#)); then
++if (($#)); then
+     sha256sum "$runner/chromosome.py" results/mpi/human/{windows,scores}.tsv >> "$out/source.sha256"
+     srun --mpi=none --cpu-bind=cores python3 "$runner/chromosome.py" "$work" "$out" "$1"
+ else

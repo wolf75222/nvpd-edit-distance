@@ -152,14 +152,17 @@ bool witnesses(View a, View b, Cut c, Size bound, Size span) {
     return true;
 }
 
+Size clearance(const std::vector<Cut>& cuts, Size k) {
+    const Cut prev = cuts[k-1], c = cuts[k], next = cuts[k+1];
+    return std::min({c.i-prev.i, c.j-prev.j, next.i-c.i, next.j-c.j});
+}
+
 bool certified_cut(View a, View b, const std::vector<Cut>& cuts, Size k, Size bound) {
     if (bound == std::max(a.size(), b.size()) - std::min(a.size(), b.size())) return true;
     if (bound > max_bound) return false;
     const Size span = 2 * (bound + 1) * word;
-    const Cut prev = cuts[k-1], c = cuts[k], next = cuts[k+1];
     // Disjoint neighborhoods let all verified optimal subpaths be spliced simultaneously.
-    return std::min({c.i-prev.i, c.j-prev.j, next.i-c.i, next.j-c.j}) >= 2*span
-        && witnesses(a, b, c, bound, span);
+    return clearance(cuts, k) >= 2*span && witnesses(a, b, cuts[k], bound, span);
 }
 
 Piece align_range(View a, View b, Cut first, Cut last, bool trace) {
@@ -167,18 +170,51 @@ Piece align_range(View a, View b, Cut first, Cut last, bool trace) {
 }
 } // namespace
 
-Result nvpd_split_profile(View a, View b, bool trace, SplitStats& stats, SplitPolicy policy) {
+SplitComposition::SplitComposition(std::string_view sequence) {
+    for (unsigned char symbol : sequence) ++counts_[symbol];
+}
+
+std::size_t SplitComposition::lower_bound(const SplitComposition& other) const {
+    std::size_t surplus = 0, deficit = 0;
+    for (std::size_t c = 0; c < counts_.size(); ++c) {
+        if (counts_[c] > other.counts_[c]) surplus += counts_[c] - other.counts_[c];
+        else deficit += other.counts_[c] - counts_[c];
+    }
+    return std::max(surplus, deficit);
+}
+
+Result nvpd_split_profile(View a, View b, bool trace, SplitStats& stats,
+                          SplitPolicy policy, Size lower_bound) {
     detail::validate(a, b, false);
     stats = {};
     const Size imbalance = std::max(a.size(), b.size()) - std::min(a.size(), b.size());
-    if (policy == SplitPolicy::single_piece || (policy == SplitPolicy::retain_verified && imbalance > max_bound)) {
+    auto single = [&] {
         auto p = align_piece(a, b, trace);
         stats.dense_pieces = p.dense;
         stats.wavefront_pieces = p.wavefront;
         return std::move(p.result);
+    };
+    if (policy == SplitPolicy::single_piece || (policy == SplitPolicy::retain_verified && imbalance > max_bound))
+        return single();
+    // The feasible split score U is at least the composition bound. If L exceeds
+    // the length gap, U cannot use the length-equality shortcut.
+    const bool filter = policy == SplitPolicy::retain_verified && lower_bound > imbalance;
+    if (filter && lower_bound > max_bound) {
+        stats.composition_pruned = true;
+        return single();
     }
     const auto cuts = candidate_cuts(a, b);
     stats.proposed_cuts = static_cast<int>(cuts.size()) - 2;
+    if (filter && stats.proposed_cuts > 0) {
+        const Size min_gap = 4 * (lower_bound + 1) * word;
+        Size max_gap = 0;
+        for (Size k = 1; k + 1 < cuts.size(); ++k)
+            max_gap = std::max(max_gap, clearance(cuts, k));
+        if (max_gap < min_gap) {
+            stats.composition_pruned = true;
+            return single();
+        }
+    }
     std::vector<Piece> pieces(cuts.size() - 1);
     std::exception_ptr failure;
     #pragma omp parallel for if(pieces.size()>1 && !omp_in_parallel()) schedule(static)

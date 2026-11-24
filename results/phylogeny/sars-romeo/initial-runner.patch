@@ -1,0 +1,41 @@
+--- a/bench/campaign/surveillance/measure.py
++++ b/bench/campaign/surveillance/measure.py
+@@ -16,7 +16,7 @@
+     parser.add_argument("fasta", type=Path)
+     parser.add_argument("reference", type=Path)
+     parser.add_argument("output", type=Path)
+-    parser.add_argument("target", choices=("cpu", "gpu", "release"))
++    parser.add_argument("target", choices=("cpu", "gpu"))
+     parser.add_argument("--repetitions", type=int, default=5)
+     args = parser.parse_args()
+     if args.repetitions < 2:
+@@ -28,9 +28,6 @@
+         configs = [(alg, width) for alg in ("edlib", "wfa2", "nvpd-adaptive", "nvpd-split")
+                    for width in (1, threads)]
+         configs.append(("nvpd-omp", threads))
+-    elif args.target == "release":
+-        configs = [(alg, width) for alg in ("edlib", "wfa2", "biwfa", "nvpd-split")
+-                   for width in (1, threads)]
+     else:
+         configs = [("nvpd-cuda-local", 1), ("edlib", 1), ("wfa2", 1)]
+     rng = random.Random(1001)
+--- a/bench/campaign/surveillance/run.sbatch
++++ b/bench/campaign/surveillance/run.sbatch
+@@ -10,7 +10,7 @@
+ target=$1
+ cuda=(-DCHPS_CUDA=OFF)
+ case "$target" in
+-    cpu|release) romeo_load_x64cpu_env >/dev/null; spack load /q22mihh ;;
++    cpu) romeo_load_x64cpu_env >/dev/null; spack load /q22mihh ;;
+     gpu) romeo_load_armgpu_env >/dev/null; spack load /dvle736; spack load /phhwuh3
+          cuda=(-DCHPS_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=90) ;;
+     *) exit 2 ;;
+@@ -31,7 +31,7 @@
+     sha256sum "$2" "$3" | cut -d' ' -f1
+ } > "$out/environment.txt"
+ (cd "$tmp/app" && sha256sum editdist) > "$out/binary.sha256"
+-sha256sum include/chps/*.hpp src/{cli/main.cpp,cpu/*.cpp,cuda/*.cu} bench/campaign/surveillance/{measure.py,run.sbatch} > "$out/sources.sha256"
++sha256sum src/{cli/main.cpp,cpu/*.cpp,cuda/*.cu} bench/campaign/surveillance/{measure.py,run.sbatch} > "$out/sources.sha256"
+ export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DYNAMIC=false
+ srun --ntasks=1 --cpu-bind=cores --cpus-per-task="$SLURM_CPUS_PER_TASK" python3 \
+     bench/campaign/surveillance/measure.py "$tmp/app/editdist" "$2" "$3" "$out/trials.csv" "$target"

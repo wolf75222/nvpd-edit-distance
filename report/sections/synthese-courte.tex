@@ -1,40 +1,51 @@
 \section{Introduction}
-La distance globale compte les éditions nécessaires pour transformer une chaîne entière en une autre. NvPD, proposé par Sadiq et ses coauteurs, calcule les colonnes de chaque ligne en parallèle~\cite{sadiq}. Les essais comparent son travail dense sur EPYC et GH200 aux méthodes qui dépendent du score.
+Une insertion décale les positions homologues entre deux séquences. La distance globale compte le minimum d'éditions nécessaire pour les aligner sur toute leur longueur. NvPD, proposé par Sadiq et ses coauteurs, calcule les colonnes de chaque ligne en parallèle~\cite{sadiq}. Sur ROMEO, la comparaison porte sur le coût d'une paire, puis sur le partage du travail entre nœuds et la reconstruction d'arbres à partir des distances.
 
 Pour deux longueurs \(m,n\) et des coûts unitaires,
 \[
  |m-n|\le d(A,B)\le\max(m,n),\qquad W_{\mathrm{dense}}=mn.
 \]
-\synthese{Deux chaînes d'un million de bases définissent près de \(10^{12}\) cases. Les méthodes denses les visitent toutes, tandis que le nombre de fronts nécessaires dépend du score atteint.}
+Dans la figure~\ref{fig:short-dep}, \(P_j=D_{i-1,j}\) est le score de la ligne précédente. Au lieu de lire la case gauche de la ligne courante, NvPD utilise la dernière colonne \(k\) où le symbole courant de la première chaîne apparaît dans le préfixe de la seconde.
+\schema{dependances}{Pour les chaînes \texttt{A} et \texttt{AC}, la récurrence classique et NvPD donnent un coût final de un. Les flèches indiquent les scores lus pour la dernière case.}{fig:short-dep}{src/cpu/dp.cpp}
+\synthese{Deux séquences d'un million de bases imposent \(10^{12}\) mises à jour au calcul dense. Un parcours par fronts atteint le dernier préfixe au score \(d(A,B)\).}
 
 \section{Coût d’une paire et débit d’une collection}
-Une paire permet de mesurer le travail par cellule. Une collection ajoute le coût de la répartition des paires entre travailleurs.
+Sur une paire, NvPD dépend surtout de la longueur des séquences. Sur une collection, le temps dépend aussi de la charge du rang le plus lent.
 \subsection{Longueur et divergence}
-Edlib de Šošić et Šikić code plusieurs différences de scores dans un mot binaire~\cite{edlib}. WFA2 de Marco-Sola et ses coauteurs garde la position la plus avancée sur chaque diagonale à coût fixé~\cite{wfa}. Sur GH200, Kokkos calcule deux lignes de NvPD par lancement. Pour une fenêtre humaine de 524\,288 bases, cette fusion ramène le temps de \(2{,}520\pm0{,}034\) à \(1{,}345\pm0{,}018\)\,s (cinq processus après échauffement).
-\chart{comparison/synthese.png}{Rapport des temps de NvPD sur GPU et de chaque bibliothèque sur un cœur Grace, sur douze paires synthétiques. Les crochets donnent les IC à 95\,\% des rapports appariés.}{fig:short-work}{notebooks/profil_nvpd.ipynb}
-La figure~\ref{fig:short-work} couvre quatre longueurs de 5~knt à 1~Mnt. À 1~Mnt et 2\,\%, cinq blocs chauds donnent \(3{,}570\pm0{,}009\)\,s avec NvPD sur GH200 et \(0{,}767\pm0{,}006\)\,s avec WFA2 sur Grace. À 10\,\%, les mêmes méthodes prennent \(3{,}591\pm0{,}011\) et \(9{,}835\pm0{,}023\)\,s.
+La grille comprend cinq paires pour chacune des douze combinaisons de longueur (5, 20, 100 et 1\,000~knt) et de taux d'édition (2, 5 et 10\,\%). La référence suit une loi uniforme sur A, C, G et T. Le générateur tire les positions sans remise et choisit indépendamment chaque type d'édition avec probabilité \(1/3\). À 1~Mnt, le calcul séquentiel porte sur une paire par taux.
 
-\synthese{Les trois taux injectés, 2, 5 et 10\,\%, laissent l'aire du rectangle presque constante. Ils modifient pourtant assez le temps de WFA2 pour inverser son classement face au calcul dense sur GH200.}
+Edlib de Šošić et Šikić code plusieurs différences de scores dans un mot binaire~\cite{edlib}. WFA2 de Marco-Sola et ses coauteurs conserve la position la plus avancée sur chaque diagonale à coût fixé~\cite{wfa}. La figure~\ref{fig:short-work} compare ces bibliothèques sur un cœur Grace à NvPD sur le GPU du même GH200. Les répétitions après chauffe utilisent la première paire de chaque configuration.
+\chart{comparison/synthese.png}{Chaque case donne le rapport entre le temps de NvPD et celui de la bibliothèque, avec son écart-type et l'intervalle de confiance à 95\,\% sur la moyenne.}{fig:short-work}{python/studies/score_comparison.py}
+À 1~Mnt et 2\,\%, cinq répétitions donnent \(3{,}570\pm0{,}009\)\,s pour NvPD et \(0{,}767\pm0{,}006\)\,s pour WFA2 (moyenne et écart-type). À 10\,\%, les durées atteignent respectivement \(3{,}591\pm0{,}011\) et \(9{,}835\pm0{,}023\)\,s.
+
+\synthese{Parmi les douze paires de la figure~\ref{fig:short-work}, seule celle de 1~Mnt à 10\,\% donne l'avantage à NvPD sur les deux bibliothèques. Le rapport moyen NvPD/WFA2 y vaut \(0{,}365\).}
 
 \subsection{Ordonnancement entre nœuds}
-Dans une matrice hétérogène, une paire de longueurs \(m_i,m_j\) coûte \(m_i m_j\) cellules à NvPD. Les rangs MPI reçoivent des intervalles sur une courbe de Hilbert. Les bornes peuvent répartir le nombre de paires ou équilibrer la somme de ces coûts. Le même noyau à colonnes SIMD traite chaque paire sur un travailleur.
-\chart{distributed/ordonnancement.png}{Les effets du poids des paires et de l'ordre des entrées sont mesurés sur la même matrice humaine à un et deux nœuds.}{fig:short-mpi}{bench/mpi/schedules/measure.py}
-\synthese{Pour 8\,128 paires triées par longueur, pondérer les coupes porte le débit de 107,2 à 587,4\,GCUPS sur 384 cœurs (figure~\ref{fig:short-mpi}). Sur les mêmes entrées en ordre de locus, le partage cyclique atteint 451,7\,GCUPS.}
+Pour une paire de longueurs \(m_i,m_j\), NvPD calcule \(m_i m_j\) cellules. La courbe de Hilbert ordonne les paires. Les coupes pondérées équilibrent la somme des produits de longueurs confiés à chaque rang MPI. La figure~\ref{fig:short-mpi} compare cette répartition au vol de tâches et aux autres découpages sur 128 fragments du chromosome 21.
+\chart{distributed/ordonnancement.png}{Les trois premiers panneaux mesurent les cinq politiques sur deux nœuds EPYC. Le dernier rapporte l'accélération obtenue de un à deux nœuds au doublement du nombre de cœurs.}{fig:short-mpi}{bench/mpi/schedules/measure.py}
+\synthese{Sur 8\,128 paires issues des fragments triés par longueur, le débit à 384 cœurs passe de \(107{,}2\pm0{,}4\) à \(587{,}4\pm11{,}4\)\,GCUPS avec les coupes pondérées. Leur efficacité forte de 192 à 384 cœurs vaut 98,3\,\%.}
 
 \subsection{Reconstruction du chemin sur les chromosomes}
-BiWFA de Marco-Sola et ses coauteurs rencontre deux fronts pour restituer un chemin avec une mémoire de travail proportionnelle au score~\cite{biwfa}. Le solveur par fragments cherche des coupes dans de longues régions identiques. Si la somme des scores des fragments vaut \(U\), plus de \(U\) mots disjoints et uniques de chaque côté de la coupe suffisent à la conserver sur un chemin optimal. Les intervalles qui perdent une coupe sont réalignés.
+BiWFA de Marco-Sola et ses coauteurs propage deux fronts en sens inverse pour reconstruire un chemin en mémoire \(O(d+1)\)~\cite{biwfa}. Sur les chromosomes de CHM13, le solveur par fragments propose des coupes dans les régions identiques. La somme \(U\) des scores locaux majore \(d\). Une coupe est admissible si, de chaque côté, plus de \(U\) mots disjoints ont une occurrence unique dans la bande accessible de la cible. Le solveur réaligne les fragments adjacents si ce test échoue.
 \chart{comparison/trace_chromosomes.png}{Le temps et le pic de mémoire du CIGAR sont comparés sur le chromosome 1 de CHM13. Les accélérations sur quatre paires distinguent le changement de méthode du gain obtenu en ajoutant des cœurs.}{fig:short-trace}{bench/cpu/chromosome-trace/measure.py}
-\synthese{Sur le chromosome 1 de CHM13, le CIGAR de 176 éditions prend \(11{,}81\pm1{,}23\)\,ms avec huit travailleurs et \(183{,}11\pm5{,}14\)\,ms avec WFA2 sur un cœur (figure~\ref{fig:short-trace}). Le solveur par fragments utilise BiWFA sur les deux intérieurs qui subsistent.}
+\synthese{Sur le chromosome 1 de CHM13, le CIGAR de 176 éditions prend \(11{,}81\pm1{,}23\)\,ms avec huit cœurs et \(183{,}11\pm5{,}14\)\,ms avec WFA2 sur un cœur (figure~\ref{fig:short-trace}). BiWFA traite les deux fragments qui contiennent encore des différences.}
 
 \section{Conclusion}
-La réduction du travail dépend du résultat demandé. Une bande de calcul assez large peut suffire au score optimal. Une bande fixée à l'avance peut rendre certaines paires inaccessibles ou surestimer leur coût. La figure~\ref{fig:short-rf} mesure l'effet sur les partitions d'un arbre de 64 feuilles. Le quotient \(R=|S_1\triangle S_2|/(|S_1|+|S_2|)\) compare les groupes enracinés pour UPGMA et les bipartitions sans racine pour Neighbor-Joining.
-\chart{biology/sensibilite_arbres.png}{La sensibilité des arbres à la bande est comparée sur le panel de surveillance et sur huit collections synthétiques.}{fig:short-rf}{scripts/phylogeny/band_sensitivity.py}
-\synthese{À demi-largeur 323, toutes les paires du panel sont accessibles. Deux distances dépassent leur valeur de référence de 5 et 19 éditions. Les partitions des deux arbres coïncident pourtant avec celles obtenues par alignement global.}
+Le gain de NvPD dépend du coût par paire et du partage des cellules entre cœurs. Le GPU peut aussi fusionner des lignes pour réduire les lancements. Sur une fenêtre colinéaire de 524\,288 bases du chromosome 21, cette fusion ramène le temps de Kokkos de \(2{,}520\pm0{,}034\) à \(1{,}345\pm0{,}018\)\,s.
+
+La cohorte de 64 accessions du SARS-CoV-2 donne 2\,016 distances. Sur 32 cœurs EPYC, subdiviser les rangées ramène Edlib de 1,645 à 0,343\,s pour la matrice. Dans le noyau hybride NvPD/BiWFA, le filtre de composition ramène le calcul de 584 à 448\,ms. Le répartiteur de WFA-GPU d'Aguado-Puig et coll.~\cite{wfagpuaffine} confie au GPU les 15 paires contenant uniquement A, C, G et T. Les 2\,001 autres sont alignées sur CPU. Voir \reposource{results/phylogeny/sars-romeo/README.md}.
+
+Les deux arbres utilisent le coût littéral \(c(x,y)=\mathbf{1}_{x\ne y}\), y compris pour \texttt{N}. Restreindre le chemin à \(|i-j|\le w\) peut déplacer des branches (figure~\ref{fig:short-rf}). Le RF normalisé \(R=|S_1\triangle S_2|/(|S_1|+|S_2|)\) porte sur les clades internes d'UPGMA ou les bipartitions internes de Neighbor-Joining~\cite{robinson}.
+\chart{biology/sensibilite_arbres.png}{La demi-largeur de bande détermine le nombre de distances disponibles et l'écart topologique sur le panel viral et huit collections synthétiques.}{fig:short-rf}{scripts/phylogeny/band_sensitivity.py}
+\synthese{À \(w=323\), deux des 2\,016 distances virales dépassent la référence de 5 et 19 éditions. Le RF vaut zéro pour les deux méthodes. À \(w=512\), les 2\,016 distances coïncident avec la référence.}
 
 \FloatBarrier
-\begin{thebibliography}{4}
+\begingroup\small
+\begin{thebibliography}{9}\setlength{\itemsep}{0pt}
 \bibitem{sadiq} M. U. Sadiq et coll. \href{https://doi.org/10.1007/s10586-019-02962-w}{\emph{NvPD: novel parallel edit distance algorithm, correctness, and performance evaluation.}} Cluster Computing 23 (2020).
 \bibitem{edlib} M. Šošić et M. Šikić. \href{https://doi.org/10.1093/bioinformatics/btw753}{\emph{Edlib: a C/C++ library for fast, exact sequence alignment using edit distance.}} Bioinformatics 33 (2017).
 \bibitem{wfa} S. Marco-Sola et coll. \href{https://doi.org/10.1093/bioinformatics/btaa777}{\emph{Fast gap-affine pairwise alignment using the wavefront algorithm.}} Bioinformatics 37 (2021).
 \bibitem{biwfa} S. Marco-Sola et coll. \href{https://doi.org/10.1093/bioinformatics/btad074}{\emph{Optimal gap-affine alignment in \(O(s)\) space.}} Bioinformatics 39 (2023).
-\end{thebibliography}
+\bibitem{robinson} D. F. Robinson et L. R. Foulds. \href{https://doi.org/10.1016/0025-5564(81)90043-2}{\emph{Comparison of phylogenetic trees.}} Mathematical Biosciences 53 (1981).
+\bibitem{wfagpuaffine} Q. Aguado-Puig et coll. \href{https://doi.org/10.1093/bioinformatics/btad701}{\emph{WFA-GPU: gap-affine pairwise read-alignment using GPUs.}} Bioinformatics 39 (2023).
+\end{thebibliography}\endgroup

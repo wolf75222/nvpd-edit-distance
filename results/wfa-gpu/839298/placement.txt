@@ -1,0 +1,2 @@
+   NumNodes=1 NumCPUs=5 NumTasks=1 CPUs/Task=5 ReqB:S:C:T=0:0:*:*
+     Nodes=romeo-a058 CPU_IDs=0,72,144,216,218 Mem=24576 GRES=gpu:h100:1(IDX:0)

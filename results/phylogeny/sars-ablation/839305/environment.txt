@@ -1,0 +1,15 @@
+job=839305
+romeo-c022
+Model name:                              AMD EPYC 9654 96-Core Processor
+Core(s) per socket:                      96
+Socket(s):                               2
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+cc6077be76209c6501e57240536a5c60638167977b4b06acd73e0a84b24f04a5 cohort.fa
+fbd30e08c38b4ac27fd2d3222ab374b230fb6a3f49f6bd1bbba0a3626c252076 matrix.tsv
+967f1de2a98acc596e45998fef13177241d2011d2f84e288a9eac32d79e5e172  ablation
+61688c2877fcc517681a8d9f377eb4a13f70d18983180a335d32f13d010b69de  src/cpu/split.cpp
+1d196de13c2cc1c8944f8247db8fc594c55bab7814d138cba4b40b722b7024a4  include/chps/split.hpp
+3bbb4dfdd864a7f2f839290c343cffaa013e757c65c01766d8a64f184598a736  src/cli/main.cpp
+2e1506510b0b14c384f846c08e876650a8c3595f6b2e0031be74715a1951d0cc  src/libraries/wfa2/wfa_adapter.c
+a9e6c983505232b25c26b80d3eec5f734d6a3b53a1d9c11ba7ced05a9f545830  ablation.cpp
+8d1ec3c5a8df8c3acf27bcdebc9c8a2adb46b33ecc0a169581c2ea590abe09ee  run.sbatch

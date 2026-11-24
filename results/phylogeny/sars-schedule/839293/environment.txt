@@ -1,0 +1,10 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Model name:                              AMD EPYC 9654 96-Core Processor
+Release -O3 -DNDEBUG -march=native
+cc6077be76209c6501e57240536a5c60638167977b4b06acd73e0a84b24f04a5  cohort.fa
+fbd30e08c38b4ac27fd2d3222ab374b230fb6a3f49f6bd1bbba0a3626c252076  results/phylogeny/sars-edit/matrix.tsv
+675e766a61a32fe01d1e9d54bd5ad262a6e281979086a84ecbddbb44c03a353b  rows
+c32b8a9a0c56ff6c43137aa5fbe4be9d5f4fec8867ce328be3d015943c556ad9  groups
+6b7f03f28fc8a144148658fb1eae604aaacb2b6081e835df7b2fae9ca1739fb7  rows:src/cli/main.cpp
+f6d22fcdd628b4fe7b0700ef423f62e9d7f461fb8d35ad71860751c307961d95  groups:src/cli/main.cpp

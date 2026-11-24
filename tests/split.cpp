@@ -14,6 +14,21 @@ chps::SplitStats check(std::string_view a, std::string_view b) {
     return stats;
 }
 
+chps::SplitStats check_filter(std::string_view a, std::string_view b) {
+    const chps::SplitComposition first(a), second(b);
+    const auto lower = first.lower_bound(second);
+    const auto oracle = chps::edlib_distance(a,b).distance;
+    if (lower != second.lower_bound(first) || lower > static_cast<std::size_t>(oracle))
+        throw std::runtime_error("invalid composition lower bound");
+    chps::SplitStats stats;
+    for (bool trace : {false,true}) {
+        auto path = chps::nvpd_split_profile(a,b,trace,stats,chps::SplitPolicy::retain_verified,lower);
+        if (path.distance != oracle) throw std::runtime_error("filtered split distance differs from edlib");
+        if (trace) replay(a,b,path);
+    }
+    return stats;
+}
+
 int main() {
     omp_set_num_threads(2);
     check("", ""); check("A", ""); check("NRY", "YN"); check("CAT", "ATC");
@@ -21,6 +36,20 @@ int main() {
     std::string a(131072, 'A');
     for (auto& c : a) c = "ACGT"[rng() % 4];
     std::string b = a;
+    const auto small = a.substr(0,16384);
+    for (int edits : {127,128,1025}) {
+        auto mutant = small;
+        mutant.replace(0,edits,std::string(edits,'N'));
+        const auto stats = check_filter(small,mutant);
+        if (stats.composition_pruned != (edits >= 128))
+            throw std::runtime_error("incorrect composition filter at certificate boundary");
+    }
+    const auto longer = std::string(129,'N') + small;
+    for (bool reverse : {false,true}) {
+        const auto stats = reverse ? check_filter(longer,small) : check_filter(small,longer);
+        if (stats.composition_pruned || stats.accepted_cuts != 1)
+            throw std::runtime_error("pruned a cut certified by the length difference");
+    }
     b.replace(31007, 1, "NN"); b.erase(71907, 3); b.insert(98007, "Y");
     if (check(a, b).accepted_cuts != 7 || check(b, a).accepted_cuts != 7)
         throw std::runtime_error("missing exact split in unique sequence");

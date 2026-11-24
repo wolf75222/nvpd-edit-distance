@@ -3,34 +3,12 @@
 import argparse
 import csv
 import hashlib
-import json
 import subprocess
 import tempfile
 import textwrap
-import zipfile
 from pathlib import Path
 
-
-def read_package(package):
-    with zipfile.ZipFile(package) as archive:
-        base = "ncbi_dataset/data/"
-        metadata = {}
-        for line in archive.open(base + "data_report.jsonl"):
-            row = json.loads(line)
-            if row["virus"]["taxId"] == 2886930 and row["completeness"] == "COMPLETE":
-                metadata[row["accession"]] = row
-        sequences = {}
-        with archive.open(base + "genomic.fna") as fasta:
-            for raw in fasta:
-                line = raw.decode("ascii").strip()
-                if line.startswith(">"):
-                    accession = line[1:].split()[0]
-                    if accession in sequences:
-                        raise ValueError(f"duplicate FASTA record {accession}")
-                    sequences[accession] = []
-                elif line:
-                    sequences[accession].append(line)
-    return metadata, {key: "".join(parts).upper() for key, parts in sequences.items()}
+from ncbi_package import read_package
 
 
 def main():
@@ -45,7 +23,7 @@ def main():
         subprocess.run([args.datasets, "download", "virus", "genome", "taxon", "2886930",
                         "--complete-only", "--include", "genome", "--no-progressbar",
                         "--filename", str(package)], check=True)
-        metadata, sequences = read_package(package)
+        metadata, sequences = read_package(package, 2886930)
 
     locked = None
     if args.manifest.exists():

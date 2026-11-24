@@ -1,0 +1,5 @@
+if(PROJECT_NAME STREQUAL "chps_edit_distance" AND NOT TARGET wfagpu_baselines)
+  add_executable(wfagpu_baselines "${CMAKE_CURRENT_LIST_DIR}/batch.cpp")
+  set_target_properties(wfagpu_baselines PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+  target_link_libraries(wfagpu_baselines PRIVATE distances)
+endif()

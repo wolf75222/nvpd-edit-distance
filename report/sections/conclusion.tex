@@ -1,5 +1,7 @@
 À un million de bases sur le chromosome 21, NvPD adaptatif prend encore 1,608\,s sur EPYC, contre 7,07\,ms pour WFA2 (figure~\ref{fig:nvpd-adaptatif}). Sur les révisions presque identiques de CHM13, les coupes vérifiées laissent deux fragments à aligner pour chacun des trois chromosomes étudiés (figure~\ref{fig:split}).
 
+Le filtre de composition de la figure~\ref{fig:matrice-surveillance} évite des découpes dont les témoins seraient insuffisants. Une piste complémentaire consiste à choisir les coupes parmi des ancres chaînées. Pour \(k\) ancres fournies, Rizzo et Groot Koerkamp~\cite{llchain} traitent le problème de distance ancrée en \(O(k\log\log k)\) temps et \(O(k)\) espace. Une application à la distance globale devrait encore vérifier que les coupes appartiennent à un chemin optimal.
+
 Sur GH200, l'élargissement des tuiles réduit les lancements et augmente le nombre de prédécesseurs à recalculer. Le modèle utilise les octets demandés par le solveur, faute d'accès aux compteurs HBM (figure~\ref{fig:rooflinegpu}).
 
 En calcul distribué, un ordonnanceur pour la bande devrait estimer les cellules visitées par paire. En phylogénie, varier le panel et le traitement des branches nulles permettrait de séparer leur effet de celui de la bande (figure~\ref{fig:sensibilite-arbres}).

@@ -1,0 +1,11 @@
+romeo-a058
+name, compute_cap, driver_version
+NVIDIA GH200 120GB, 9.0, 590.48.01
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2025 NVIDIA Corporation
+Built on Wed_Aug_20_01:57:39_PM_PDT_2025
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+gcc (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+WFA-GPU 85acbcf4224811b3e52814b1bbe9364b5e2ba5ed; WFA2 CPU fallback 49c255df126ee536fe92caff7a9f7c183ec3ff29
+edlib ec2310eda1841ab48c14cd3d866778a4f5eb1491; WFA2-lib bcf473a6561fa297934a80eaa7c04b4ee412360c

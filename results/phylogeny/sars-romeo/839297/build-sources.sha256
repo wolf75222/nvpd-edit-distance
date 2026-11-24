@@ -1,0 +1,3 @@
+a7a34675e6afd8ad9774c59df1d0834472fc968ac6d856532a370565204843da  CMakeLists.txt
+2c6452e65d45375f465ea366839cd083fe511ae6dc16ef36f62fd03478cf3dff  cmake/patches/wfa2-portability.cmake
+2e1506510b0b14c384f846c08e876650a8c3595f6b2e0031be74715a1951d0cc  src/libraries/wfa2/wfa_adapter.c
