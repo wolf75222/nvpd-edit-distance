@@ -30,3 +30,6 @@ export KOKKOS_SOURCE=/path/to/kokkos
 export CHPS_HUMAN_PAIR=data/human/chr21-2m.fa CHPS_HUMAN_EXPECTED=5599
 sbatch --account="$ROMEO_PROJECT" bench/kokkos/kokkos.sbatch
 ```
+
+
+The dedicated CPU and GPU jobs run the same Kokkos protocol. Set `KOKKOS_SOURCE` to the pinned checkout before submitting from the repository root. [CPU job](cpu.sbatch) · [GPU job](kokkos.sbatch) · [Allocation-level statistics](../../results/kokkos/replications/summary.csv).

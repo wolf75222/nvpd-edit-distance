@@ -11,4 +11,6 @@ sbatch --account="$ROMEO_PROJECT" --partition=instant bench/mpi/repeated.sbatch 
 sbatch --account="$ROMEO_PROJECT" --partition=instant bench/mpi/repeated.sbatch collectives
 ```
 
+Le pipeline transmet les scores de bord aux rangs voisins par groupes de lignes. Le banc compare deux hauteurs de bloc au collectif par ligne, avec le même placement sur un et deux nœuds. [Récurrence et mesures du pipeline](pipeline/).
+
 Les réservations antérieures regroupaient plusieurs chronométrages dans le même lancement. Leurs résultats restent accessibles par identifiant Slurm. [Scaling fort](838226/trials.csv) · [Scaling faible](weak/) · [Contrôles distribués](838226/mpi-tests.txt) · [Historique des réservations](jobs.tsv).

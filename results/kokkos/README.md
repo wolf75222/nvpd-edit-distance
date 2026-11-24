@@ -1,5 +1,10 @@
 # Kokkos measurements on ROMEO
 
+La comparaison du rapport utilise trois allocations par architecture. Pour chaque taille et méthode, trois processus redémarrés fournissent une moyenne par allocation. Les barres représentent l’intervalle de Student sur ces trois moyennes. Sur la paire de 20 000 bases, Kokkos/OpenMP prend 109,53 ± 1,39 ms sur huit cœurs EPYC. Kokkos/CUDA prend 46,23 ± 3,34 ms sur un GH200. La dispersion indiquée est l’écart-type entre allocations. [Essais initiaux](timings.csv) · [Répétitions](replications/trials.csv) · [Statistiques](replications/summary.csv) · [Allocations](replications/accounting.tsv).
+
+## Initial campaigns
+
+
 The Kokkos backend runs the NvPD cost recurrence as one range kernel per score row. The native CPU comparison uses the selected OpenMP SIMD kernel. The native GPU comparison uses the selected CUDA implementation with its tile optimization. The harness builds both compared backends in the same executable and tests the normal CLI separately. See the [build and benchmark procedure](../../bench/kokkos/kokkos.md).
 
 `timings.csv` contains independent process trials for reproducible 5% synthetic inputs. Each trial warms the backend once, then records one complete cost-only call. All measured distances match edlib. `peak_rss_kib` is the process high-water mark. `device_bytes` counts the explicit score and index arrays on the accelerator. The CPU runs report zero device bytes.

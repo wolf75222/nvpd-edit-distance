@@ -60,4 +60,4 @@ export WFA_BENCH_OUT="$out"
 srun --mpi=none --exact -N1 -n1 -c1 --cpu-bind=cores bash -c '
     taskset -pc $$ | sed "s/pid [0-9]*.s current affinity list: /bound core /" >> "$WFA_BENCH_OUT/environment.txt"
     exec python3 bench/cpu/alternatives/wfa_portability.py "$@"
-' bash "$tmp" "${CHPS_WFA_INPUTS:-inputs/quicked}" "$out"
+' bash "$tmp" "${CHPS_WFA_INPUTS:-data/controls/quicked}" "$out"
