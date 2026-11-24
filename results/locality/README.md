@@ -1,0 +1,21 @@
+# CUDA locality on one ROMEO GH200
+
+Nsight Compute 2025.3.1 reported `ERR_NVGPUCTRPERM` for a targeted L1/TEX and L2 sector hit-rate probe on the allocated GPU. Thus hardware cache hit rates and DRAM traffic remain unknown. The table below comes from a source-level warp address model run in the same job. The CUDA implementation ran separately on each FASTA pair and matched the classical scalar edit distance. [Permission result](838447/cache-permission.txt) · [Requested metrics](838447/requested-metrics.txt) · [GPU and compiler](838447/device.txt)
+
+| Input | DP rows × columns | Max. left reach | Adaptive kernel | Edit distance | Single row, modeled bytes/cell | Adaptive, modeled bytes/cell |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| Synthetic 5k, 2% edit rate | 4,992 × 5,000 | 30 | 8 rows, 256 output columns | 99 | 22.481 | 10.618 |
+| Same dimensions, long interval without A | 4,992 × 5,000 | 169 | Single row | 221 | 22.342 | 22.342 |
+| Short source, repeated long target | 32 × 300,000 | 30 | 8 rows, 1,024 output columns | 299,968 | 22.424 | 8.030 |
+
+Each value equals 32 times the number of distinct 32-byte sectors requested per logical warp access, summed over the DP and divided by the number of interior DP cells. A sector accessed by two different instructions or warps counts twice. On the standard input the tile reduces modeled sector demand by 52.8%. Most intermediate DP rows stay in shared memory, while recomputing halo cells increases the match-index traffic from 3,712,800 to 5,338,331 modeled sectors. The rare-symbol control takes the same single-row path under both schedules. The wide input reduces modeled sector demand by 64.2%. [Access counts](838447/sectors.csv)
+
+## Address model
+
+The model uses the production match-index builder and the cost-only CUDA schedule. It enumerates each grid block, tile step, 256-thread pass and 32-lane warp. The actual FASTA bases determine which lanes read the upper or previous-match DP value. Array bases have CUDA allocation alignment. The model uses the real offsets of alternating score rows and match-index symbol rows, including any four-byte misalignment with a 32-byte sector. Each instruction's lane addresses are monotone because the last-match column cannot decrease. The model counts distinct four-byte word addresses and distinct sectors within that warp. The model checks aligned, shifted and broadcast warp examples, final store coverage and one-row match-index coverage. [Model source](../../bench/gpu_sectors.cu) · [CUDA global coalescing rules](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#coalesced-access-to-global-memory)
+
+The five logical access kinds are match-index (`mit`), previous diagonal (`diagonal`), previous upper (`upper`), previous-match gather (`gather`) and DP output (`store`). All lanes needing the previous diagonal are grouped once even if the compiler emits separate predicated loads. Column zero needs only the boundary value. The model excludes unused loads, instruction fetches, shared-memory and register traffic, the initial score row, preload/copy operations, and cache behavior. Sector demand cannot be converted to hardware cache misses, DRAM bandwidth or wall time from these data. The `single_row` schedule models a one-row baseline. The `adaptive` schedule follows the implementation's tile selection, including its fallback and wide-column threshold based on 132 active SMs.
+
+## Reproduction
+
+Submit `sbatch --account="$ROMEO_PROJECT" --partition=instant bench/gpu_sectors.sbatch` from the checkout. The script generates the standard input with seed 2026, derives the two controls, attempts ordinary Nsight Compute collection, checks the three CUDA scores, then writes the model results to `results/locality/$SLURM_JOB_ID/`. It checks that the three cases exercised the intended widths and fallback. Job 838447 completed successfully. Job 838445 was a pilot in which the long interval lay in the shorter sequence after the CUDA input permutation. Its recorded negative control therefore took the tiled path. [Slurm script](../../bench/gpu_sectors.sbatch) · [Input hashes](838447/inputs.sha256) · [Source hashes](838447/source.sha256) · [Job accounting](838447/accounting.tsv) · [Pilot](838445/sectors.csv)

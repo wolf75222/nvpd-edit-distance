@@ -17,7 +17,12 @@ export LD_LIBRARY_PATH="$pmix_prefix/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 set -u
 build=$(mktemp -d "${TMPDIR:-/tmp}/chps-mpi.XXXXXXXX")
 trap 'rm -rf -- "$build"' EXIT
-out="results/mpi/$SLURM_JOB_ID"
+study=${1:-strong}
+case "$study" in
+    strong) out="results/mpi/$SLURM_JOB_ID" ;;
+    weak) out="results/mpi/weak/$SLURM_JOB_ID" ;;
+    *) echo 'expected strong or weak' >&2; exit 2 ;;
+esac
 mkdir -p "$out"
 export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DYNAMIC=FALSE OMP_WAIT_POLICY=ACTIVE
 {
@@ -66,6 +71,10 @@ fi
 echo "launcher=$CHPS_MPI_LAUNCHER plugin=$CHPS_SLURM_MPI" >> "$out/environment.txt"
 python3 bench/mpi_checks.py --binary "$shared/editdist-mpi" --oracle "$build/editdist" \
     --launcher "$smoke" > "$out/mpi-tests.txt"
+if [[ $study == weak ]]; then
+    python3 bench/mpi_weak.py --binary "$shared/editdist-mpi" --oracle "$build/editdist" --out "$out"
+    exit
+fi
 cohort=()
 if [[ -f data/phix174/cohort.fa ]]; then cohort=(--cohort data/phix174/cohort.fa); fi
 python3 bench/mpi_benchmark.py --binary "$shared/editdist-mpi" --oracle "$build/editdist" \

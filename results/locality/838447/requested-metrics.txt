@@ -1,0 +1,1 @@
+l1tex__t_sector_hit_rate.pct,lts__t_sector_hit_rate.pct

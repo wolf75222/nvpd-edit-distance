@@ -16,3 +16,5 @@ Times are medians of three trials after one warmup. The single-pair algorithm ex
 Job 838221 stopped at MPI startup. Job 838222 completed the two single-pair comparisons and the separate Kokkos CPU check. Its 192-rank-per-node matrix launch exceeded the 24 MPI slots per node provided by that allocation. Its pair-only trials are kept separately from the completed campaign. The [Slurm accounting](jobs.tsv) records all three states.
 
 The [source digests](838226/source.sha256) identify the files used in the final job. The published batch script subsequently restricted Slurm environment logging to the allocation fields displayed in the results. See the [MPI protocol](../../bench/mpi.md) for commands and timing boundaries.
+
+The [weak-scaling study](weak/README.md) doubles the actual DP work at constant cells per physical core and reports throughput and weak efficiency separately.
