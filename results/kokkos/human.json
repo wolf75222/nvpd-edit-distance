@@ -1,0 +1,14 @@
+{
+  "algorithm": "nvpd-kokkos",
+  "distance": 5599,
+  "m": 2000000,
+  "n": 2001263,
+  "seconds": 24.204368538,
+  "peak_rss_kib": 221184,
+  "device_bytes": 48030336,
+  "execution_space": "Cuda",
+  "reference_distance": 5599,
+  "status": "ok",
+  "input_sha256": "2b6c4c29b210d67fc56db9e32af26b0610a742804349e6728d94d123b6af877d",
+  "job": "838230"
+}

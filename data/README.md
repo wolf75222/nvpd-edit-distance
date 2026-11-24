@@ -16,3 +16,7 @@ python3 scripts/tree.py distances.tsv --method nj --out nj.nwk
 ```
 
 Le téléchargement requiert la commande `datasets`. La construction des arbres utilise la bibliothèque standard de Python. L’option `--groups groupes.tsv` accepte les colonnes `id` et `group` pour vérifier si une branche positive isole chaque groupe. [Documentation NCBI](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/) · [Matrice et arbres mesurés](../results/romeo/cohort-837271/)
+
+## Chromosome humain 21
+
+`python3 scripts/human_reference.py` prépare deux fenêtres homologues de GRCh38 et CHM13 ainsi qu’un contrôle sur tout le chromosome 21 de CHM13. Le script vérifie les empreintes des références et du fichier de correspondance. Les FASTA sont régénérés dans `data/human/`. [Coordonnées, distances et temps](../results/human/)

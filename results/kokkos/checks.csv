@@ -1,0 +1,3 @@
+job,target,execution_space,kokkos_version,kokkos_commit,cost_and_trace_pairs,matrix_tips,unique_matrix_pairs,ctest
+838222,cpu,OpenMP,4.5.01,175257a51ff29a0059ec48bcd233ee096b2c0438,7,5,10,passed
+838230,gpu,Cuda,4.5.01,175257a51ff29a0059ec48bcd233ee096b2c0438,7,5,10,passed
