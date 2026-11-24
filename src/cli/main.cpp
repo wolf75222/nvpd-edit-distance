@@ -27,7 +27,7 @@ constexpr View help =
     "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-cuda|nvpd-kokkos|banded|banded-trim|edlib|wfa2}\n"
     "         --input FILE.fa [--threads N] [--trace]\n"
     "pair: two FASTA records, JSON output. matrix: square labeled TSV.\n"
-    "--trace: pair with hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n";
+    "--trace: pair with edlib, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n";
 
 struct Options {
     std::string mode, algorithm, path;
@@ -55,7 +55,7 @@ Options parse(int argc, char** argv) {
     if (o.path.empty() || o.algorithm.empty()) throw std::invalid_argument("input and algorithm required");
     const bool supports_trace = o.algorithm == "seq" || o.algorithm == "hirschberg" ||
                                 o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-cuda" ||
-                                o.algorithm == "nvpd-kokkos";
+                                o.algorithm == "nvpd-kokkos" || o.algorithm == "edlib";
     if (o.trace && (o.mode != "pair" || !supports_trace))
         throw std::invalid_argument("unsupported traceback mode");
     return o;
@@ -75,7 +75,7 @@ Kernel resolve(View name) {
 #endif
     }
     if (name == "diagonal") return [](View a, View b, bool) { return antidiagonal(a, b); };
-    if (name == "edlib") return [](View a, View b, bool) { return edlib_distance(a, b); };
+    if (name == "edlib") return [](View a, View b, bool trace) { return trace ? edlib_trace(a, b) : edlib_distance(a, b); };
     if (name == "wfa2") return [](View a, View b, bool) { return wfa_distance(a, b); };
     if (name == "nvpd-cuda") {
 #ifdef CHPS_CUDA

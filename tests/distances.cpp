@@ -41,7 +41,7 @@ static void check(const std::string& a, const std::string& b) {
     std::vector<Result> costs{antidiagonal(a,b), nvpd_omp(a,b), edlib_distance(a,b), wfa_distance(a,b)};
     costs.push_back(banded(a,b));
     costs.push_back(banded_trim(a,b));
-    std::vector<Result> traces{hirschberg(a,b,true), sequential(a,b,true), nvpd_omp(a,b,true)};
+    std::vector<Result> traces{edlib_trace(a,b), hirschberg(a,b,true), sequential(a,b,true), nvpd_omp(a,b,true)};
 #ifdef CHPS_KOKKOS
     costs.push_back(nvpd_kokkos(a,b));
     traces.push_back(nvpd_kokkos(a,b,true));
