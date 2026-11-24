@@ -1,0 +1,12 @@
+romeo-c022
+Model name:                              AMD EPYC 9654 96-Core Processor
+Thread(s) per core:                      1
+gcc (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Python 3.9.21
+perf version 6.9.10
+perf_event_paranoid=2
+Cpus_allowed_list:	0
+1 Data 32K 64
+1 Instruction 32K 64
+2 Unified 1024K 64
+3 Unified 32768K 64

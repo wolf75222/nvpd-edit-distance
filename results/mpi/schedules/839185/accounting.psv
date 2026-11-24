@@ -1,0 +1,2 @@
+JobID|State|ExitCode|Elapsed|AllocCPUS|ReqMem|NodeList
+839185|COMPLETED|0:0|00:03:57|384|24G|romeo-c[036-037]

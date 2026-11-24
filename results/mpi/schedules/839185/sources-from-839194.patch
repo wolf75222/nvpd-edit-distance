@@ -1,0 +1,101 @@
+--- a/src/mpi/mpi.cpp
++++ b/src/mpi/mpi.cpp
+@@ -39,8 +39,8 @@
+         std::string_view key = argv[i], value = argv[i+1];
+         if (key == "--input") { o.input = value; continue; }
+         if (key == "--schedule" && o.mode == "matrix") {
+-            if (value != "static" && value != "cyclic" && value != "hilbert" && value != "hilbert-weighted" && value != "steal")
+-                throw std::invalid_argument("expected static, cyclic, hilbert, hilbert-weighted or steal");
++            if (value != "static" && value != "cyclic" && value != "hilbert" && value != "steal")
++                throw std::invalid_argument("expected static, cyclic, hilbert or steal");
+             o.schedule = value;
+             continue;
+         }
+--- a/src/mpi/scheduled_matrix.hpp
++++ b/src/mpi/scheduled_matrix.hpp
+@@ -11,7 +11,6 @@
+ #include <exception>
+ #include <iomanip>
+ #include <iostream>
+-#include <limits>
+ #include <thread>
+ #include <stdexcept>
+ #include <string>
+@@ -37,35 +36,6 @@
+         }
+     }
+     return index;
+-}
+-
+-// Split the ordered tasks at the prefix nearest each target cumulative cost.
+-// Integer division avoids overflowing total*rank even when total fits uint64_t.
+-inline std::vector<long long> weighted_cuts(const std::vector<Task>& tasks,
+-                                             const std::vector<Record>& data, int ranks) {
+-    std::vector<std::uint64_t> prefix(tasks.size()+1,0);
+-    for (std::size_t i=0; i<tasks.size(); ++i) {
+-        const auto& t = tasks[i];
+-        const std::uint64_t a = data[t.i].bases.size(), b = data[t.j].bases.size();
+-        if (a && b>(std::numeric_limits<std::uint64_t>::max()-prefix[i])/a)
+-            throw std::length_error("weighted matrix exceeds 64-bit cell count");
+-        prefix[i+1] = prefix[i]+a*b;
+-    }
+-    std::vector<long long> cuts(ranks+1);
+-    cuts.back() = static_cast<long long>(tasks.size());
+-    const auto total = prefix.back();
+-    for (int rank=1; rank<ranks; ++rank) {
+-        if (!total) {
+-            cuts[rank]=cuts.back()*rank/ranks;
+-            continue;
+-        }
+-        const auto target = (total/ranks)*rank+(total%ranks)*rank/ranks;
+-        const auto upper = std::lower_bound(prefix.begin(),prefix.end(),target);
+-        auto offset = upper-prefix.begin();
+-        if (offset>0 && target-prefix[offset-1] < prefix[offset]-target) --offset;
+-        cuts[rank] = offset;
+-    }
+-    return cuts;
+ }
+ 
+ struct RankWork {
+@@ -164,9 +134,7 @@
+     const auto n = static_cast<long long>(data.size());
+     const auto count = n * (n-1) / 2;
+     if (count > INT_MAX) throw std::length_error("triangle exceeds MPI reduction count");
+-    const bool weighted = schedule=="hilbert-weighted";
+-    const bool curve = schedule=="hilbert" || weighted;
+-    const bool cyclic = schedule=="cyclic", steal = schedule=="steal";
++    const bool curve = schedule=="hilbert", cyclic = schedule=="cyclic", steal = schedule=="steal";
+     int side = 1;
+     while (side < n) side *= 2;
+     std::vector<Task> tasks;
+@@ -181,11 +149,9 @@
+     std::atomic<long long> next{0};
+     std::exception_ptr failure;
+     VictimQueues queues(count,rank,ranks,grain,team);
+-    const auto cuts = weighted ? weighted_cuts(tasks,data,ranks) : std::vector<long long>{};
+-    const auto begin = weighted ? cuts[rank] : cyclic ? rank : count*rank/ranks;
++    const auto begin = cyclic ? rank : count*rank/ranks;
+     const auto stride = cyclic ? ranks : 1;
+-    const auto size = weighted ? cuts[rank+1]-begin :
+-                      cyclic ? (count+ranks-1-rank)/ranks : count*(rank+1)/ranks-begin;
++    const auto size = cyclic ? (count+ranks-1-rank)/ranks : count*(rank+1)/ranks-begin;
+     #pragma omp parallel num_threads(team)
+     {
+         auto& local = per_worker[omp_get_thread_num()];
+--- a/bench/mpi/schedules/measure.py
++++ b/bench/mpi/schedules/measure.py
+@@ -1,4 +1,4 @@
+-"""Measure identical all-vs-all distances under five MPI scheduling policies."""
++"""Measure identical all-vs-all distances under four MPI scheduling policies."""
+ import argparse
+ import csv
+ import hashlib
+@@ -12,7 +12,7 @@
+ 
+ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+ from mpi_benchmark import launch, run_rank_zero
+-POLICIES = ("static", "cyclic", "hilbert", "steal", "hilbert-weighted")
++POLICIES = ("static", "cyclic", "hilbert", "steal")
+ TRIAL_FIELDS = ("job block order layout schedule nodes ranks threads cores grain pairs cells seconds gcups "
+                 "busy_fraction max_mean_rank_cells stolen_pairs cross_node_pairs max_rank_rss_kib "
+                 "input_sha256 canonical_scores_sha256").split()

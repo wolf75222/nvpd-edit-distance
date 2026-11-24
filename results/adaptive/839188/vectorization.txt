@@ -1,0 +1,6 @@
+src/cpu/nvpd_band_row.hpp:10:13: optimized: loop vectorized using 16 byte vectors
+src/cpu/nvpd_band_row.hpp:10:13: optimized: loop vectorized using 32 byte vectors
+src/cpu/nvpd_band_row.hpp:12:28: optimized: loop vectorized using 32 byte vectors
+SIMD gather  57c:	62 d2 7d 2a 90 1c 84 	vpgatherdd (%r12,%ymm0,4),%ymm3{%k2}
+scalar control nvpd_band_row.hpp:12:28: missed: couldn't vectorize loop
+scalar control nvpd_band_row.hpp:14:60: missed: not vectorized: not suitable for gather load _316 = *_315;

@@ -1,0 +1,10 @@
+Internal ctest changing into directory: /tmp/nvpd-adaptive.cRTGCl/build
+Test project /tmp/nvpd-adaptive.cRTGCl/build
+    Start 1: adaptive
+1/2 Test #1: adaptive .........................   Passed    0.06 sec
+    Start 2: distances
+2/2 Test #2: distances ........................   Passed    0.04 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.10 sec
