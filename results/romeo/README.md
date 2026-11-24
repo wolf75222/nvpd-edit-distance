@@ -22,3 +22,5 @@ git archive f08b4f6 -o /tmp/nvpd-initial.tar
 ```
 
 Les trois taux de mutation sont 2, 5 et 10 %. À 5 000 et 20 000 bases, la première paire de chaque taux sert à mesurer la montée en charge de 1 à 8 threads. À un million de bases, les trois méthodes denses CPU traitent la première paire de chaque taux. Le GPU, edlib et WFA2 traitent les cinq paires de chaque taux. La campagne utilise des nœuds partagés. Les temps décrivent la [révision initiale](https://github.com/wolf75222/nvpd-edit-distance/commit/f08b4f6fcdf81de3a6ffcd60a8934cd1aca31c83).
+
+La [campagne OpenMP sur quinze paires d’un million de bases](completion-1m/) complète les mesures de la révision initiale.

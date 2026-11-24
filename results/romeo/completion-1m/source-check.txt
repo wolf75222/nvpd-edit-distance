@@ -1,0 +1,12 @@
+CMakeLists.txt: OK
+include/chps/baselines.hpp: OK
+include/chps/dp.hpp: OK
+include/chps/fasta.hpp: OK
+src/baselines.cpp: OK
+src/dp.cpp: OK
+src/fasta.cpp: OK
+src/main.cpp: OK
+src/dp_internal.hpp: OK
+src/wfa_adapter.c: OK
+src/cuda.cu: OK
+tests/distances.cpp: OK
