@@ -1,0 +1,11 @@
+job	expected_trials	command
+837261	198	COHORT_FASTA=data/phix174/cohort.fa sbatch --parsable --account="$ROMEO_PROJECT" bench/cpu.sbatch
+837262	18	sbatch --parsable --account="$ROMEO_PROJECT" bench/gpu.sbatch
+837263	30	sbatch --parsable --account="$ROMEO_PROJECT" --time=01:00:00 bench/gpu.sbatch --lengths 100000 1000000 --profile full --trials 1
+837264	120	sbatch --parsable --account="$ROMEO_PROJECT" --time=01:00:00 bench/cpu.sbatch --profile full --algorithms edlib wfa2 --trials 1
+837265	9	sbatch --parsable --account="$ROMEO_PROJECT" --time=01:00:00 bench/cpu.sbatch --lengths 100000 --threads 8 --algorithms seq diagonal nvpd-omp --trials 1
+837266	3	sbatch --parsable --account="$ROMEO_PROJECT" --time=01:00:00 bench/cpu.sbatch --lengths 1000000 --rates 0.02 --threads 8 --algorithms seq diagonal nvpd-omp --trials 1
+837267	3	sbatch --parsable --account="$ROMEO_PROJECT" --time=01:00:00 bench/cpu.sbatch --lengths 1000000 --rates 0.05 --threads 8 --algorithms seq diagonal nvpd-omp --trials 1
+837268	3	sbatch --parsable --account="$ROMEO_PROJECT" --time=01:00:00 bench/cpu.sbatch --lengths 1000000 --rates 0.1 --threads 8 --algorithms seq diagonal nvpd-omp --trials 1
+837271	24	COHORT_FASTA=data/phix174/cohort.fa COHORT_VERIFY_WITH=nvpd-cuda sbatch --parsable --account="$ROMEO_PROJECT" bench/gpu.sbatch --lengths 5000 20000 --replicates 2 3 4 5 --trials 1
+837272	108	sbatch --parsable --account="$ROMEO_PROJECT" bench/cpu.sbatch --lengths 5000 20000 100000 --replicates 2 3 4 5 --threads 8 --algorithms seq diagonal nvpd-omp --trials 1

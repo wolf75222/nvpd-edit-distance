@@ -1,0 +1,20 @@
+/build*/
+/deps/
+/data/**/*.fa
+/data/**/*.fna
+/data/**/*.zip
+/data/sars_metadata-current.tsv
+/results/romeo/logs/
+/CHPS1001_*.pdf
+/Projet 3 - Articles*.zip
+/.venv*/
+/.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.DS_Store
+slurm-*.log
+*.out
+/report/*.log
+/report/*.aux
+/report/*.synctex.gz
