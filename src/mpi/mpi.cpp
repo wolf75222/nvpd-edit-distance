@@ -14,6 +14,7 @@
 #include <numeric>
 #include <set>
 #include <stdexcept>
+#include <sys/resource.h>
 #ifdef __linux__
 #include <sched.h>
 #endif
@@ -22,12 +23,13 @@ namespace {
 struct Options {
     std::string mode, input;
     int threads = 1, trials = 1, warmups = 0, pipeline_rows = 0;
+    bool report_rss = false;
 };
 
 Options parse(int argc, char** argv) {
-    if (argc < 2) throw std::invalid_argument("expected pair or matrix");
+    if (argc < 2) throw std::invalid_argument("expected pair, pairs or matrix");
     Options o{argv[1], {}};
-    if (o.mode != "pair" && o.mode != "matrix") throw std::invalid_argument("unknown mode");
+    if (o.mode != "pair" && o.mode != "pairs" && o.mode != "matrix") throw std::invalid_argument("unknown mode");
     for (int i = 2; i < argc; i += 2) {
         if (i + 1 >= argc) throw std::invalid_argument("missing argument value");
         std::string_view key = argv[i], value = argv[i+1];
@@ -38,6 +40,7 @@ Options parse(int argc, char** argv) {
             throw std::invalid_argument("expected integer for " + std::string(key));
         if (key == "--threads" && n > 0) o.threads = n;
         else if (key == "--pipeline-rows" && o.mode == "pair" && n > 0) o.pipeline_rows = n;
+        else if (key == "--report-rss" && n == 1) o.report_rss = true;
         else if (key == "--trials" && n > 0) o.trials = n;
         else if (key == "--warmups" && n >= 0) o.warmups = n;
         else throw std::invalid_argument("unknown option or invalid value: " + std::string(key));
@@ -61,6 +64,7 @@ std::vector<chps::Record> input(const Options& o, int rank) {
     int count = static_cast<int>(records.size());
     MPI_Bcast(&count, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (o.mode == "pair" && count != 2) throw std::invalid_argument("pair requires two records");
+    if (o.mode == "pairs" && count % 2) throw std::invalid_argument("pairs requires an even record count");
     if (rank) records.resize(count);
     for (auto& r : records) {
         broadcast_string(r.id, rank);
@@ -176,15 +180,19 @@ int distributed_pair(std::string_view a, std::string_view b, int rank, int ranks
 }
 
 std::vector<int> batch(const std::vector<chps::Record>& data, int rank, int ranks,
-                       int team, int& workers) {
-    const std::size_t count = data.size() * (data.size()-1) / 2;
+                       int team, bool adjacent, int& workers) {
+    const std::size_t count = adjacent ? data.size()/2 : data.size() * (data.size()-1) / 2;
     if (count > INT_MAX) throw std::length_error("cohort exceeds MPI reduction count limit");
     std::vector<int> local(count), result(rank ? 0 : count);
     std::vector<std::pair<std::size_t,std::size_t>> jobs;
-    std::size_t p = 0;
-    for (std::size_t i = 0; i < data.size(); ++i) {
-        for (std::size_t j = i+1; j < data.size(); ++j, ++p) {
-            if (p % ranks == static_cast<std::size_t>(rank)) jobs.emplace_back(i,j);
+    if (adjacent) {
+        for (std::size_t p = rank; p < count; p += ranks) jobs.emplace_back(2*p, 2*p+1);
+    } else {
+        std::size_t p = 0;
+        for (std::size_t i = 0; i < data.size(); ++i) {
+            for (std::size_t j = i+1; j < data.size(); ++j, ++p) {
+                if (p % ranks == static_cast<std::size_t>(rank)) jobs.emplace_back(i,j);
+            }
         }
     }
     workers = static_cast<int>(std::min<std::size_t>(team,jobs.size()));
@@ -284,7 +292,7 @@ int main(int argc, char** argv) {
             int workers = 0;
             if (o.mode == "pair")
                 distance = distributed_pair(records[0].bases, records[1].bases, rank, ranks, team, o.pipeline_rows, workers);
-            else matrix = batch(records, rank, ranks, team, workers);
+            else matrix = batch(records, rank, ranks, team, o.mode == "pairs", workers);
             double elapsed = MPI_Wtime() - start, slowest = 0;
             MPI_Reduce(&elapsed, &slowest, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             int total_workers = 0;
@@ -294,15 +302,33 @@ int main(int argc, char** argv) {
                 else if (first_distance != distance || first_matrix != matrix)
                     throw std::runtime_error("repeated MPI distances disagree");
             }
-            if (!rank && trial >= 0)
+            long max_rss_kib = 0;
+            if (o.report_rss && trial >= 0) {
+                rusage usage{};
+                if (getrusage(RUSAGE_SELF,&usage)) throw std::runtime_error("getrusage failed");
+                long rss_kib = usage.ru_maxrss;
+#ifdef __APPLE__
+                rss_kib /= 1024;
+#endif
+                MPI_Reduce(&rss_kib,&max_rss_kib,1,MPI_LONG,MPI_MAX,0,MPI_COMM_WORLD);
+            }
+            if (!rank && trial >= 0) {
                 std::cerr << std::setprecision(12) << "{\"mode\":\"" << o.mode << "\",\"trial\":" << trial+1
                           << ",\"ranks\":" << ranks << ",\"threads_per_rank\":" << team
                           << ",\"sampled_physical_cores\":" << physical
                           << ",\"pipeline_rows\":" << o.pipeline_rows
-                          << ",\"assigned_workers\":" << total_workers << ",\"seconds\":" << slowest << "}\n";
+                          << ",\"assigned_workers\":" << total_workers << ",\"seconds\":" << slowest;
+                if (o.report_rss) std::cerr << ",\"max_rank_rss_kib\":" << max_rss_kib;
+                std::cerr << "}\n";
+            }
         }
         if (!rank) {
             if (o.mode == "matrix") matrix_output(records,matrix);
+            else if (o.mode == "pairs") {
+                std::cout << "id_a\tid_b\tdistance\n";
+                for (std::size_t i = 0; i < matrix.size(); ++i)
+                    std::cout << records[2*i].id << '\t' << records[2*i+1].id << '\t' << matrix[i] << '\n';
+            }
             else std::cout << "{\"algorithm\":\"" << (o.pipeline_rows ? "nvpd-mpi-pipeline" : "nvpd-mpi")
                            << "\",\"distance\":" << distance << "}\n";
         }

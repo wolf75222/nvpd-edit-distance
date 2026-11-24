@@ -1,0 +1,8 @@
+Edlib global scores were computed for every homologous pair in ROMEO allocation 838908.
+An independent local WFA2-lib global edit-distance run used the original paired FASTA records.
+770 WFA2 scores match the edlib reference
+SHA-256
+82455b7ce8aab5051e2b3c8055f72256e410cc5529cdeeeca20bc80eca3ac6ca  editdist
+c163869fc8af04b371e194186892d8675359fd2745dba52286bd231f1be53e47  verify.py
+717cf7f955aa4dbf0a3e79938ae2f8e44f0905bb677a8703e32e0e6d065d3622  scores.tsv
+bcf0735b60f31a9300ec3dccea6084bd85a086e6501b139c3c8a511d5a2c5bde  windows.tsv
