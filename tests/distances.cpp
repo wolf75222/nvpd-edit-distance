@@ -41,7 +41,7 @@ static void check(const std::string& a, const std::string& b) {
     std::vector<Result> costs{antidiagonal(a,b), nvpd_omp(a,b), edlib_distance(a,b), wfa_distance(a,b)};
     costs.push_back(banded(a,b));
     costs.push_back(banded_trim(a,b));
-    std::vector<Result> traces{sequential(a,b,true), nvpd_omp(a,b,true)};
+    std::vector<Result> traces{hirschberg(a,b,true), sequential(a,b,true), nvpd_omp(a,b,true)};
 #ifdef CHPS_KOKKOS
     costs.push_back(nvpd_kokkos(a,b));
     traces.push_back(nvpd_kokkos(a,b,true));
@@ -83,6 +83,14 @@ int main() {
     std::string repeated;
     for (int copy = 0; copy < 85; ++copy) repeated += "ACGT";
     check("ACNTGACGTNACG", repeated);
+    for (bool transpose : {false, true}) {
+        std::string a = dna(20'011), b = dna(37);
+        if (transpose) std::swap(a, b);
+        const auto path = hirschberg(a, b, true);
+        replay(a, b, path);
+        if (path.distance != edlib_distance(a, b).distance)
+            throw std::runtime_error("wrong linear-space traceback beyond dense limit");
+    }
     // One DP row isolates column indexing, including million-column inputs.
     for (int length : {127, 128, 129, 254, 255, 256, 257, 65535, 1000000}) {
         const std::string absent(length, 'A');

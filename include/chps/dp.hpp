@@ -13,6 +13,7 @@ struct Result {
 };
 
 Result sequential(std::string_view a, std::string_view b, bool trace = false);
+Result hirschberg(std::string_view a, std::string_view b, bool trace = false);
 Result antidiagonal(std::string_view a, std::string_view b);
 Result nvpd_omp(std::string_view a, std::string_view b, bool trace = false);
 Result nvpd_cuda(std::string_view a, std::string_view b, bool trace = false);

@@ -35,7 +35,7 @@ file(GLOB wfa_sources "${wfa2_SOURCE_DIR}/wavefront/*.c" "${wfa2_SOURCE_DIR}/sys
                       "${wfa2_SOURCE_DIR}/utils/*.c" "${wfa2_SOURCE_DIR}/alignment/*.c")
 add_library(wfa_static STATIC ${wfa_sources})
 target_include_directories(wfa_static PUBLIC "${wfa2_SOURCE_DIR}")
-add_library(distances STATIC src/dp.cpp src/banded.cpp src/baselines.cpp src/wfa_adapter.c)
+add_library(distances STATIC src/dp.cpp src/hirschberg.cpp src/banded.cpp src/baselines.cpp src/wfa_adapter.c)
 target_include_directories(distances PUBLIC include)
 target_link_libraries(distances PUBLIC OpenMP::OpenMP_CXX PRIVATE edlib_static wfa_static m)
 if(CHPS_KOKKOS)
