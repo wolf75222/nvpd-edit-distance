@@ -1,5 +1,6 @@
 #include "chps/baselines.hpp"
 #include "chps/banded.hpp"
+#include "chps/split.hpp"
 #ifdef CHPS_CUDA
 #include "chps/cuda.hpp"
 #endif
@@ -24,10 +25,10 @@ using namespace chps;
 using View = std::string_view;
 using Kernel = Result (*)(View, View, bool);
 constexpr View help =
-    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-cuda|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
+    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-split|nvpd-cuda|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
     "         --input FILE.fa [--fai FILE.fa.fai] [--threads N] [--trace]\n"
     "pair: two FASTA records, JSON output. matrix: square labeled TSV.\n"
-    "--trace: pair with edlib, wfa2, biwfa, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n";
+    "--trace: pair with edlib, wfa2, biwfa, nvpd-split, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n";
 
 struct Options {
     std::string mode, algorithm, path, fai;
@@ -59,7 +60,7 @@ Options parse(int argc, char** argv) {
     if (o.path.empty() || o.algorithm.empty()) throw std::invalid_argument("input and algorithm required");
     const bool supports_trace = o.algorithm == "seq" || o.algorithm == "hirschberg" ||
                                 o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-cuda" ||
-                                o.algorithm == "nvpd-kokkos" || o.algorithm == "edlib" ||
+                                o.algorithm == "nvpd-kokkos" || o.algorithm == "nvpd-split" || o.algorithm == "edlib" ||
                                 o.algorithm == "wfa2" || o.algorithm == "biwfa";
     if (o.trace && (o.mode != "pair" || !supports_trace))
         throw std::invalid_argument("unsupported traceback mode");
@@ -69,6 +70,7 @@ Options parse(int argc, char** argv) {
 Kernel resolve(View name) {
     if (name == "seq") return sequential;
     if (name == "hirschberg") return hirschberg;
+    if (name == "nvpd-split") return nvpd_split;
     if (name == "nvpd-omp") return nvpd_omp;
     if (name == "banded" || name == "banded-trim")
         return name == "banded" ? banded : banded_trim;
@@ -127,7 +129,7 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
     const auto n = records.size();
     std::vector<std::vector<int>> distances(n, std::vector<int>(n));
     const auto team = static_cast<std::size_t>(o.threads);
-    const bool pair_parallel = o.algorithm == "nvpd-omp" && team > 1 && n * (n - 1) / 2 >= team;
+    const bool pair_parallel = (o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-split") && team > 1 && n * (n - 1) / 2 >= team;
     const bool across = pair_parallel || (team > 1 &&
         (o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "biwfa" || o.algorithm == "seq" ||
          o.algorithm == "banded" || o.algorithm == "banded-trim" || o.algorithm == "hirschberg"));
