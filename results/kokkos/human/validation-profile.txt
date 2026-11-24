@@ -1,0 +1,9 @@
+Internal ctest changing into directory: build/app
+Test project build/app
+    Start 1: distances
+1/1 Test #1: distances ........................   Passed    0.51 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.51 sec
+101 differential pairs, cost + trace, reference and candidate

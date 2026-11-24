@@ -1,0 +1,13 @@
+romeo-c022
+Architecture:                            x86_64
+Model name:                              AMD EPYC 9654 96-Core Processor
+Kokkos 4.5.01 175257a51ff29a0059ec48bcd233ee096b2c0438
+c++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+CXX_FLAGS = -O3 -DNDEBUG -march=native -std=c++20 -fopenmp
+ab2bc89432bf59d923ea89e0ddeb246d7056bc6eca107a3c32c9b76d11807b1c  src/kokkos/kokkos.cpp
+802fccb092a137ecb65907fb0a455648a663e04ec9f183aed98ab64fcabf1b06  src/kokkos/row_policy.hpp
+2c40facafd11d2174adac2b347a10f2b786406d10384f9e80902d29deb7769d0  bench/kokkos/human/inputs.py
+a70ec3e880f4693e47c4a288ce93399186d823dfc45df6aaa8cdcca5e85cac0b  bench/kokkos/human/trial.cpp
+0b406e54f2cffba162abaeaa0be38f6b5873c371f005897a15e0c4343dfa2f96  bench/kokkos/human/measure.py
+91f6ccc36bd9880337e32c4cd7f55da1fc78b15737d65be7f16ac5f7b5c81275  bench/kokkos/human/targets.cmake
+ed7a31a087b93c88e99a074d76d38c24cb80f71125bf368e451d88d83b5afb2e  bench/kokkos/human/run.sbatch

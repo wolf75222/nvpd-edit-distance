@@ -1,0 +1,19 @@
+romeo-a058
+Architecture:                            aarch64
+Model name:                              Neoverse-V2
+Kokkos 4.5.01 175257a51ff29a0059ec48bcd233ee096b2c0438
+c++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+name, driver_version, memory.total [MiB]
+NVIDIA GH200 120GB, 590.48.01, 97871 MiB
+Cuda compilation tools, release 12.6, V12.6.85
+Build cuda_12.6.r12.6/compiler.35059454_0
+CUDA_FLAGS = -O3 -DNDEBUG -std=c++20 "--generate-code=arch=compute_90,code=[compute_90,sm_90]"
+CXX_FLAGS = -O3 -DNDEBUG -std=c++20 -fopenmp -extended-lambda -Wext-lambda-captures-this -arch=sm_90
+ab2bc89432bf59d923ea89e0ddeb246d7056bc6eca107a3c32c9b76d11807b1c  src/kokkos/kokkos.cpp
+802fccb092a137ecb65907fb0a455648a663e04ec9f183aed98ab64fcabf1b06  src/kokkos/row_policy.hpp
+2c40facafd11d2174adac2b347a10f2b786406d10384f9e80902d29deb7769d0  bench/kokkos/human/inputs.py
+ed9ddce14591ffd3e5c778f41cefe76cf8213029c958e72c66e4ba6cf2e8c7e5  bench/kokkos/human/trial.cpp
+0b406e54f2cffba162abaeaa0be38f6b5873c371f005897a15e0c4343dfa2f96  bench/kokkos/human/measure.py
+0ead332b283c9bea9f9474996a7a1038b8b1274b01a709541f8576af42e25f90  bench/kokkos/human/targets.cmake
+b22dffc1b8d1f9d1cbfe8b317c1f02d46d881ac99f836f2a4cea7460bd2f3d2c  bench/kokkos/human/run.sbatch
+NVIDIA Nsight Systems version 2024.5.1.113-245134619542v0
