@@ -7,7 +7,7 @@ from pathlib import Path
 import random
 import tempfile
 
-from mpi_benchmark import generated, launch, run, sha, sizes
+from mpi_benchmark import generated, launch, run, run_rank_zero, sha, sizes
 from mpi_weak import inputs
 
 
@@ -40,15 +40,11 @@ def scaling(binary, oracle, cohort, directory, output):
             for study, name, nodes in keys:
                 mode, path = cases[study,name,nodes]
                 expected, pairs, cells, digest = metadata[path]
-                # Capture the root streams at their source. The MPI launcher forwards
-                # rank output asynchronously and may merge stdout and stderr.
-                stdout, stderr = directory / "rank0.out", directory / "rank0.err"
-                redirect = ('if [ "${OMPI_COMM_WORLD_RANK:-${SLURM_PROCID:-}}" = 0 ]; then '
-                            'exec >"$1" 2>"$2"; fi; shift 2; exec "$@"')
-                run([*launch(nodes,24,8), "sh", "-c", redirect, "rank", stdout, stderr, binary,mode,"--input",path,"--threads","8",
-                            "--warmups","2","--trials","1"])
-                score = str(json.loads(stdout.read_text())["distance"]) if mode == "pair" else sha(stdout.read_bytes())
-                [timing] = [json.loads(x) for x in stderr.read_text().splitlines() if x.startswith('{"mode":')]
+                proc = run_rank_zero(launch(nodes, 24, 8),
+                                     [binary, mode, "--input", path, "--threads", "8",
+                                      "--warmups", "2", "--trials", "1"], directory)
+                score = str(json.loads(proc.stdout)["distance"]) if mode == "pair" else sha(proc.stdout.encode())
+                [timing] = [json.loads(x) for x in proc.stderr.splitlines() if x.startswith('{"mode":')]
                 if (timing["sampled_physical_cores"], timing["assigned_workers"], score) != (nodes*192, nodes*192, expected):
                     raise ValueError(f"invalid score or worker placement on {name}/{nodes}")
                 writer.writerow(dict(job=os.environ["SLURM_JOB_ID"], study=study, case=name, nodes=nodes, block=block,

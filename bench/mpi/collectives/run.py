@@ -10,7 +10,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from mpi_benchmark import generated, launch, run, sha, sizes
+from mpi_benchmark import generated, launch, run, run_rank_zero, sha, sizes
 
 
 def measure(binary, oracle, library, directory, output):
@@ -32,7 +32,7 @@ def measure(binary, oracle, library, directory, output):
                 cmd = launch(nodes, 24, 8)
                 if active:
                     cmd += ["env", f"LD_PRELOAD={library}"]
-                proc = run([*cmd, binary, "pair", "--input", path, "--threads", "8", "--warmups", "2", "--trials", "1"])
+                proc = run_rank_zero(cmd, [binary, "pair", "--input", path, "--threads", "8", "--warmups", "2", "--trials", "1"], directory)
                 logs = [json.loads(line) for line in proc.stderr.splitlines() if line.startswith("{")]
                 [timing] = [row for row in logs if "trial" in row]
                 measured = [row for row in logs if "collective" in row]

@@ -62,6 +62,23 @@ def run(cmd):
     return proc
 
 
+def run_rank_zero(launcher, arguments, directory):
+    """Capture the root streams before the MPI launcher forwards output."""
+    with tempfile.TemporaryDirectory(dir=directory) as capture:
+        stdout = Path(capture).resolve() / "result"
+        stderr = stdout.with_name("timing")
+        redirect = ('if [ "${OMPI_COMM_WORLD_RANK:-${SLURM_PROCID:-}}" = 0 ]; then '
+                    'exec >"$1" 2>"$2"; fi; shift 2; exec "$@"')
+        try:
+            proc = run([*launcher, "sh", "-c", redirect, "rank-output", stdout, stderr, *arguments])
+        except RuntimeError as exc:
+            detail = stderr.read_text()[-1500:] if stderr.exists() else ""
+            raise RuntimeError(f"{exc}\n{detail}") from exc
+        proc.stdout = stdout.read_text()
+        proc.stderr = stderr.read_text()
+        return proc
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--binary", type=Path, required=True)
@@ -71,7 +88,7 @@ def main():
     a = p.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
     fields = ["job","case","mode","nodes","ranks","threads_per_rank","assigned_workers","sampled_physical_cores",
-              "step_cores","reservation_cores","records","pairs","cells","trial","seconds",
+              "pipeline_rows","step_cores","reservation_cores","records","pairs","cells","trial","seconds",
               "gcups","input_sha256","oracle_algorithm","distance_or_matrix_sha256"]
     grouped = {}
     with tempfile.TemporaryDirectory(dir=os.environ.get("CHPS_MPI_DATA_TMP")) as tmp, (a.out/"trials.csv").open("x",newline="") as file:
@@ -89,9 +106,9 @@ def main():
             for nodes in ((1,2) if case_no%2==0 else (2,1)):
                 ranks_per_node, threads = 24,8
                 step = launch(nodes,ranks_per_node,threads)
-                cmd = [*step,str(a.binary),mode,"--input",str(path),"--threads",str(threads),
+                cmd = [str(a.binary),mode,"--input",str(path),"--threads",str(threads),
                        "--warmups","1","--trials","3"]
-                proc = run(cmd)
+                proc = run_rank_zero(step, cmd, tmp)
                 got = json.loads(proc.stdout)["distance"] if mode == "pair" else sha(proc.stdout.encode())
                 if got != expected: raise ValueError(f"{case} disagrees with edlib")
                 stats = [json.loads(x) for x in proc.stderr.splitlines() if x.startswith('{"mode":')]

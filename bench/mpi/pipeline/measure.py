@@ -11,7 +11,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from mpi_benchmark import generated, launch, run, sha, sizes
+from mpi_benchmark import generated, launch, run, run_rank_zero, sha, sizes
 
 def compare(binary, oracle, probe, directory, output):
     cases = {}
@@ -24,12 +24,6 @@ def compare(binary, oracle, probe, directory, output):
                     "wide": "8790d9c24414cfc977cd1107c80ccd647ae25e02aad6e3fb90fd340f9f47b0be"}
     if {name: data[2] for name, data in cases.items()} != previous_sha:
         raise ValueError("inputs differ from the historical MPI campaign")
-    # PRRTE can interleave stdout and stderr. Capture rank zero's two streams
-    # directly on the shared filesystem, outside the measured kernel.
-    stdout, stderr = directory / "score.json", directory / "timings.jsonl"
-    capture = ["sh", "-c", 'out=$1; err=$2; shift 2; '
-               'if [ "${OMPI_COMM_WORLD_RANK:-${SLURM_PROCID:-}}" = 0 ]; then '
-               'exec "$@" > "$out" 2> "$err"; fi; exec "$@"', "rank-output", stdout, stderr]
     rng = random.Random(41721)
     configs = [(c, nodes, h) for c in cases for nodes in (1, 2) for h in (0, 8, 32)]
     records = []
@@ -46,17 +40,13 @@ def compare(binary, oracle, probe, directory, output):
                     cmd = launch(nodes, 24, 8)
                     if block == 0:
                         cmd += ["env", f"LD_PRELOAD={probe}"]
-                    cmd += [*capture, binary, "pair", "--input", path, "--threads", "8",
+                    arguments = [binary, "pair", "--input", path, "--threads", "8",
                             "--warmups", "2" if block else "0", "--trials", "1"]
                     if height:
-                        cmd += ["--pipeline-rows", str(height)]
-                    try:
-                        run(cmd)
-                    except RuntimeError as exc:
-                        detail = stderr.read_text()[-1500:] if stderr.exists() else ""
-                        raise RuntimeError(f"{exc}\n{detail}") from exc
-                    result = json.loads(stdout.read_text())
-                    logs = [json.loads(line) for line in stderr.read_text().splitlines() if line.startswith("{")]
+                        arguments += ["--pipeline-rows", str(height)]
+                    proc = run_rank_zero(cmd, arguments, directory)
+                    result = json.loads(proc.stdout)
+                    logs = [json.loads(line) for line in proc.stderr.splitlines() if line.startswith("{")]
                     [t] = [entry for entry in logs if "trial" in entry]
                     method = "nvpd-mpi-pipeline" if height else "nvpd-mpi"
                     if result != {"algorithm": method, "distance": exact}:

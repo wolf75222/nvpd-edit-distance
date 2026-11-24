@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 from statistics import median
 
-from mpi_benchmark import launch, run, sha
+from mpi_benchmark import launch, run, run_rank_zero, sha
 
 CORES = 192
 TRIALS = 5
@@ -55,8 +55,8 @@ def benchmark(args, work):
             work_per_core[nodes] = cells / cores
             options = [mode, "--input", str(path), "--threads", "8"]
             oracle = run([str(args.oracle), *options, "--algorithm", "edlib"]).stdout
-            proc = run([*launch(nodes, 24, 8), str(args.binary), *options, "--warmups", "1",
-                        "--trials", str(TRIALS)])
+            proc = run_rank_zero(launch(nodes, 24, 8), [str(args.binary), *options, "--warmups", "1",
+                        "--trials", str(TRIALS)], work)
             if mode == "pair":
                 got = json.loads(proc.stdout)["distance"]
                 equal = got == json.loads(oracle)["distance"]
