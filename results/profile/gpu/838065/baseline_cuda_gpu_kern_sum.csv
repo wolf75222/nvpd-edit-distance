@@ -1,0 +1,3 @@
+Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Name
+100.0,6232768,4992,1248.6,1248.0,1184,1376,40.4,"chps::<unnamed>::next_row(const int *, int *, const int *, int, int)"
+0.0,896,1,896.0,896.0,896,896,0.0,"chps::<unnamed>::first_row(int *, int)"

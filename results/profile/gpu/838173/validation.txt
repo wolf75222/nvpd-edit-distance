@@ -1,0 +1,9 @@
+Internal ctest changing into directory: build
+Test project build
+    Start 1: distances
+1/1 Test #1: distances ........................   Passed    2.51 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   2.51 sec
+{"algorithm":"nvpd-cuda","distance":483,"m":5000,"n":5000,"seconds":0.776068764,"peak_rss_kib":184320,"device_bytes":120024}

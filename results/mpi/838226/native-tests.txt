@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /tmp/chps-mpi.M5A7Y2he
+Test project /tmp/chps-mpi.M5A7Y2he
+    Start 1: distances
+1/1 Test #1: distances ........................   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.02 sec

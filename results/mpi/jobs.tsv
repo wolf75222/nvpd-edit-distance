@@ -1,0 +1,4 @@
+job	state	exit_code	elapsed	allocated_cpus	nodes	nodelist
+838221	FAILED	1:0	00:00:10	384	2	romeo-c[009,039]
+838222	FAILED	1:0	00:00:40	384	2	romeo-c[009,039]
+838226	COMPLETED	0:0	00:00:28	384	2	romeo-c[009,039]

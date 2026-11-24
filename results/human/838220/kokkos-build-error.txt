@@ -1,0 +1,10 @@
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(269): error: argument of type "size_t" (aka "unsigned long") is incompatible with parameter of type "const cudaGraphEdgeData *"
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(269): error: too few arguments in function call
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(349): error: no suitable constructor exists to convert from "int" to "cudaMemLocation"
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(357): error: no suitable constructor exists to convert from "int" to "cudaMemLocation"
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(358): error: argument of type "cudaStream_t" (aka "CUstream_st *") is incompatible with parameter of type "unsigned int"
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(269): error: argument of type "size_t" (aka "unsigned long") is incompatible with parameter of type "const cudaGraphEdgeData *"
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(269): error: too few arguments in function call
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(349): error: no suitable constructor exists to convert from "int" to "cudaMemLocation"
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(357): error: no suitable constructor exists to convert from "int" to "cudaMemLocation"
+core/src/Cuda/Kokkos_Cuda_Instance.hpp(358): error: argument of type "cudaStream_t" (aka "CUstream_st *") is incompatible with parameter of type "unsigned int"

@@ -1,0 +1,4 @@
+variant,diagnostic
+baseline,dp.cpp:142:42: missed: couldn't vectorize loop
+v1,v1.cpp:144:42: optimized: loop vectorized using 32 byte vectors
+v2,v2.cpp:160:34: optimized: loop vectorized using 32 byte vectors

@@ -1,0 +1,5 @@
+JobID|Partition|State|ExitCode|Elapsed
+838065|instant|COMPLETED|0:0|00:00:14
+838161|instant|COMPLETED|0:0|00:02:48
+838170|instant|COMPLETED|0:0|00:03:56
+838173|instant|COMPLETED|0:0|00:03:24

@@ -1,0 +1,5 @@
+job,node,cores,allocated_cpu_ids,requested_mem_gib,wall_limit_minutes,elapsed_seconds,state,exit_code,phase
+838066,romeo-c022,16,,8,30,4,FAILED,1,perf handshake before measurements
+838147,romeo-c022,16,40-55,8,30,30,COMPLETED,0,baseline counters
+838160,romeo-c022,16,40-55,8,30,36,COMPLETED,0,baseline-v1 and v1 counters and scaling
+838169,romeo-c022,16,"33-34,37-50",8,30,31,COMPLETED,0,v1-v2 and v2 counters and scaling

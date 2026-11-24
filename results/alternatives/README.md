@@ -9,6 +9,6 @@ cmake -S . -B build-alt -DCMAKE_BUILD_TYPE=Release -DCHPS_QUICKED=ON \
   -DCMAKE_C_FLAGS=-mcpu=native -DCMAKE_CXX_FLAGS=-mcpu=native
 cmake --build build-alt --parallel
 python3 scripts/synthetic.py
-python3 scripts/human_reference.py --help
+python3 scripts/human_reference.py
 python3 bench/alternatives.py --build build-alt --out build-alt/trials.csv --machine apple-m1-pro
 ```

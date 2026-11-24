@@ -1,0 +1,17 @@
+2026-11-24T14:11:37Z
+romeo-c009
+romeo-c039
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+mpirun (Open MPI) 5.0.5
+cmake version 3.30.9
+JobId=838222
+TimeLimit=00:30:00
+Partition=instant
+NodeList=romeo-c[009,039]
+NumNodes=2
+NumCPUs=384
+NumTasks=48
+CPUs/Task=8
+ReqTRES=cpu=384,mem=32G,node=2,billing=384
+AllocTRES=cpu=384,mem=32G,node=2,billing=384
+launcher=mpirun plugin=pmix_v5

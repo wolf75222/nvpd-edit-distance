@@ -1,0 +1,4 @@
+srun: error: Task launch for StepId=838226.0 failed on node romeo-c009: Unspecified error
+srun: error: Task launch for StepId=838226.0 failed on node romeo-c039: Unspecified error
+srun: error: Application launch failed: Unspecified error
+srun: Job step aborted
