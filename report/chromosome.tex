@@ -1,0 +1,22 @@
+\section{Fenêtres humaines et chromosome entier}
+GRCh38.p14 et T2T-CHM13v2.0 décrivent deux références humaines différentes~\cite{t2t}. Les fenêtres proviennent de la séquence principale du chromosome 21 dans chaque assemblage (accessions \texttt{NC\_000021.9} et \texttt{NC\_060945.1}). La chaîne UCSC hg38 vers hs1 place leurs deux bornes dans des blocs homologues du brin positif. Le script vérifie l'empreinte des sources et l'unicité des 41 bases à chaque extrémité sur son chromosome. Il conserve intégralement les intervalles entre bornes, y compris les insertions et les délétions. Les deux fenêtres sont emboîtées et exemptes de bases ambiguës.
+\begin{table}[H]\centering
+\caption{Temps de calcul médians sur une allocation ARM/GH200. Chaque cellule regroupe deux processus neufs. edlib et WFA2 utilisent un cœur Grace. NvPD inclut ses transferts, ses allocations et l'initialisation CUDA à froid.}
+\small\begin{tabular}{lrrrrr}\toprule
+Entrée & Dimensions (nt) & \(d\) & edlib (s) & WFA2 (s) & NvPD GPU (s)\\\midrule
+\HumanRows
+\bottomrule
+\end{tabular}\end{table}
+Les segments GRCh38 commencent à la coordonnée 34\,000\,000, comptée depuis zéro. Les segments CHM13 commencent à 32\,381\,795. La portée maximale de l'index atteint 290 puis 622 colonnes. Ces valeurs imposent le retour au noyau natif à une ligne. Le débit dense passe de 218,1 à 176,1\,GCUPS lorsque le nombre de cases quadruple. Les tampons GPU explicites occupent 45,8 puis 91,6\,Mio. Le RSS maximal du processus CUDA vaut 216 puis 252\,Mio. Sur une autre allocation, Kokkos/CUDA~12.6 retrouve 5\,599 éditions en 24,204\,s sur la petite fenêtre et réserve les mêmes 48\,030\,336 octets sur le GPU. Ce contrôle unique emploie un autre environnement de compilation. Certaines mesures RSS des appels courts sur Grace renvoient zéro et restent indéterminées.
+
+Dans le contrôle entier, le second chromosome est une copie de CHM13 portant 64 insertions dispersées. L'écart de longueur donne une borne inférieure de 64. La construction réalise exactement ce coût. WFA2 prend 11,34\,ms pour le calcul et 0,476\,s pour le processus entier, lecture du FASTA comprise. edlib prend 0,643\,s pour le calcul et la bande élaguée 6,804\,s. Les pics RSS correspondants valent 144, 180 et 108\,Mio. La comparaison biologique entre deux références entières reste hors du domaine mesuré.
+
+\subsection{Interprétation des arbres de distance}
+Pour deux groupes \(U,V\), UPGMA associe ceux qui minimisent leur distance moyenne puis met à jour
+\[
+ d(U\cup V,W)=\frac{|U|d(U,W)+|V|d(V,W)}{|U|+|V|}.
+\]
+Il place les feuilles à la même hauteur, ce qui correspond à une hypothèse d'horloge pour une lecture évolutive. Pour \(r\) groupes actifs, le Neighbor-Joining minimise \(Q_{ij}=(r-2)d_{ij}-\sum_k d_{ik}-\sum_k d_{jk}\). Il produit un arbre non enraciné. La distance d'édition brute ne corrige ni les substitutions multiples ni les origines différentes d'un génome circulaire. Les arbres en annexe décrivent la proximité des séquences de phage dans leur orientation et avec leur origine déposées.
+
+\subsection{Bilan}
+Le SIMD accélère le calcul dense sur un seul cœur. À l'échelle d'un nœud, huit cœurs donnent le meilleur temps mesuré sur la paire carrée. Sur deux nœuds, la distribution de paires indépendantes atteint 70,8 à 72,4\,\% d'efficacité. Sur les fenêtres humaines, WFA2 est la plus rapide des trois méthodes mesurées. Les résultats dépendent à la fois de la distance, de la forme des chaînes et du nombre de paires disponibles.

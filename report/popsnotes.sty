@@ -1,0 +1,37 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{popsnotes}[2026/11/24 Rapport CHPS, mise en page du modele PoPS]
+\RequirePackage[T1]{fontenc}
+\RequirePackage{amsmath,newtxtext,newtxmath,microtype}
+\RequirePackage{geometry,booktabs,array,graphicx,float}
+\RequirePackage[gray]{xcolor}
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,decorations.pathreplacing}
+\RequirePackage[font=small,labelfont=bf,labelsep=period,justification=justified,singlelinecheck=false]{caption}
+\RequirePackage{titlesec,fancyhdr,etoolbox}
+\RequirePackage[hidelinks,bookmarksnumbered=true]{hyperref}
+\urlstyle{same}
+\setlength{\parindent}{.85em}
+\setlength{\parskip}{4pt plus .8pt minus .5pt}
+\linespread{1.025}
+\setlength{\emergencystretch}{2em}
+\titleformat{\section}{\raggedright\sffamily\bfseries\large}{\thesection}{.65em}{}
+\titleformat{\subsection}{\raggedright\bfseries\normalsize}{\thesubsection}{.6em}{}
+\titlespacing*{\section}{0pt}{13pt plus 3pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt plus 2pt}{4pt}
+\setlength{\headheight}{13pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape\DocHeader}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{.35pt}
+\fancypagestyle{firstpage}{\fancyhf{}\fancyhead[R]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+\newcommand{\makedocumentheader}{%
+  \thispagestyle{firstpage}
+  \begin{center}
+    {\rmfamily\bfseries\LARGE\DocTitle\par}
+    \vspace{5pt}{\large\DocAuthor\par}\vspace{2pt}\DocSubtitle\par{\small\DocDate\par}
+  \end{center}
+  \noindent\setlength{\fboxsep}{8pt}%
+  \colorbox{black!7}{\begin{minipage}{\dimexpr\linewidth-2\fboxsep}
+  \small\textbf{Résumé}\par\DocAbstract\end{minipage}}\par\vspace{7pt}}
+\AtBeginEnvironment{thebibliography}{\small\setlength{\bibsep}{3pt}\raggedright}

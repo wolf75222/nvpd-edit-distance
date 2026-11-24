@@ -1,0 +1,17 @@
+\begin{tikzpicture}[x=1cm,y=1cm,font=\footnotesize\sffamily,
+ plage/.style={draw,rounded corners=1pt,minimum height=7mm,text width=22mm,align=center},
+ dep/.style={-{Latex[length=1.7mm]},line width=.6pt}]
+\node[align=right,anchor=east] at (0,1.35) {ligne \(i\)};
+\node[align=right,anchor=east] at (0,-.2) {ligne \(i+1\)};
+\foreach \t in {0,1,2,3} {
+  \pgfmathsetmacro{\xx}{1.6+2.5*\t}
+  \node[plage,fill=black!5] at (\xx,1.35) {colonnes \(J_{\t}\)};
+  \node[plage] at (\xx,-.2) {colonnes \(J_{\t}\)};
+  \draw[dep] (\xx,.98) -- (\xx,.71);
+  \draw[dep] (\xx,.43) -- (\xx,.17);
+}
+\draw[line width=1.3pt] (.45,.57)--(10.25,.57);
+\node[fill=white,inner xsep=5pt,inner ysep=0pt] at (5.35,.57) {ligne \(i\) entièrement disponible};
+\node[align=left,anchor=west] at (.4,-.93)
+  {Lecture de \(P\), écriture de \(Q\) sur la ligne \(i\). Les rôles de \(P\) et \(Q\) s'inversent à la ligne suivante.};
+\end{tikzpicture}

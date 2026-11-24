@@ -1,0 +1,30 @@
+\section{Kokkos et calcul distribué}
+Kokkos~\cite{kokkos} décrit un espace mémoire et un espace d'exécution. Le code utilise un tableau \texttt{View} pour la dernière occurrence et un second pour la DP. Un \texttt{parallel\_for} traite une ligne. Une même instance de l'espace d'exécution ordonne les lancements, puis une synchronisation finale précède le rapatriement du score. Le même code cible OpenMP sur EPYC et CUDA sur Hopper. La version native OpenMP garde une région parallèle autour des lignes. La version native CUDA peut aussi fusionner huit lignes par lancement. Un port de la récurrence n'assure donc pas les mêmes coûts de synchronisation.
+\input{kokkos-mesures}
+
+\subsection{Deux nœuds complets}
+Pour une paire, le rang \(r\) possède une bande verticale de colonnes. La dernière occurrence locale appartient à cette bande. Si elle manque, la position précédente du symbole dans les bandes de gauche est connue dès l'initialisation. Pour chaque ligne, chaque rang diffuse deux entiers, son bord droit et la valeur précédant sa dernière occurrence locale du symbole courant. Si cette occurrence est la première colonne du rang, son prédécesseur provient du bord droit du voisin. Un \texttt{Allgather} rassemble ces valeurs sur tous les rangs.
+\begin{center}\begin{minipage}{.94\linewidth}
+\textbf{Algorithme 5.} \textit{NvPD distribué par colonnes.} Les rangs exécutent les mêmes itérations.
+\begin{algorithmic}[1]
+\State Partager \(B\) en intervalles contigus, construire l'index local et repérer les occurrences antérieures
+\For{chaque symbole \(c=A_i\)}
+\State Rassembler les bords et prédécesseurs de tous les rangs pour la ligne \(i-1\)
+\State Calculer en parallèle chaque colonne locale avec la récurrence de l'algorithme 1
+\State Échanger les deux lignes locales
+\EndFor
+\State Communiquer la dernière case de la dernière bande
+\end{algorithmic}
+\end{minipage}\end{center}
+Pour une matrice, le rang distribue des paires indépendantes à ses fils. Chaque fil traite sa paire sans collectif par ligne. Une réduction finale réunit le triangle supérieur. La figure ci-dessous distingue les points de communication.
+\begin{figure}[H]\centering\input{figures/mpi}
+\caption{Deux stratégies MPI. Dans la paire distribuée (a), toutes les bandes échangent des bords à chaque ligne. Dans le lot indépendant (b), chaque distance reste locale jusqu'à la réduction finale.}
+\end{figure}
+\begin{table}[H]\centering
+\caption{Même réservation exclusive, 24 rangs de huit fils par nœud. Les 192 puis 384 cœurs physiques distincts ont été observés. Médiane de trois maxima des temps de rang après échauffement, hors lecture du FASTA. L'efficacité à deux nœuds vaut \(S/2\).}
+\small\begin{tabular}{lrrrr}\toprule
+Charge & 1 nœud (s) & 2 nœuds (s) & \(S\) & Efficacité (\%)\\\midrule
+\MpiRows
+\bottomrule
+\end{tabular}\end{table}
+Les collectifs répétés rendent la paire plus lente sur deux nœuds aux deux formes essayées. Les 2\,016 paires de chaque matrice fournissent assez de calcul indépendant pour réduire le temps total.

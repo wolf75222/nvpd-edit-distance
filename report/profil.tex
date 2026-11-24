@@ -1,0 +1,53 @@
+\section{Profilage du noyau OpenMP}
+Trois campagnes exploitables sur le même nœud ROMEO mesurent les noyaux compilés avec GCC~11.5, \texttt{-O3 -march=native}. Les deux EPYC 9654 offrent 192 cœurs physiques. Chaque cœur dispose de 32\,Kio de cache L1 de données et de 1\,Mio de L2. Huit cœurs partagent 32\,Mio de L3. Les fils occupent des cœurs physiques proches. La première campagne de référence utilisait d'autres options de compilation.
+\begin{table}[H]\centering
+\caption{Accélération du noyau SIMD par rapport à la première version, sur des entrées identiques. Chaque case donne la médiane de trois rapports appariés \(T_{\rm initial}/T_{\rm SIMD}\). Les deux dimensions indiquent les lignes et les colonnes.}
+\begin{tabular}{lrrr}\toprule
+Forme & 1 cœur & 8 cœurs & 16 cœurs\\\midrule
+\CpuPairedRows
+\bottomrule
+\end{tabular}
+\end{table}
+La forme sans branche de l'algorithme~1 produit des vecteurs de 32 octets avec GCC. Sur le carré à un cœur, le compteur d'instructions retirées passe de 21,76 à 2,13 par case. Les défauts de lecture L1D restent proches, de 188,97 à 189,39 pour mille cases.\footnote{Ces compteurs couvrent l'appel après échauffement, index et allocations compris. Un défaut L1 peut être servi par le L2 ou le L3.} La baisse du nombre d'instructions explique une partie du gain sans supposer une meilleure localité. Au-delà de 32\,Mio, les accès indirects et le partage de la bande passante peuvent peser davantage. Les compteurs disponibles ne mesurent pas un temps d'attente DRAM par case.
+
+Le prototype à index compact remplace les positions absolues par des écarts codés sur un octet lorsque leur portée le permet. Sur la forme la plus large, le pic d'espace de travail modélisé passe de 96 à 80\,Mio, et le pic RSS d'environ 101,5 à 85,0\,Mio. La conversion conserve provisoirement une table entière. Le rapport SIMD / compact varie de 0,88 à 1,14 selon la forme et le nombre de fils. La version publiée par défaut conserve l'index entier.
+
+\subsection{Charge fixe et charge par cœur constante}
+À taille fixe, \(S_p=T_1(W)/T_p(W)\) et \(E_p=S_p/p\). Pour la charge croissante, \(E_p^{\rm faible}=T_1(W_1)/T_p(pW_1)\). La première expérience garde \(20\,000^2\) cases. La seconde garde \(4\,096\) lignes et \(4\,096p\) colonnes, soit \(16\,777\,216\) cases par cœur~\cite{amdahl,gustafson}.
+\begin{table}[H]\centering
+\caption{Médianes de trois essais du noyau SIMD. L'accélération forte utilise la même version à un cœur.}
+\begin{tabular}{r rrr rr}\toprule
+Cœurs & Temps fort (ms) & \(S_p\) & \(E_p\) (\%) & Temps faible (ms) & \(E_p^{\rm faible}\) (\%)\\\midrule
+\CpuScalingRows
+\bottomrule
+\end{tabular}
+\end{table}
+Huit cœurs donnent le meilleur temps parmi les configurations essayées. À seize, le placement couvre deux groupes de cache et deux domaines NUMA. La barrière en fin de ligne reste aussi fréquente. L'expérience mesure leur effet cumulé. Elle ne sépare pas leurs contributions.
+
+\newpage
+\section{Optimisations CUDA et algorithmes concurrents}
+La première version CUDA lance un noyau par ligne. La seconde traite jusqu'à huit lignes par tuile et écrit 256 colonnes par bloc. La troisième passe à 1\,024 colonnes lorsque la grille conserve au moins deux blocs complets par multiprocesseur. Elle emploie toujours 256 fils par bloc. Si \(R>64\), si la paire a moins de huit lignes ou si une trace est demandée, le programme reprend le parcours par ligne. Cela limite la mémoire partagée et le travail redondant.
+
+\begin{table}[H]\centering
+\caption{Effet du choix adaptatif par rapport au noyau initial sur le GH200. Chaque temps chaud inclut index, allocations, transferts et calcul. Pour chaque variante, on prend la médiane de trois appels par processus, puis la médiane des trois processus.}
+\begin{tabular}{lrrrrrr}\toprule
+Longueur de référence (knt) & 5 & 20 & 100 & 250 & 500 & 1\,000\\\midrule
+\GpuAdaptiveRows
+\bottomrule
+\end{tabular}
+\end{table}
+La première tuile fixe accélère le cas à 20\,000 bases par 2,49 mais augmente de 2,4\,\% le temps du cas à un million. À un million de bases et 2\,\% d'erreur, la version adaptative prend 3,62\,s contre 5,14\,s pour la version initiale. À 10\,\%, elle prend 3,64\,s contre 5,15\,s. Le profil Nsight Systems à 5\,000 bases compte 4\,993 lancements contre 625, pour respectivement 6,46 et 3,34\,ms cumulées dans les noyaux. La mesure murale inclut d'autres coûts. Les appels d'allocation enregistrés sous trace sont sensibles à l'instrumentation. Le cluster restreint l'accès aux compteurs matériels NVIDIA, si bien que ces essais ne fournissent aucun taux de défaut de cache GPU. eWFA-GPU décrit par Aguado-Puig et coll.~\cite{wfagpu} parallélise un front par coût, une décomposition distincte de celle de NvPD.
+
+\subsection{Comparaison sur un seul fil}
+Les mesures ci-dessous proviennent d'un Apple M1 Pro, GCC~16.1, avec optimisation native. Chaque case est la médiane de cinq processus neufs. L'ordre des méthodes varie à chaque répétition. La lecture du FASTA précède le chronomètre. Les cinq méthodes donnent le même coût sur chaque entrée. QuickEd~\cite{quicked} utilise son chemin exact par défaut, qui reconstruit un alignement. Les autres méthodes ne demandent que le coût. Hors de ce tableau, deux chaînes périodiques de 512 bases ont révélé une erreur dans la version 1.2 de QuickEd, qui renvoie 954 pour une distance de 128. L'exécutable vérifie désormais chaque score avec edlib après la mesure et signale tout désaccord.
+\begin{table}[H]\centering
+\caption{Temps en millisecondes. Le contrôle de 100\,000 bases modifie 128 bases centrales de la référence humaine. La répétition des bases permet un alignement en 72 éditions.}
+\small\begin{tabular}{lrrrrrr}\toprule
+Paire & \(d\) & Bande & Bande élaguée & edlib & WFA2 & QuickEd\\\midrule
+\AlternateRows
+\bottomrule
+\end{tabular}
+\end{table}
+Sur le contrôle à flancs identiques, retirer ces flancs réduit le problème à 128 positions au plus. Sur les 50\,000 premières bases des deux fenêtres humaines, les différences sont plus dispersées. Le gain mesuré de l'élagage n'y atteint que 1,07. WFA2 donne ici le meilleur temps. À 5 et 10\,\% synthétiques, edlib donne le temps le plus court. Ces mesures sur un seul fil ne comparent pas les machines entre elles.
+
+Parmi les méthodes récentes, A*PA2 associe une recherche guidée, des blocs bit-parallèles et le SIMD pour l'alignement global exact~\cite{astar}. Sassy utilise le SIMD pour chercher les occurrences approchées d'un motif dans un texte sous un seuil d'éditions~\cite{sassy}. Nos essais imposent un alignement global des deux chaînes entières.

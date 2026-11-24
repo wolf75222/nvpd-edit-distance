@@ -1,0 +1,60 @@
+\section{Du problème biologique aux noyaux de calcul}
+Une substitution remplace une base. Une insertion ou une délétion décale toutes les positions qui la suivent. La distance de Hamming compte les différences position par position pour deux chaînes de même longueur. La distance d'édition autorise ces décalages. Elle vérifie
+\[
+ |m-n|\le d(A,B)\le\max(m,n),\qquad
+ d(A,C)\le d(A,B)+d(B,C).
+\]
+La première borne vient du changement de longueur. Pour la seconde borne sur \(d(A,B)\), il suffit de substituer au plus \(\min(m,n)\) bases et d'ajuster la longueur. L'inégalité triangulaire résulte de la composition de deux suites d'éditions. Chaque édition admet une opération inverse de même coût, d'où la symétrie. Plusieurs alignements peuvent réaliser le même minimum.
+
+Une édition compte pour une unité, y compris dans les répétitions. Un écart de dix bases coûte donc dix. Cette convention répond à une question algorithmique précise. Pour interpréter des différences biologiques, il faut aussi tenir compte de l'orientation des brins, des ambiguïtés et des remaniements. Un nombre d'éditions entre deux assemblages inclut leurs différences de représentation. Il ne donne à lui seul ni un nombre de mutations historiques ni un temps de divergence.
+
+\subsection{Calcul dense, coût et alignement}
+La programmation dynamique (DP) classique utilise
+\[
+ C_{ij}=\min(C_{i-1,j}+1,\ C_{i,j-1}+1,\ C_{i-1,j-1}+[A_i\ne B_j]).
+\]
+Le parcours séquentiel avance par lignes. Le parcours parallèle avance par anti-diagonales de somme \(s=i+j\), avec \(\max(1,s-n)\le i\le\min(m,s-1)\). Chaque case lit deux valeurs de l'anti-diagonale \(s-1\) et une de \(s-2\). Les anti-diagonales d'extrémité n'occupent qu'une fraction des fils.
+
+\begin{center}\begin{minipage}{.94\linewidth}
+\textbf{Algorithme 1.} \textit{NvPD pour le coût global.} Entrées \(A,B\). Sortie \(d(A,B)\).
+\begin{algorithmic}[1]
+\ForAll{\(c\in\mathrm{alphabet}(A)\)}
+  \State \(K[c,0]\gets 0\) ; pour \(j=1,\ldots,n\), \(K[c,j]\gets j\) si \(B_j=c\), sinon \(K[c,j-1]\)
+\EndFor
+\State \(P[0:n]\gets (0,1,\ldots,n)\)
+\For{\(i=1,\ldots,m\)}
+  \State \(Q[0]\gets i\)
+  \State \textbf{en parallèle pour} \(j=1,\ldots,n\)
+  \State \hspace{1em}\(k\gets K[A_i,j]\)
+  \State \hspace{1em}\(Q[j]\gets\min\{1+\min(P[j-1],P[j]),\ P[\max(0,k-1)]+j-k\}\)
+  \State Synchroniser les colonnes et échanger \(P,Q\)
+\EndFor
+\State \Return \(P[n]\)
+\end{algorithmic}
+\end{minipage}\end{center}
+Le temps de calcul dense est \(\Theta(mn)\), auquel s'ajoute la construction de l'index en \(O(qn+m)\). Pour le coût seul, placer la chaîne courte sur les lignes réduit le nombre de synchronisations. En mode trace, le programme conserve l'orientation des entrées et remonte dans la matrice complète, selon la récurrence classique. Un test rejoue chaque opération du CIGAR\footnote{Suite de longueurs et d'opérations. Les symboles \texttt{=}, \texttt{X}, \texttt{I} et \texttt{D} représentent une égalité, une substitution, une insertion et une délétion.}, vérifie la consommation des deux chaînes et recompte le coût.
+
+\newpage
+\section{Architectures des versions}
+\begin{figure}[H]\centering
+\input{figures/architecture}
+\caption{Chemins d'exécution. Le lecteur valide les identifiants et l'alphabet. Les exécutables échangent leurs résultats par fichiers pour vérifier les distances avec des implémentations indépendantes.}
+\end{figure}
+\texttt{src/fasta.cpp} lit les enregistrements une fois. Le mode \texttt{pair} retourne le coût, le temps et le pic RSS\footnote{Le RSS maximal est la plus grande quantité de mémoire physique résidente du processus. Il inclut le programme, les bibliothèques, leurs espaces de travail et les entrées.} en JSON. Le mode \texttt{matrix} parcourt le triangle supérieur, recopie sa partie symétrique et écrit un TSV étiqueté. Pour les méthodes séquentielles, OpenMP peut distribuer les paires. Pour NvPD, les fils coopèrent déjà au sein d'une paire. \texttt{dp.cpp} partage l'index et la reconstruction avec CUDA et Kokkos. Les appels à edlib et à WFA2 passent par des adaptateurs. QuickEd dispose d'un exécutable séparé pour isoler les symboles C de ses dépendances.
+
+\subsection{Réduire le domaine exploré}
+Un chemin de coût au plus \(k\) vérifie \(\lvert i-j\rvert\le k\) en toute case. Le noyau \texttt{banded} applique la DP dans cette bande, selon le principe du calcul à seuil d'Ukkonen~\cite{ukkonen}. Il répète le calcul avec un seuil doublé jusqu'à obtenir le coût exact. Si le minimum d'une ligne excède le seuil, aucun chemin admissible ne peut la franchir. La version \texttt{banded-trim} retire les préfixes et suffixes communs. Cette simplification découle de \(d(cx,cy)=d(x,y)\) et de la même identité sur les chaînes renversées.
+\begin{center}\begin{minipage}{.94\linewidth}
+\textbf{Algorithme 2.} \textit{Distance exacte à bande adaptative.}
+\begin{algorithmic}[1]
+\State Si demandé, retirer les extrémités communes ; traiter les chaînes vides
+\State \(k\gets\max(1,|m-n|)\)
+\Loop
+  \State Initialiser les bords de la bande et ses sentinelles à l'extérieur
+  \State Calculer \(C_{ij}\) pour \(\max(0,i-k)\le j\le\min(n,i+k)\) dans deux lignes
+  \If{la dernière case est atteinte et \(C_{mn}\le k\)} \State \Return \(C_{mn}\) \EndIf
+  \State \(k\gets\min(2k,\max(m,n))\)
+\EndLoop
+\end{algorithmic}
+\end{minipage}\end{center}
+Les largeurs successives forment une suite géométrique. Avec \(L=\max(m,n)\) et \(d=d(A,B)\), la borne en temps est \(O(L(d+1))\), la mémoire de travail \(O(d+1)\). Le test de seuil emploie des entiers. edlib regroupe les différences de plusieurs cases dans les bits d'un mot machine~\cite{myers,edlib}. WFA2-lib conserve, pour chaque coût et chaque diagonale atteinte, la position la plus avancée. Chaque front prolonge gratuitement les égalités après une édition~\cite{wfa}. L'adaptateur choisit la métrique d'édition globale, en mode coût seul, sans heuristique. QuickEd estime d'abord une borne supérieure \(\hat s\), puis résout exactement dans le domaine ainsi restreint~\cite{quicked}. Son chemin par défaut reconstruit aussi l'alignement.

@@ -1,0 +1,37 @@
+\section{Deux organisations du front de calcul}
+La version CUDA partage le temps de calcul entre les lancements et les accès à la mémoire globale. Soit \(J=[u,v]\) le bloc de colonnes de sortie et \(h\le 8\) le nombre de lignes de la tuile. À la sous-étape \(t\), le domaine utile est \([\max(0,u-(h-t)R),v]\). Cette définition propage exactement les dépendances, par récurrence sur la profondeur. Les valeurs à gauche de la première colonne sont traitées par les conditions aux bords.
+\begin{center}\begin{minipage}{.94\linewidth}
+\textbf{Algorithme 3.} \textit{Pas CUDA de \(h\) lignes sur une bande de sortie.}
+\begin{algorithmic}[1]
+\State Calculer \(R\) à partir des dernières occurrences et choisir la largeur des blocs
+\For{chaque groupe de \(h\) lignes successives}
+\State \textbf{en parallèle pour chaque bloc} \(J\)
+\State \hspace{1em}Lire les prédécesseurs de la première sous-étape dans la ligne globale
+\State \hspace{1em}\textbf{pour} \(t=1,\ldots,h\), calculer les colonnes utiles par NvPD
+\State \hspace{2em}Conserver les résultats intermédiaires en mémoire partagée
+\State \hspace{2em}Synchroniser les fils du bloc avant la sous-étape suivante
+\State \hspace{1em}Écrire \(J\) sur la nouvelle ligne globale, sans écrire son halo
+\EndFor
+\end{algorithmic}
+\end{minipage}\end{center}
+\subsection{Réutilisation des tampons entre paires}
+Sur un lot sériel de paires, les deux tableaux GPU peuvent conserver leur allocation jusqu'à la paire suivante. Le programme réalloue chaque tableau uniquement si sa taille change. Les essais instrumentent les appels \texttt{cudaMalloc} et \texttt{cudaFree} du même noyau. Ils incluent le premier remplissage des tampons et leur libération finale. Chaque score est comparé à edlib. Sur les 2\,016 paires de phage, le nombre d'allocations physiques passe de 4\,032 à 250. Le pic réservé reste de 150\,892 octets. Les temps médians passent de 11,804 à 8,549\,s, avec une accélération appariée de 1,38. Sur les lots synthétiques de 256, 5\,000 et 20\,000 bases, les accélérations appariées sont respectivement de 1,59, 1,05 et 1,45. Le mode matrice réutilise ces deux tampons à l'échelle du lot.
+
+\subsection{Fronts par coût d'édition}
+Pour le calcul par coût, le front est une collection de diagonales. Sur \(k=i-j\), on note \(F_s(k)\) la plus grande position \(i\) atteinte au coût \(s\) après prolongement des égalités. Les trois choix insertion, substitution et délétion donnent respectivement \(F_{s-1}(k+1)\), \(F_{s-1}(k)+1\) et \(F_{s-1}(k-1)+1\). Seules les transitions issues d'une position valide et réalisables dans les deux chaînes sont admissibles. Cette écriture correspond au cas de coût unitaire de WFA~\cite{wfa}.
+\begin{center}\begin{minipage}{.94\linewidth}
+\textbf{Algorithme 4.} \textit{Front d'onde exact, coût unitaire.}
+\begin{algorithmic}[1]
+\State \(F_0(0)\gets\) longueur du préfixe commun, \(s\gets0\)
+\While{le front ne contient pas \((m,n)\)}
+\State \(s\gets s+1\)
+\For{chaque diagonale atteignable \(k\) avec \(|k|\le s\)}
+\State Prendre la plus grande position admissible issue du front précédent
+\State Prolonger sur la diagonale tant que les deux bases concordent
+\State Enregistrer la nouvelle position dans \(F_s(k)\)
+\EndFor
+\EndWhile
+\State \Return \(s\)
+\end{algorithmic}
+\end{minipage}\end{center}
+Quand les différences sont rares, de longues portions égales se parcourent sans remplir une surface quadratique. À l'inverse, sur une matrice dense, un débit en GCUPS\footnote{Milliards de mises à jour de cases par seconde. Pour une méthode dense, le débit nominal est \(mn/(10^9T)\). Les recalculs de halo ne figurent pas au numérateur.} permet de relier le temps de calcul aux dimensions. Les résultats des méthodes par bande, par bits ou par coût sont donc exprimés en secondes.
