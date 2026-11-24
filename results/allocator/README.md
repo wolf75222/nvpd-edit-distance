@@ -27,3 +27,9 @@ Job 838236 included the original CUDA translation unit in the probe. Only its ca
 ## Production CLI
 
 A CUDA matrix owns one `chps::CudaWorkspace` and uses it for all serial pairs. A standalone `nvpd_cuda` call creates a private workspace and releases it on return. The row kernels and the choice of CUDA launch geometry are unchanged. The archived source and selected workspace source have the same SHA-256 digest for the block of code containing the kernels, `00bc56e4c8b5cf605776c53418175c33bebc3be023a5ca57f4606a5efc85275a`.
+
+Job 838238 built both CLIs in Release mode on one GH200. Each independent subprocess read the same 64-record FASTA, built and printed the full distance matrix. Process startup, CUDA initialization, input, all alignments, TSV output and exit were inside this wall timer. The three alternating paired trials in `production.csv` gave a median of **23.604 s** for the archived CLI and **9.403 s** with the persistent workspace. The median paired speedup was **2.475×**. Every output matched the edlib matrix byte for byte. Both builds passed CTest. The additional changing-width matrix and deterministic CIGAR checks passed.
+
+The probe and whole-CLI numbers come from different jobs and timing boundaries. The probe explicitly counts allocations and releases inside a warmed process. The production measurements quantify the time for an end user to run the matrix command. No measurement decomposed the difference between the two speedup estimates.
+
+`initial.sha256` and `current.sha256` identify the CLI sources used in 838238. `sources.sha256` identifies the exact included kernel and probe driver of 838236. The archived launcher digests are in `launchers.csv`. The public probe launcher additionally extracts the pinned baseline on replay.

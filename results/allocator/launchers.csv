@@ -1,0 +1,3 @@
+job,submitted_launcher,launcher_sha256,phase,exit_code
+838236,bench/allocator.sbatch,7e0b2e670a9d64847d39322b554f3980919f7f31bc10ea3194abbc543cd2012e,instrumented allocation probe,0
+838238,bench/allocator_validate.sbatch,154d6147d52851ad877e9b91b65fcf87d49a1a8c07f647401f965d877215f6a4,production matrix CLI validation,0
