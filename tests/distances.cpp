@@ -66,6 +66,10 @@ int main() {
     const std::string rare = "R" + std::string(511, 'A') + "Y";
     check("RYNNR", rare);
     check(rare, "RYNNR");
+    check("ARNNNRRYYYY", rare);
+    std::string repeated;
+    for (int copy = 0; copy < 85; ++copy) repeated += "ACGT";
+    check("ACNTGACGTNACG", repeated);
     if (sequential("GATTACA", "GCATGCU").distance != 4) return 1;
-    std::cout << "194 differential pairs, including traceback replay\n";
+    std::cout << "196 differential pairs, including traceback replay\n";
 }
