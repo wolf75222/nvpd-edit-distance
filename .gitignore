@@ -1,6 +1,7 @@
 /build*/
 /deps/
 /data/controls/quicked/
+/data/human/chm13-panel/
 /data/**/*.fa
 /data/**/*.fna
 /data/**/*.zip
