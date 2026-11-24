@@ -22,3 +22,11 @@ bash bench/kokkos-step.sh gpu results/kokkos-gpu
 ```
 
 Each run builds the normal CLI, runs the differential CTest suite and checks cost, traceback and matrix mode through the CLI. It generates the same 5,000 and 20,000-base pairs with the course generator at 5% input edit rate. Each backend warms up once in a fresh process, then times one complete distance call including allocation and data transfers. The two backends alternate order across three trials. CPU timings cover one thread and the allocated team size (up to eight). GPU trials use one device. The program checks all distances against edlib, records process peak RSS, and attributes the run to its reported execution space. Check `timings.csv`, `checks.json` and `environment.txt` in the output directory.
+
+On ROMEO, the accelerator launcher loads the tested CUDA and CMake packages. To include the human case, pass the path to the pinned two-record FASTA and its independently verified distance.
+
+```bash
+export KOKKOS_SOURCE=/path/to/kokkos
+export CHPS_HUMAN_PAIR=data/human/chr21-2m.fa CHPS_HUMAN_EXPECTED=5599
+sbatch --account="$ROMEO_PROJECT" bench/kokkos.sbatch
+```

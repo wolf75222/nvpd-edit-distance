@@ -11,3 +11,7 @@ On the GH200, Kokkos reported the Cuda execution space. Job 838230 used CUDA 12.
 The single cold CLI run in `human.json` compared 2,000,000 and 2,001,263 bases. Kokkos CUDA took 24.204 s and returned distance 5,599, matching the edlib and WFA2 references. It allocated 48,030,336 bytes of explicit device storage and reached 221,184 KiB of process peak RSS. The CLI created the Kokkos runtime before starting the timer.
 
 The first accelerator build in 838220 encountered a CUDA 13 API incompatibility in Kokkos 4.5.01. Job 838227 built the library with CUDA 12.6.3, then passed edlib to nvcc_wrapper and hit an incompatible min/max definition. The final build used the Kokkos CMake launcher to route only dependent targets to nvcc_wrapper.
+
+`builds.csv` records the launcher and step script digests used by each historical job. The public `bench/kokkos.sbatch` is the portable equivalent of `recovery.sbatch`. It takes site-local paths through environment variables. `sources.sha256` identifies the CPU and GPU kernels used in the timings.
+
+The native CUDA source in this comparison corresponds to commit `3f1840ff498bd68240cbf806def414ff32c1e331`, before the reusable matrix workspace. The isolated pair benchmark retains the same allocation scope.

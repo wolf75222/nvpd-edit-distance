@@ -8,7 +8,7 @@ Forme & 1 cœur & 8 cœurs & 16 cœurs\\\midrule
 \bottomrule
 \end{tabular}
 \end{table}
-La forme sans branche de l'algorithme~1 produit des vecteurs de 32 octets avec GCC. Sur le carré à un cœur, le compteur d'instructions retirées passe de 21,76 à 2,13 par case. Les défauts de lecture L1D restent proches, de 188,97 à 189,39 pour mille cases.\footnote{Ces compteurs couvrent l'appel après échauffement, index et allocations compris. Un défaut L1 peut être servi par le L2 ou le L3.} La baisse du nombre d'instructions explique une partie du gain sans supposer une meilleure localité. Au-delà de 32\,Mio, les accès indirects et le partage de la bande passante peuvent peser davantage. Les compteurs disponibles ne mesurent pas un temps d'attente DRAM par case.
+La forme sans branche de l'algorithme~1 produit avec GCC des vecteurs de 32 octets, soit huit entiers de 32 bits. Sur le carré à un cœur, le compteur d'instructions retirées passe de 21,76 à 2,13 par case. Les défauts de lecture L1D restent proches, de 188,97 à 189,39 pour mille cases.\footnote{Ces compteurs couvrent l'appel après échauffement, index et allocations compris. Un défaut L1 peut être servi par le L2 ou le L3.} La baisse du nombre d'instructions explique une partie du gain sans supposer une meilleure localité. Au-delà de 32\,Mio, les accès indirects et le partage de la bande passante peuvent peser davantage. Les compteurs disponibles ne mesurent pas un temps d'attente DRAM par case.
 
 Le prototype à index compact remplace les positions absolues par des écarts codés sur un octet lorsque leur portée le permet. Sur la forme la plus large, le pic d'espace de travail modélisé passe de 96 à 80\,Mio, et le pic RSS d'environ 101,5 à 85,0\,Mio. La conversion conserve provisoirement une table entière. Le rapport SIMD / compact varie de 0,88 à 1,14 selon la forme et le nombre de fils. La version publiée par défaut conserve l'index entier.
 
@@ -22,7 +22,7 @@ Cœurs & Temps fort (ms) & \(S_p\) & \(E_p\) (\%) & Temps faible (ms) & \(E_p^{\
 \bottomrule
 \end{tabular}
 \end{table}
-Huit cœurs donnent le meilleur temps parmi les configurations essayées. À seize, le placement couvre deux groupes de cache et deux domaines NUMA. La barrière en fin de ligne reste aussi fréquente. L'expérience mesure leur effet cumulé. Elle ne sépare pas leurs contributions.
+Huit cœurs donnent le meilleur temps parmi les configurations essayées. À seize, le placement couvre deux groupes de cache et deux domaines NUMA\footnote{Un cœur accède plus directement à la mémoire de son domaine NUMA. La topologie du placement renseigne sur la distance potentielle des accès mémoire.}. La barrière en fin de ligne reste aussi fréquente. L'expérience mesure leur effet cumulé. Elle ne sépare pas leurs contributions.
 
 \newpage
 \section{Optimisations CUDA et algorithmes concurrents}
