@@ -54,12 +54,13 @@ int left_reach(const detail::MatchIndex& matches, std::size_t stride) {
 // After t rows, column j can only depend on columns [j-t*reach, j].
 // Redundant cells at the left of each block let it advance without a grid barrier.
 __global__ void row_tile(const int* input, int* output, const int* indices,
-                         Symbols symbols, int first_i, int count, int n, int reach) {
+                         Symbols symbols, int first_i, int count, int n, int reach,
+                         int output_width) {
     extern __shared__ int scratch[];
     const int width = static_cast<int>(blockDim.x);
-    const int begin = static_cast<int>(blockIdx.x) * width;
-    const int end = begin + min(n - begin, width - 1);
-    const int pitch = width + (count - 1) * reach;
+    const int begin = static_cast<int>(blockIdx.x) * output_width;
+    const int end = begin + min(n - begin, output_width - 1);
+    const int pitch = output_width + (count - 1) * reach;
     const int* previous = input;
     int previous_begin = 0;
     for (int t = 0; t < count; ++t) {
@@ -101,14 +102,23 @@ Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {
     int* prev = table.data;
     const int reach = !trace && m >= tile_rows ? left_reach(matches, stride) : max_halo_step + 1;
     if (reach <= max_halo_step) {
+        int device, multiprocessors;
+        check(cudaGetDevice(&device), "get CUDA device");
+        check(cudaDeviceGetAttribute(&multiprocessors, cudaDevAttrMultiProcessorCount, device),
+              "get SM count");
+        // Wider blocks amortize the halo when at least two CTAs per SM remain.
+        const int wide = 4 * threads;
+        const int columns = stride / wide >= 2 * multiprocessors ? wide : threads;
+        const int tile_blocks = static_cast<int>((stride + columns - 1) / columns);
         int* curr = table.data + stride;
         for (int i = 1; i <= m;) {
             const int count = std::min(tile_rows, m - i + 1);
             Symbols symbols{};
             for (int t = 0; t < count; ++t)
                 symbols.id[t] = matches.symbol[static_cast<unsigned char>(a[i-1+t])];
-            const auto bytes = 2 * (threads + (count - 1) * reach) * sizeof(int);
-            row_tile<<<blocks, threads, bytes>>>(prev, curr, indices.data, symbols, i, count, n, reach);
+            const auto bytes = 2 * (columns + (count - 1) * reach) * sizeof(int);
+            row_tile<<<tile_blocks, threads, bytes>>>(prev, curr, indices.data, symbols,
+                                                      i, count, n, reach, columns);
             check(cudaGetLastError(), "launch NvPD tile");
             std::swap(prev, curr);
             i += count;
