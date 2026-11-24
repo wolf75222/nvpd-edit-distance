@@ -15,6 +15,14 @@ if len(affinity) < 8:
 configs = [(case, mode, method, threads) for case in inputs for mode in ("score", "trace")
            for method in ("split", "split-all", "edlib", "wfa2", "biwfa")
            for threads in ((1, 2, 4, 8) if method == "split" else ((8,) if method == "split-all" else (1,)))]
+if os.environ.get("CHPS_TRACE_ABLATION") == "1":
+    configs = [(case, "trace", method, p) for case in inputs
+               for method, p in (("trim-only",1),("split",1),("split",8))]
+long_block = os.environ.get("CHPS_TRACE_LONG_BLOCK")
+if long_block:
+    configs = [("chr1","trace",method,p) for method,p in
+               (("edlib",1),("wfa2",1),("biwfa",1),("split",8))]
+limit = 720 if long_block else 120
 fields = "block case mode method threads m n distance seconds peak_rss_kib proposed accepted nvpd_leaves wavefront_leaves retried".split()
 scores = {}
 # A measured call and its warm-up share the same wall-time budget.
@@ -23,7 +31,7 @@ censored = set()
 with output.open("x") as stream:
     writer = csv.writer(stream)
     writer.writerow(fields)
-    for block in range(1, 6):
+    for block in ([int(long_block)] if long_block else range(1, 6)):
         random.Random(8713 + block).shuffle(configs)
         for case, mode, method, threads in configs:
             key = case, mode, method, threads
@@ -33,7 +41,7 @@ with output.open("x") as stream:
             cpus = ",".join(str(c) for c in affinity[:threads])
             cmd = ["taskset", "-c", cpus, binary, inputs[case], method, mode, str(threads)]
             try:
-                sample = subprocess.check_output(cmd, text=True, timeout=120).strip().split(",")
+                sample = subprocess.check_output(cmd, text=True, timeout=limit).strip().split(",")
             except subprocess.TimeoutExpired:
                 censored.add(key)
                 dest = output.with_name("censored.csv")
@@ -42,7 +50,7 @@ with output.open("x") as stream:
                     failed = csv.writer(f)
                     if new:
                         failed.writerow(("block","case","mode","method","threads","process_limit_s"))
-                    failed.writerow((block,*key,120))
+                    failed.writerow((block,*key,limit))
                 continue
             if len(sample) != 10 or scores.setdefault(case, sample[2]) != sample[2]:
                 raise ValueError((case, sample))

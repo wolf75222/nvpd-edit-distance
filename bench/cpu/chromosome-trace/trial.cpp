@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
     omp_set_num_threads(std::stoi(argv[4]));
     chps::SplitStats stats;
     auto run = [&] {
+        if (algorithm == "trim-only") return chps::nvpd_split_profile(a,b,trace,stats,chps::SplitPolicy::single_piece);
         if (algorithm == "split-all") return chps::nvpd_split_profile(a,b,trace,stats,chps::SplitPolicy::require_all);
         if (algorithm == "split") return chps::nvpd_split_profile(a,b,trace,stats);
         if (algorithm == "biwfa") return chps::biwfa(a,b,trace);

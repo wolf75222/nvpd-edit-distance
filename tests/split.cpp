@@ -33,6 +33,22 @@ int main() {
     auto partial = check(a, b);
     if (partial.accepted_cuts != 6 || partial.proposed_cuts != 7 || partial.global_retry)
         throw std::runtime_error("independent certification lost usable cuts");
+    // The only matching seed in B is a displaced duplicate; forcing it costs at least 512.
+    auto duplicated = a.substr(0, 16384);
+    duplicated.replace(8192+256-64, 128, duplicated.substr(8192-64, 128));
+    auto changed = duplicated;
+    changed[8192] = 'N';
+    auto false_match = check(duplicated, changed);
+    if (false_match.proposed_cuts != 1 || false_match.accepted_cuts != 0 || !false_match.global_retry ||
+        chps::nvpd_split(duplicated, changed).distance != 1)
+        throw std::runtime_error("displaced duplicate forced a nonoptimal path");
+    std::string scarce(16384, 'A');
+    scarce.replace(8192-64, 128, a.substr(8192-64,128));
+    auto eight_edits = scarce;
+    for (int i=0; i<8; ++i) eight_edits[i*100] = 'N';
+    auto repeated_words = check(scarce, eight_edits);
+    if (repeated_words.proposed_cuts != 1 || !repeated_words.global_retry)
+        throw std::runtime_error("failed to reject nonunique witness words");
     const std::string repeat(66000, 'A');
     if (check(repeat, repeat+"T").proposed_cuts) throw std::runtime_error("nonunique seed");
 }

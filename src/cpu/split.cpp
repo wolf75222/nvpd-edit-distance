@@ -171,7 +171,7 @@ Result nvpd_split_profile(View a, View b, bool trace, SplitStats& stats, SplitPo
     detail::validate(a, b, false);
     stats = {};
     const Size imbalance = std::max(a.size(), b.size()) - std::min(a.size(), b.size());
-    if (policy == SplitPolicy::retain_verified && imbalance > max_bound) {
+    if (policy == SplitPolicy::single_piece || (policy == SplitPolicy::retain_verified && imbalance > max_bound)) {
         auto p = align_piece(a, b, trace);
         stats.dense_pieces = p.dense;
         stats.wavefront_pieces = p.wavefront;

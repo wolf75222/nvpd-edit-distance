@@ -15,6 +15,10 @@ spack load /q22mihh
 set -u
 bench=bench/cpu/chromosome-trace
 out=results/trace/chromosomes/$SLURM_JOB_ID
+if [[ -n ${SLURM_ARRAY_TASK_ID:-} ]]; then
+    out="results/trace/chromosomes/$SLURM_ARRAY_JOB_ID/block-$SLURM_ARRAY_TASK_ID"
+    export CHPS_TRACE_LONG_BLOCK="$SLURM_ARRAY_TASK_ID"
+fi
 mkdir -p "$out"
 tmp=$(mktemp -d "$PWD/.trace.XXXXXXXX")
 trap 'rm -rf -- "$tmp"' EXIT
