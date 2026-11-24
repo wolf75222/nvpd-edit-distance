@@ -6,14 +6,47 @@ import sys
 import tempfile
 
 
+def vector_boundaries(binary, path, index):
+    canonical = b"ACGT" * 16
+    # Bytes 15/16 fall on opposite sides of the SIMD load boundary.
+    for pos, symbol in zip((0, 15, 16, 31), b"rybn"):
+        changed = canonical[:pos] + bytes([symbol]) + canonical[pos + 1:]
+        for mode in ("pair", "matrix"):
+            records = (changed, changed.upper()) if mode == "pair" else (changed, changed.upper(), canonical)
+            raw = bytearray()
+            entries = []
+            for name, bases in zip(("a", "b", "c"), records):
+                raw.extend(f">{name}\n".encode())
+                entries.append(f"{name}\t64\t{len(raw)}\t64\t65\n")
+                raw.extend(bases + b"\n")
+            index.write_text("".join(entries))
+            for args in ([], ["--fai", index]):
+                argv = [binary, mode, "--algorithm", "edlib", "--input", path, *args]
+                path.write_bytes(raw)
+                output = subprocess.check_output(argv, text=True)
+                if mode == "pair":
+                    row = json.loads(output)
+                    if (row["m"], row["n"], row["distance"]) != (64, 64, 0):
+                        raise AssertionError((pos, row))
+                elif output != "id\ta\tb\tc\na\t0\t0\t1\nb\t0\t0\t1\nc\t1\t1\t0\n":
+                    raise AssertionError((pos, output))
+                for invalid in (0, 255):
+                    bad = raw.copy()
+                    bad[3 + pos] = invalid  # first base follows ">a\n"
+                    path.write_bytes(bad)
+                    result = subprocess.run(argv, capture_output=True, text=True)
+                    if not result.returncode or "invalid DNA symbol in a" not in result.stderr:
+                        raise AssertionError((pos, invalid, result.stderr))
+
+
 def main():
     binary = Path(sys.argv[1]).resolve()
     with tempfile.TemporaryDirectory() as folder:
         path = Path(folder) / "input.fa"
 
-        def read(contents):
+        def read(contents, *args):
             path.write_bytes(contents)
-            return subprocess.run([binary, "pair", "--algorithm", "edlib", "--input", path],
+            return subprocess.run([binary, "pair", "--algorithm", "edlib", "--input", path, *args],
                                   capture_output=True, text=True)
 
         for width in (0, 1, 15, 16, 31, 32, 63, 64, 65, 10_001):
@@ -35,7 +68,42 @@ def main():
             result = read(malformed)
             if result.returncode == 0 or message not in result.stderr:
                 raise AssertionError((result.returncode, result.stderr))
-    print("10 line widths and 4 malformed FASTA cases passed")
+        index = path.with_suffix(".fa.fai")
+        # Each record can have its own width and line terminator.
+        sample = b">a description\r\nacgt\r\nRyN\r\n>b\nACG\nTRY\nN"
+        a, b = sample.index(b"acgt"), sample.index(b"ACG")
+        row_a = f"a\t7\t{a}\t4\t6\n"
+        row_b = f"b\t7\t{b}\t3\t4\n"
+        index.write_text(row_a + row_b)
+        indexed = read(sample, "--fai", index)
+        if indexed.returncode or json.loads(indexed.stdout)["distance"] != 0:
+            raise AssertionError(indexed.stderr or indexed.stdout)
+        matrix = subprocess.run([binary, "matrix", "--algorithm", "edlib", "--input", path, "--fai", index],
+                                check=True, capture_output=True, text=True)
+        plain = subprocess.check_output([binary, "matrix", "--algorithm", "edlib", "--input", path], text=True)
+        if matrix.stdout != plain:
+            raise AssertionError("indexed matrix differs")
+        invalid = (row_a, row_b + row_a, row_a + row_b + row_b, row_a.replace("a", "wrong") + row_b,
+                   row_a.replace(f"\t{a}\t", f"\t{a+1}\t") + row_b, row_a.replace("7", "6") + row_b,
+                   row_a.replace("7", "8") + row_b, row_a.replace("4\t6", "4\t5") + row_b,
+                   row_a.replace("7", "-7") + row_b, row_a.replace("7", "18446744073709551616") + row_b,
+                   row_a.rstrip() + "\textra\n" + row_b)
+        for contents in invalid:
+            index.write_text(contents)
+            result = read(sample, "--fai", index)
+            if result.returncode == 0 or "FAI" not in result.stderr:
+                raise AssertionError((contents, result.stderr))
+        index.unlink()
+        result = read(sample, "--fai", index)
+        if result.returncode == 0 or "cannot open FAI" not in result.stderr:
+            raise AssertionError(result.stderr)
+        empty = b">a\n>b\nA"
+        index.write_text("a\t0\t3\t0\t0\nb\t1\t6\t1\t1\n")
+        result = read(empty, "--fai", index)
+        if result.returncode or json.loads(result.stdout)["distance"] != 1:
+            raise AssertionError(result.stderr or result.stdout)
+        vector_boundaries(binary, path, index)
+    print("FASTA normalization, indexed pair/matrix, empty records, and stale/malformed index checks passed")
 
 
 if __name__ == "__main__":

@@ -2,8 +2,10 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <charconv>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -48,21 +50,92 @@ bool is_upper_acgt(std::string_view line) {
     });
 }
 
-} // namespace
+// Read one standard five-column FAI entry per FASTA header. Coordinates refer
+// to uncompressed bytes. Validate before reserving and while decoding.
+class FastaIndex {
+    std::ifstream file_;
+    std::uintmax_t file_size_;
+    std::size_t remaining_ = 0, line_bases_ = 0, line_bytes_ = 0;
 
-std::vector<Record> read_fasta(const std::string& path) {
-    std::ifstream file(path);
+    static std::size_t number(std::string_view field) {
+        std::size_t n = 0;
+        const auto [end, error] = std::from_chars(field.data(), field.data() + field.size(), n);
+        if (field.empty() || error != std::errc{} || end != field.data() + field.size())
+            throw std::runtime_error("invalid FAI integer");
+        return n;
+    }
+
+public:
+    FastaIndex(const std::string& fasta, const std::string& index) : file_(index) {
+        if (!file_) throw std::runtime_error("cannot open FAI: " + index);
+        file_size_ = std::filesystem::file_size(fasta);
+    }
+
+    std::size_t next(std::string_view id, std::size_t offset) {
+        if (remaining_) throw std::runtime_error("FAI length exceeds decoded sequence");
+        std::string row;
+        if (!std::getline(file_, row)) throw std::runtime_error("missing FAI entry");
+        if (!row.empty() && row.back() == '\r') row.pop_back();
+        std::string_view rest(row);
+        std::array<std::string_view, 5> fields;
+        for (std::size_t i = 0; i < fields.size() - 1; ++i) {
+            const auto tab = rest.find('\t');
+            if (tab == rest.npos) throw std::runtime_error("FAI requires five tab-separated fields");
+            fields[i] = rest.substr(0, tab);
+            rest.remove_prefix(tab + 1);
+        }
+        fields.back() = rest;
+        const auto length = number(fields[1]);
+        if (fields[0] != id || number(fields[2]) != offset)
+            throw std::runtime_error("FAI name or offset disagrees with FASTA");
+        line_bases_ = number(fields[3]);
+        line_bytes_ = number(fields[4]);
+        if (offset > file_size_ || length > file_size_ - offset || line_bases_ > length ||
+            (length && !line_bases_) || line_bytes_ < line_bases_ || line_bytes_ - line_bases_ > 2 ||
+            (!length && line_bytes_))
+            throw std::runtime_error("invalid FAI length or line geometry");
+        remaining_ = length;
+        return length;
+    }
+
+    void line(std::size_t decoded, std::size_t physical, std::size_t terminator) {
+        if (!remaining_ && !decoded && physical == terminator) return;
+        const auto expected = std::min(remaining_, line_bases_);
+        if (decoded != expected || physical - terminator != decoded ||
+            (remaining_ > line_bases_ && physical != line_bytes_) ||
+            (remaining_ == line_bases_ && terminator && physical != line_bytes_))
+            throw std::runtime_error("FAI length or line geometry disagrees with FASTA");
+        remaining_ -= decoded;
+    }
+
+    void finish() {
+        if (remaining_ || file_.peek() != std::char_traits<char>::eof() || file_.bad())
+            throw std::runtime_error("FAI has incorrect length or extra entries");
+    }
+};
+
+template<bool Indexed>
+std::vector<Record> decode(const std::string& path, FastaIndex* index) {
+    std::ifstream file(path, std::ios::binary);
     if (!file) throw std::runtime_error("cannot open FASTA: " + path);
     std::vector<Record> records;
     std::unordered_set<std::string> ids;
     std::string line;
+    std::size_t offset = 0;
     while (std::getline(file, line)) {
+        std::size_t bytes = 0, terminator = 0;
+        if constexpr (Indexed) {
+            bytes = line.size() + !file.eof();
+            terminator = !file.eof() + static_cast<std::size_t>(line.ends_with('\r'));
+            offset += bytes;
+        }
         if (line.starts_with('>')) {
             std::istringstream header(line.substr(1));
             std::string id;
             if (!(header >> id) || !ids.insert(id).second)
                 throw std::runtime_error("missing or duplicate FASTA ID: " + id);
             records.push_back({id, {}});
+            if constexpr (Indexed) records.back().bases.reserve(index->next(id, offset));
             continue;
         }
         if (records.empty()) {
@@ -80,10 +153,22 @@ std::vector<Record> read_fasta(const std::string& path) {
             }
             line.resize(used);
         }
+        if constexpr (Indexed) index->line(line.size(), bytes, terminator);
         records.back().bases.append(line);
     }
     if (file.bad()) throw std::runtime_error("FASTA read failed: " + path);
     if (records.empty()) throw std::runtime_error("empty FASTA: " + path);
+    if constexpr (Indexed) index->finish();
     return records;
+}
+} // namespace
+
+std::vector<Record> read_fasta(const std::string& path) {
+    return decode<false>(path, nullptr);
+}
+
+std::vector<Record> read_fasta(const std::string& path, const std::string& index_path) {
+    FastaIndex index(path, index_path);
+    return decode<true>(path, &index);
 }
 }

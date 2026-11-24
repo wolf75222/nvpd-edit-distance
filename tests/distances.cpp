@@ -38,10 +38,10 @@ static void replay(std::string_view a, std::string_view b, const Result& result)
 
 static void check(const std::string& a, const std::string& b) {
     int reference = sequential(a, b, false).distance;
-    std::vector<Result> costs{antidiagonal(a,b), nvpd_omp(a,b), edlib_distance(a,b), wfa_distance(a,b)};
+    std::vector<Result> costs{antidiagonal(a,b), nvpd_omp(a,b), edlib_distance(a,b), wfa_distance(a,b), biwfa(a,b)};
     costs.push_back(banded(a,b));
     costs.push_back(banded_trim(a,b));
-    std::vector<Result> traces{edlib_trace(a,b), hirschberg(a,b,true), sequential(a,b,true), nvpd_omp(a,b,true)};
+    std::vector<Result> traces{edlib_trace(a,b), wfa_trace(a,b), biwfa(a,b,true), hirschberg(a,b,true), sequential(a,b,true), nvpd_omp(a,b,true)};
 #ifdef CHPS_KOKKOS
     costs.push_back(nvpd_kokkos(a,b));
     traces.push_back(nvpd_kokkos(a,b,true));
@@ -75,6 +75,14 @@ int main() {
         check(a,b);
     }
     check(dna(259), dna(519));
+    // Force bidirectional breakpoints beyond upstream's 250-edit base cases.
+    const std::string left = dna(917), right = dna(913);
+    for (const auto& path : {biwfa(left, right, true), wfa_trace(left, right)}) {
+        replay(left, right, path);
+        if (path.distance != edlib_distance(left, right).distance ||
+            path.distance != biwfa(left, right).distance || path.distance <= 250)
+            throw std::runtime_error("wrong wavefront breakpoint or score");
+    }
     // Exercise absent symbols, distant matches and SIMD tails in both orientations.
     const std::string rare = "R" + std::string(511, 'A') + "Y";
     check("RYNNR", rare);

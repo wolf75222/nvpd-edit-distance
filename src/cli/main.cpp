@@ -24,13 +24,13 @@ using namespace chps;
 using View = std::string_view;
 using Kernel = Result (*)(View, View, bool);
 constexpr View help =
-    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-cuda|nvpd-kokkos|banded|banded-trim|edlib|wfa2}\n"
-    "         --input FILE.fa [--threads N] [--trace]\n"
+    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-cuda|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
+    "         --input FILE.fa [--fai FILE.fa.fai] [--threads N] [--trace]\n"
     "pair: two FASTA records, JSON output. matrix: square labeled TSV.\n"
-    "--trace: pair with edlib, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n";
+    "--trace: pair with edlib, wfa2, biwfa, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n";
 
 struct Options {
-    std::string mode, algorithm, path;
+    std::string mode, algorithm, path, fai;
     int threads = 1;
     bool trace = false;
 };
@@ -46,6 +46,10 @@ Options parse(int argc, char** argv) {
         View value = argv[i];
         if (arg == "--algorithm") o.algorithm = value;
         else if (arg == "--input") o.path = value;
+        else if (arg == "--fai") {
+            if (value.empty()) throw std::invalid_argument("--fai requires an index path");
+            o.fai = value;
+        }
         else if (arg == "--threads") {
             const auto [end, ec] = std::from_chars(value.data(), value.data() + value.size(), o.threads);
             if (ec != std::errc{} || end != value.data() + value.size() || o.threads < 1)
@@ -55,7 +59,8 @@ Options parse(int argc, char** argv) {
     if (o.path.empty() || o.algorithm.empty()) throw std::invalid_argument("input and algorithm required");
     const bool supports_trace = o.algorithm == "seq" || o.algorithm == "hirschberg" ||
                                 o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-cuda" ||
-                                o.algorithm == "nvpd-kokkos" || o.algorithm == "edlib";
+                                o.algorithm == "nvpd-kokkos" || o.algorithm == "edlib" ||
+                                o.algorithm == "wfa2" || o.algorithm == "biwfa";
     if (o.trace && (o.mode != "pair" || !supports_trace))
         throw std::invalid_argument("unsupported traceback mode");
     return o;
@@ -76,7 +81,8 @@ Kernel resolve(View name) {
     }
     if (name == "diagonal") return [](View a, View b, bool) { return antidiagonal(a, b); };
     if (name == "edlib") return [](View a, View b, bool trace) { return trace ? edlib_trace(a, b) : edlib_distance(a, b); };
-    if (name == "wfa2") return [](View a, View b, bool) { return wfa_distance(a, b); };
+    if (name == "wfa2") return [](View a, View b, bool trace) { return trace ? wfa_trace(a, b) : wfa_distance(a, b); };
+    if (name == "biwfa") return biwfa;
     if (name == "nvpd-cuda") {
 #ifdef CHPS_CUDA
         return nvpd_cuda;
@@ -123,7 +129,7 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
     const auto team = static_cast<std::size_t>(o.threads);
     const bool pair_parallel = o.algorithm == "nvpd-omp" && team > 1 && n * (n - 1) / 2 >= team;
     const bool across = pair_parallel || (team > 1 &&
-        (o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "seq" ||
+        (o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "biwfa" || o.algorithm == "seq" ||
          o.algorithm == "banded" || o.algorithm == "banded-trim" || o.algorithm == "hirschberg"));
     // Split long triangular rows into independent groups. This also exposes
     // enough work when there are fewer rows than workers but enough pairs.
@@ -169,7 +175,7 @@ int main(int argc, char** argv) {
         if (argc == 2 && View(argv[1]) == "--help") { std::cout << help; return 0; }
         const auto o = parse(argc, argv);
         const auto kernel = resolve(o.algorithm);
-        const auto records = chps::read_fasta(o.path);
+        const auto records = o.fai.empty() ? chps::read_fasta(o.path) : chps::read_fasta(o.path, o.fai);
         for (const auto& r : records)
             if (r.bases.size() > (INT_MAX - 2) / 2)
                 throw std::length_error("sequence exceeds the 32-bit alignment index range");
