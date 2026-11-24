@@ -19,11 +19,15 @@
 #include <sched.h>
 #endif
 
+#include "scheduled_matrix.hpp"
+
 namespace {
 struct Options {
     std::string mode, input;
     int threads = 1, trials = 1, warmups = 0, pipeline_rows = 0;
     bool report_rss = false;
+    std::string schedule;
+    int grain = 1;
 };
 
 Options parse(int argc, char** argv) {
@@ -34,11 +38,18 @@ Options parse(int argc, char** argv) {
         if (i + 1 >= argc) throw std::invalid_argument("missing argument value");
         std::string_view key = argv[i], value = argv[i+1];
         if (key == "--input") { o.input = value; continue; }
+        if (key == "--schedule" && o.mode == "matrix") {
+            if (value != "static" && value != "cyclic" && value != "hilbert" && value != "hilbert-weighted" && value != "steal")
+                throw std::invalid_argument("expected static, cyclic, hilbert, hilbert-weighted or steal");
+            o.schedule = value;
+            continue;
+        }
         int n = 0;
         auto [end, ec] = std::from_chars(value.data(), value.data() + value.size(), n);
         if (ec != std::errc{} || end != value.data() + value.size())
             throw std::invalid_argument("expected integer for " + std::string(key));
         if (key == "--threads" && n > 0) o.threads = n;
+        else if (key == "--grain" && o.mode == "matrix" && n > 0) o.grain = n;
         else if (key == "--pipeline-rows" && o.mode == "pair" && n > 0) o.pipeline_rows = n;
         else if (key == "--report-rss" && n == 1) o.report_rss = true;
         else if (key == "--trials" && n > 0) o.trials = n;
@@ -270,11 +281,15 @@ int placement(int threads, int& team) {
 
 int main(int argc, char** argv) {
     int support, rank, ranks;
-    MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &support);
+    int required = MPI_THREAD_FUNNELED;
+    for (int i = 1; i+1 < argc; ++i)
+        if (std::string_view(argv[i]) == "--schedule" && std::string_view(argv[i+1]) == "steal")
+            required = MPI_THREAD_SERIALIZED;
+    MPI_Init_thread(&argc, &argv, required, &support);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &ranks);
     try {
-        if (support < MPI_THREAD_FUNNELED) throw std::runtime_error("MPI_THREAD_FUNNELED required");
+        if (support < required) throw std::runtime_error("MPI thread support insufficient for chosen schedule");
         const auto o = parse(argc,argv);
         const auto records = input(o,rank);
         omp_set_dynamic(0);
@@ -282,6 +297,7 @@ int main(int argc, char** argv) {
         omp_set_num_threads(o.threads);
         int team = 1;
         const int physical = placement(o.threads,team);
+        const auto hosts = o.schedule.empty() ? std::vector<int>{} : chps::mpi::node_leaders(rank,ranks);
         int distance = 0;
         std::vector<int> matrix;
         int first_distance = 0;
@@ -290,9 +306,13 @@ int main(int argc, char** argv) {
             MPI_Barrier(MPI_COMM_WORLD);
             const double start = MPI_Wtime();
             int workers = 0;
+            chps::mpi::RankWork work;
             if (o.mode == "pair")
                 distance = distributed_pair(records[0].bases, records[1].bases, rank, ranks, team, o.pipeline_rows, workers);
-            else matrix = batch(records, rank, ranks, team, o.mode == "pairs", workers);
+            else if (!o.schedule.empty()) {
+                matrix = chps::mpi::scheduled_matrix(records,o.schedule,rank,ranks,team,o.grain,hosts,work);
+                workers = static_cast<int>(std::min<unsigned long long>(team,work.pairs));
+            } else matrix = batch(records, rank, ranks, team, o.mode == "pairs", workers);
             double elapsed = MPI_Wtime() - start, slowest = 0;
             MPI_Reduce(&elapsed, &slowest, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             int total_workers = 0;
@@ -312,6 +332,8 @@ int main(int argc, char** argv) {
 #endif
                 MPI_Reduce(&rss_kib,&max_rss_kib,1,MPI_LONG,MPI_MAX,0,MPI_COMM_WORLD);
             }
+            if (!o.schedule.empty() && trial >= 0)
+                chps::mpi::rank_diagnostics(work,rank,ranks,trial+1);
             if (!rank && trial >= 0) {
                 std::cerr << std::setprecision(12) << "{\"mode\":\"" << o.mode << "\",\"trial\":" << trial+1
                           << ",\"ranks\":" << ranks << ",\"threads_per_rank\":" << team
