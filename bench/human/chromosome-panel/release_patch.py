@@ -29,6 +29,12 @@ def read_variants(path, chromosomes):
     return variants
 
 
+def allele_edit_cost(ref, alt):
+    """The one-base allele matches a base of the longer allele when present."""
+    short, long = sorted((ref, alt), key=len)
+    return len(long) - 1 + int(short not in long)
+
+
 def check_chromosome(path, variants, m, n):
     source = bytearray()
     target = bytearray()
@@ -71,9 +77,7 @@ def check_chromosome(path, variants, m, n):
             raise ValueError(f"VCF mismatch at {path.stem}:{pos+1}")
         emit(refseq[cursor:pos])
         emit(alt)
-        # A one-letter allele aligns to one occurrence in the longer allele, if present.
-        short, long = sorted((ref, alt), key=len)
-        allele_cost = len(long) - 1 + int(short not in long)
+        allele_cost = allele_edit_cost(ref, alt)
         cost += allele_cost
         if end <= 1000 or pos >= m - 1000:
             near_end += 1

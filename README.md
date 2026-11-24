@@ -135,6 +135,10 @@ Les noyaux et la ligne de commande se trouvent dans `src/`, les interfaces dans 
 
 La [comparaison des temps](figures/comparison/synthese.png) couvre douze paires synthétiques. Chaque case donne le rapport NvPD/bibliothèque, son écart-type et l’intervalle de confiance à 95 % à paire fixée. La [répartition entre rangs](figures/distributed/concentration_rangs.png) montre qui exécute les cellules lorsque les paires ont des tailles inégales.
 
+Sur le chromosome 20, le premier budget de NvPD s’épuise à la dixième ligne. La couleur repère les cellules que le second passage doit recalculer. Les deux autres cartes situent les paires coûteuses dans la matrice MPI et les révisions dans les chromosomes de CHM13. [Partitions de Hilbert](figures/distributed/carte_paires.pdf) · [Révisions de CHM13](figures/biology/paysage_chromosomique.pdf)
+
+[![Deux passages de NvPD sur une fenêtre du chromosome 20. Les cellules roses sont évaluées deux fois.](figures/cpu/geometrie_bande.png)](figures/cpu/geometrie_bande.pdf)
+
 Depuis la racine, les commandes suivantes régénèrent le carnet, les figures et les deux PDF avec Python 3.11 et Tectonic. La conversion du schéma TikZ en SVG utilise `pdftocairo` (Poppler).
 
 ```sh

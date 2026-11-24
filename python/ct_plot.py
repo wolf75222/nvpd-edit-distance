@@ -158,8 +158,8 @@ def category_rows(axis, labels, xlabel):
 
 
 @contextmanager
-def atomic_png(destination):
-    """Remplacer le PNG seulement après la fermeture d'un fichier temporaire voisin."""
+def atomic_figure(destination):
+    """Publier une figure après l'écriture complète du fichier temporaire voisin."""
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(f".{destination.name}.{uuid4().hex}.tmp")
     stream = temporary.open("xb")
@@ -169,6 +169,9 @@ def atomic_png(destination):
         temporary.replace(destination)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+atomic_png = atomic_figure
 
 
 def montage(directory, entries):
@@ -188,5 +191,5 @@ def montage(directory, entries):
             panel.thumbnail((width - 24, height - 38), Image.Resampling.LANCZOS)
         sheet.paste(panel, (x + (width - panel.width) // 2, y))
         pen.text((x + 12, y + height - 30), f"Figure {index+1}. {heading}", fill=INK, font=font)
-    with atomic_png(directory / "montage.png") as stream:
+    with atomic_figure(directory / "montage.png") as stream:
         sheet.save(stream, format="PNG", dpi=(150, 150))

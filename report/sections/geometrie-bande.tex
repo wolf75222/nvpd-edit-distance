@@ -1,0 +1,13 @@
+\subsection{Géométrie des passages en bande}\label{sec:band-geometry}
+
+Un intervalle du chromosome 20 de CHM13 illustre le lien entre budget d’édition et cellules calculées. Dans les deux versions de l’assemblage, la fenêtre compte 33 bases. Les trois premières et les trois dernières bases coïncident. Il reste deux chaînes de 27 bases. La différence des effectifs de chaque symbole fournit la borne inférieure \(\sum_x\max(0,N_B(x)-N_A(x))=2\). Les substitutions position par position donnent une borne supérieure de quatre éditions.
+
+À longueurs égales, le passage par \((i,j)\) demande au moins \(2|j-i|\) insertions ou délétions pour quitter la diagonale et y revenir. Le budget \(k\) autorise donc les décalages \(|j-i|\leq\lfloor k/2\rfloor\). La figure~\ref{fig:band-geometry} représente chaque cellule par son nombre d’évaluations. Le chemin superposé, reconstruit par Edlib, comprend deux substitutions, une insertion et une délétion.
+
+\chart{cpu/geometrie_bande.pdf}{Le dépliage de la bande place chaque diagonale sur une ligne horizontale. Les cercles repèrent les quatre éditions. Les cases roses sont évaluées aux deux budgets, les bleues au seul budget de quatre.}{fig:band-geometry}{python/studies/band_geometry.py}
+
+\FloatBarrier
+\Needspace{4\baselineskip}
+Le chemin reste aux décalages \(0\) et \(-1\), tous deux admis par la première bande. Pourtant, à la dixième ligne, tous les scores du passage dépassent deux. Le noyau s’arrête après 29 cellules et recommence avec \(k=4\). Il atteint alors la case terminale après 129 cellules.
+
+\synthese{Le noyau effectue 158 mises à jour sur 129 cellules distinctes, soit \(21{,}7\,\%\) des 729 mises à jour du calcul dense après élagage. Les 29 reprises mesurent ici le coût du premier budget.}

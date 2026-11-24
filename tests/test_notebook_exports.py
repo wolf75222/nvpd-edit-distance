@@ -15,6 +15,7 @@ class NotebookExports(unittest.TestCase):
         cells = json.loads((ROOT / "notebooks/profil_nvpd.ipynb").read_text())["cells"]
         self.assertEqual(len({cell["id"] for cell in cells}), len(cells))
         published = set()
+        vectors = set()
         for index, cell in enumerate(cells):
             if cell["cell_type"] != "code":
                 continue
@@ -31,6 +32,10 @@ class NotebookExports(unittest.TestCase):
                 self.assertEqual(len(calls), 1)
                 stem = ast.literal_eval(calls[0].args[1])
                 path = ROOT / "figures" / (stem + ".png")
+                if any(k.arg == "vector" and ast.literal_eval(k.value) for k in calls[0].keywords):
+                    pdf = path.with_suffix(".pdf")
+                    self.assertTrue(pdf.read_bytes().startswith(b"%PDF-"), str(pdf))
+                    vectors.add(pdf)
                 self.assertNotIn(path, published)
                 published.add(path)
                 self.assertEqual(len(images), 1)
@@ -41,6 +46,7 @@ class NotebookExports(unittest.TestCase):
         exports = {p for p in (ROOT / "figures").rglob("*.png") if p.name != "montage.png"}
         self.assertTrue(published)
         self.assertEqual(published, exports)
+        self.assertEqual(vectors, set((ROOT / "figures").rglob("*.pdf")))
 
 
 if __name__ == "__main__":

@@ -12,6 +12,12 @@ Edlib et WFA2 donnent le même score sur les 18 paires. Le chromosome 18 demande
 
 Le VCF officiel donne les remplacements entre versions, en coordonnées de la v1.0. Sur les 18 chromosomes, ses 310 entrées ont passé le filtre du consortium. Le pilote vérifie chaque allèle de référence et applique le premier allèle du génotype déposé. Sur 292 entrées, tout l’intervalle de référence tient dans les mille premières ou dernières bases du chromosome. Le remplacement reproduit la v1.1 sur 14 chromosomes. Sur les chromosomes 1, 3, 4 et X, seule la première base du résultat diffère de la v1.1. BCFtools 1.21, utilisé avec le premier allèle de chaque génotype, reproduit les 18 empreintes du rejeu.
 
+Le fichier [release-intervals.csv](release-intervals.csv) conserve, pour chaque entrée du VCF, le chromosome, les bornes de référence semi-ouvertes à partir de zéro et le coût du remplacement. Depuis la racine du dépôt, la commande suivante le reconstruit à partir du VCF compressé du consortium.
+
+```sh
+python python/studies/chromosome_landscape.py /chemin/vers/patch.vcf.gz results/human/chromosome-panel/release-intervals.csv
+```
+
 Dans ce VCF, l’un des deux allèles de chaque remplacement a une seule base. Pour un allèle long de longueur $k$, le coût local vaut $k-1$ si la base isolée y apparaît et $k$ sinon. Les coûts locaux totalisent 2 663. Quatre substitutions supplémentaires donnent une transformation réalisable de coût 2 667 entre les séquences publiées. L’optimisation globale économise 80 opérations par rapport à ce chemin. [Fichier du consortium](https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/changes/v1.0_to_v1.1/v1.0_patch.vcf.gz) · [Rejeu par chromosome et empreintes](release-patch.csv)
 
 ## Lecture et mémoire

@@ -1,0 +1,17 @@
+\subsection{Géométrie des partitions de Hilbert}\label{sec:carte-paires}
+
+La carte de la figure~\ref{fig:carte-paires} situe les paires coûteuses dans le parcours de Hilbert. Les 128 fragments du chromosome~21 sont triés par longueur croissante. Pour deux fragments de longueurs \(m_i\) et \(m_j\), la récurrence dense calcule \(w_{ij}=m_i m_j\) cellules. Si \(h_t\) désigne la \(t\)-ième paire du parcours, sa charge cumulée est
+\[
+  P(k)=\sum_{t=1}^{k} w_{h_t},\qquad
+  f_Q=\frac{\sum_{i<j,\;i,j\in Q} m_i m_j}{P(8\,128)},
+  \qquad Q=\{97,\ldots,128\}.
+\]
+Le numérateur de \(f_Q\) compte uniquement les paires dont les deux fragments appartiennent au quart le plus long. Hilbert découpe le parcours en blocs de 169 ou 170 paires. La pondération place chaque coupe au préfixe le plus proche de sa cible en cellules.
+
+\chart{distributed/carte_paires.pdf}{Les contours séparent les rangs MPI sur les deux nœuds. Au-dessus de la diagonale, les blocs de Hilbert ont des effectifs voisins. Au-dessous, les coupes équilibrent le nombre de cellules. Le panneau b) agrandit le carré encadré en a) et donne les numéros de rang.}{fig:carte-paires}{python/studies/pair_work_map.py}
+
+\FloatBarrier
+\Needspace{4\baselineskip}
+Les 32 fragments agrandis mesurent de 12\,272 à 12\,746 bases. Les trois derniers rangs, numérotés de 45 à 47, traitent leurs paires mutuelles avec le découpage par effectif. La pondération les distribue entre les rangs 28 à 47. La concentration de charge sur l’ensemble des rangs se lit ensuite sur la distribution cumulée.
+
+\synthese{Les 496 paires du carré agrandi représentent \(6{,}10\,\%\) des comparaisons et \(41{,}44\,\%\) des cellules. En tenant compte des longueurs, la même portion du parcours mobilise vingt rangs.}
