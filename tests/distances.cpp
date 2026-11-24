@@ -1,18 +1,19 @@
 #include "cigar_replay.hpp"
 #include "chps/baselines.hpp"
 #include "chps/banded.hpp"
+#ifdef CHPS_CUDA
+#include "chps/cuda.hpp"
+#endif
 #ifdef CHPS_KOKKOS
 #include "chps/kokkos.hpp"
 #endif
 #include <omp.h>
-#include <charconv>
 #include <iostream>
 #include <random>
 #include <stdexcept>
 #include <vector>
 
 using namespace chps;
-
 
 static void check(const std::string& a, const std::string& b) {
     int reference = sequential(a, b, false).distance;
@@ -27,6 +28,8 @@ static void check(const std::string& a, const std::string& b) {
 #ifdef CHPS_CUDA
     costs.push_back(nvpd_cuda(a,b));
     traces.push_back(nvpd_cuda(a,b,true));
+    costs.push_back(nvpd_cuda_local(a,b));
+    traces.push_back(nvpd_cuda_local(a,b,true));
 #endif
     for (const auto& r : traces) replay(a, b, r);
     costs.insert(costs.end(), traces.begin(), traces.end());

@@ -1,5 +1,6 @@
 #include "chps/baselines.hpp"
 #include "chps/banded.hpp"
+#include "chps/adaptive.hpp"
 #include "chps/split.hpp"
 #ifdef CHPS_CUDA
 #include "chps/cuda.hpp"
@@ -25,7 +26,7 @@ using namespace chps;
 using View = std::string_view;
 using Kernel = Result (*)(View, View, bool);
 constexpr View help =
-    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-split|nvpd-cuda|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
+    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-adaptive|nvpd-split|nvpd-cuda|nvpd-cuda-local|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
     "         --input FILE.fa [--fai FILE.fa.fai] [--threads N] [--trace]\n"
     "pair: two FASTA records, JSON output. matrix: square labeled TSV.\n"
     "--trace: pair with edlib, wfa2, biwfa, nvpd-split, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n";
@@ -59,7 +60,7 @@ Options parse(int argc, char** argv) {
     }
     if (o.path.empty() || o.algorithm.empty()) throw std::invalid_argument("input and algorithm required");
     const bool supports_trace = o.algorithm == "seq" || o.algorithm == "hirschberg" ||
-                                o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-cuda" ||
+                                o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-cuda" || o.algorithm == "nvpd-cuda-local" ||
                                 o.algorithm == "nvpd-kokkos" || o.algorithm == "nvpd-split" || o.algorithm == "edlib" ||
                                 o.algorithm == "wfa2" || o.algorithm == "biwfa";
     if (o.trace && (o.mode != "pair" || !supports_trace))
@@ -70,6 +71,7 @@ Options parse(int argc, char** argv) {
 Kernel resolve(View name) {
     if (name == "seq") return sequential;
     if (name == "hirschberg") return hirschberg;
+    if (name == "nvpd-adaptive") return nvpd_adaptive;
     if (name == "nvpd-split") return nvpd_split;
     if (name == "nvpd-omp") return nvpd_omp;
     if (name == "banded" || name == "banded-trim")
@@ -85,9 +87,9 @@ Kernel resolve(View name) {
     if (name == "edlib") return [](View a, View b, bool trace) { return trace ? edlib_trace(a, b) : edlib_distance(a, b); };
     if (name == "wfa2") return [](View a, View b, bool trace) { return trace ? wfa_trace(a, b) : wfa_distance(a, b); };
     if (name == "biwfa") return biwfa;
-    if (name == "nvpd-cuda") {
+    if (name == "nvpd-cuda" || name == "nvpd-cuda-local") {
 #ifdef CHPS_CUDA
-        return nvpd_cuda;
+        return name == "nvpd-cuda-local" ? nvpd_cuda_local : nvpd_cuda;
 #else
         throw std::invalid_argument("CUDA backend requires a build with -DCHPS_CUDA=ON");
 #endif
@@ -129,7 +131,8 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
     const auto n = records.size();
     std::vector<std::vector<int>> distances(n, std::vector<int>(n));
     const auto team = static_cast<std::size_t>(o.threads);
-    const bool pair_parallel = (o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-split") && team > 1 && n * (n - 1) / 2 >= team;
+    const bool grouped = o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-adaptive" || o.algorithm == "nvpd-split";
+    const bool pair_parallel = grouped && team > 1 && n * (n - 1) / 2 >= team;
     const bool across = pair_parallel || (team > 1 &&
         (o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "biwfa" || o.algorithm == "seq" ||
          o.algorithm == "banded" || o.algorithm == "banded-trim" || o.algorithm == "hirschberg"));
@@ -190,8 +193,8 @@ int main(int argc, char** argv) {
         if (o.mode == "pair") {
             run_pair(o, kernel, records);
 #ifdef CHPS_CUDA
-        } else if (o.algorithm == "nvpd-cuda") {
-            chps::CudaWorkspace workspace;
+        } else if (o.algorithm == "nvpd-cuda" || o.algorithm == "nvpd-cuda-local") {
+            chps::CudaWorkspace workspace(o.algorithm == "nvpd-cuda" ? chps::CudaHalo::global : chps::CudaHalo::local);
             run_matrix(o, [&](View a, View b, bool trace) { return workspace.distance(a, b, trace); }, records);
 #endif
         } else {

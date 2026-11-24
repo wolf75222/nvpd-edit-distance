@@ -2,6 +2,7 @@
 
 #include "chps/cuda.hpp"
 #include "dp_internal.hpp"
+#include "local_tiles.cuh"
 
 #include <algorithm>
 #include <stdexcept>
@@ -24,7 +25,7 @@ __global__ void next_row(const int* prev, int* curr, const int* last, int i, int
     if (j <= n) curr[j] = j == 0 ? i : detail::nvpd_cell(prev, j, last[j]);
 }
 
-constexpr int tile_rows = 8;
+constexpr int tile_rows = detail::local_tile_rows;
 constexpr int max_halo_step = 64;
 struct Symbols { int id[tile_rows]; };
 
@@ -111,14 +112,30 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
     check(cudaGetLastError(), "launch first row");
     int* prev = table.data;
     const int reach = !trace && m >= tile_rows ? left_reach(matches, stride) : max_halo_step + 1;
-    if (reach <= max_halo_step) {
+    const bool consider_local = halo_ == CudaHalo::local && !trace && m >= tile_rows && reach > max_halo_step;
+    int columns = threads;
+    detail::LocalTilePlan plan;
+    if (reach <= max_halo_step || consider_local) {
         int device, multiprocessors;
         check(cudaGetDevice(&device), "get CUDA device");
         check(cudaDeviceGetAttribute(&multiprocessors, cudaDevAttrMultiProcessorCount, device),
               "get SM count");
         // Wider blocks amortize the halo when at least two CTAs per SM remain.
         const int wide = 4 * threads;
-        const int columns = stride / wide >= 2 * multiprocessors ? wide : threads;
+        columns = stride / wide >= 2 * multiprocessors ? wide : threads;
+        if (consider_local) {
+            int shared_limit;
+            check(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlock, device),
+                  "get CUDA shared memory limit");
+            plan = detail::make_local_plan(matches, n, columns, shared_limit / (2 * sizeof(int)));
+        }
+    }
+    if (!plan.left.empty()) {
+        boundaries_.resize(plan.left.size());
+        check(cudaMemcpy(boundaries_.data, plan.left.data(), boundaries_.bytes, cudaMemcpyHostToDevice),
+              "copy local tile boundaries");
+    }
+    if (reach <= max_halo_step || !plan.left.empty()) {
         const int tile_blocks = static_cast<int>((stride + columns - 1) / columns);
         int* curr = table.data + stride;
         for (int i = 1; i <= m;) {
@@ -126,9 +143,15 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
             Symbols symbols{};
             for (int t = 0; t < count; ++t)
                 symbols.id[t] = matches.symbol[static_cast<unsigned char>(a[i-1+t])];
-            const auto bytes = 2 * (columns + (count - 1) * reach) * sizeof(int);
-            row_tile<<<tile_blocks, threads, bytes>>>(prev, curr, indices.data, symbols,
-                                                      i, count, n, reach, columns);
+            if (plan.left.empty()) {
+                const auto bytes = 2 * (columns + (count - 1) * reach) * sizeof(int);
+                row_tile<<<tile_blocks, threads, bytes>>>(prev, curr, indices.data, symbols,
+                                                          i, count, n, reach, columns);
+            } else {
+                const auto bytes = 2 * plan.pitch * sizeof(int);
+                detail::local_row_tile<<<tile_blocks, threads, bytes>>>(prev, curr, indices.data,
+                    boundaries_.data, symbols, i, count, n, columns, plan.pitch);
+            }
             check(cudaGetLastError(), "launch NvPD tile");
             std::swap(prev, curr);
             i += count;
@@ -142,7 +165,7 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
             prev = curr;
         }
     }
-    const auto device_bytes = indices.bytes + table.bytes;
+    const auto device_bytes = indices.bytes + table.bytes + boundaries_.bytes;
     if (trace) {
         std::vector<int> host(table_size);
         check(cudaMemcpy(host.data(), table.data, table.bytes, cudaMemcpyDeviceToHost),
@@ -156,6 +179,11 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
 
 Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {
     CudaWorkspace workspace;
+    return workspace.distance(a, b, trace);
+}
+
+Result nvpd_cuda_local(std::string_view a, std::string_view b, bool trace) {
+    CudaWorkspace workspace(CudaHalo::local);
     return workspace.distance(a, b, trace);
 }
 
