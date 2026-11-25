@@ -42,6 +42,8 @@ Le GH200 associe un processeur Grace et un accélérateur Hopper. Pour une seule
 \subsection{Alignement des assemblages chromosomiques}
 Les essais sur fenêtres mettent en évidence le rôle de la divergence locale. Sur un chromosome entier, la position des différences détermine aussi quelles régions peuvent être alignées séparément. Les comparaisons portent successivement sur deux assemblages distincts et sur des révisions d’un même assemblage.
 \input{sections/chromosome}
+La figure~\ref{fig:decision} rassemble les choix étudiés selon la sortie attendue. Un score, un chemin et une matrice donnent accès à des possibilités de calcul différentes.
+\schema{decision}{La sortie attendue et les propriétés des séquences orientent le choix du solveur et du partage du travail.}{fig:decision}{report/figures/decision.tex}
 \subsection{Calcul des matrices sur un et deux nœuds}\label{sec:mpi}
 Une collection de \(q\) séquences fournit \(q(q-1)/2\) paires. On peut donc répartir entre les cœurs soit les colonnes d’une même paire, soit des paires entières. Sur ROMEO, le protocole compare ces deux répartitions avec 24 rangs MPI de huit fils OpenMP par nœud.
 \input{sections/distribue}

@@ -30,4 +30,6 @@ Six coupes subsistent sur ce chromosome. Le retrait des extrémités communes vi
 
 Dans l'essai où seul le découpage varie, le témoin aligne la paire entière après retrait des mêmes extrémités communes. Sur le chromosome 1, le rapport de son temps à celui de huit travailleurs vaut \(32{,}07\pm0{,}62\). Pour la fenêtre de deux millions de bases entre GRCh38 et CHM13, l'écart de longueur vaut 1\,263 bases et le chemin coûte 5\,599 éditions. Les deux calculs traitent alors un fragment unique. Leur rapport de temps vaut \(1{,}002\pm0{,}017\).
 
+Le choix des coupes peut aussi partir d’ancres chaînées. Pour \(k\) ancres imposées, Rizzo et Groot Koerkamp calculent la distance ancrée en \(O(k\log\log k)\) temps et \(O(k)\) espace~\cite{llchain}. Appliquer cette méthode à la distance globale demande de vérifier qu’un chemin optimal passe par les ancres retenues.
+
 \synthese{Pour deux révisions du chromosome 1, le découpage à huit cœurs reconstruit les 176 éditions en \(11{,}58\pm0{,}14\)\,ms dans l'essai d'ablation. À découpage fixé, le passage d'un à huit cœurs accélère le CIGAR d'un facteur \(1{,}67\pm0{,}04\).}
