@@ -1,0 +1,5 @@
+JobID	JobName	Partition	AllocCPUS	AllocTRES	Elapsed	State	ExitCode	NodeList
+839971	chps-matrix	instant	4	billing=4,cpu=4,gres/gpu=1,mem=16G,node=1	00:03:29	COMPLETED	0:0	romeo-a052
+839971.batch	batch		4	cpu=4,gres/gpu=1,mem=16G,node=1	00:03:29	COMPLETED	0:0	romeo-a052
+839971.extern	extern		4	billing=4,cpu=4,gres/gpu=1,mem=16G,node=1	00:03:29	COMPLETED	0:0	romeo-a052
+839971.0	python3		4	cpu=4,gres/gpu=1,mem=16G,node=1	00:03:18	COMPLETED	0:0	romeo-a052

@@ -1,0 +1,20 @@
+romeo-a056
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+cmake version 3.30.5
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+name, driver_version, memory.total [MiB]
+NVIDIA GH200 120GB, 590.48.01, 97871 MiB
+Architecture:                            aarch64
+Model name:                              Neoverse-V2
+cc6077be76209c6501e57240536a5c60638167977b4b06acd73e0a84b24f04a5  build/hybrid-matrix/viral/surveillance.fa
+ca41ee9b1746972d8212ed206739503b2e9cc94a3c4a6fee531726580c54c031  bench/hybrid/matrix/measure.py
+278939fced0d58d9d53fabd047e06eca14f19750d7871aabaa79d075cdad8608  bench/hybrid/matrix/run.sbatch
+b4cb84c814a8e9acbd7301631bef95a7d71a2796f14537d287fc409d0ebb2ef5  src/hybrid/main.cpp
+54bd8fba6f813fb7b185fc63256366c7faa85e13666cabfa10c8ab22b823561c  src/hybrid/matrix.cpp
+54094e76a6f5353397d3befceb2f0c3f90a241a40b24a04d50d990aa7b4c7f70  src/hybrid/matrix.hpp
+83ad3f5b8e7493e48b86e2fa1acc0d7ed6a3361a93c3304941771a87d3718772  src/hybrid/sketch.hpp
+19ade4d89bcbc11bd778bd9837751f77ccf35264d16e203c0e08bd27946aec64  src/cuda/cuda.cu
+OMP_DYNAMIC=FALSE
+OMP_NUM_THREADS=1
+OMP_PROC_BIND=FALSE

@@ -53,6 +53,7 @@ COHORT_FASTA=data/cohort.fa COHORT_GROUPS=data/groups.tsv \
 | SIMD, caches, RSS, échelle forte et faible | [OpenMP](cpu/openmp/profile_cpu.md) | [Compteurs et temps](../results/profile/cpu/) |
 | CUDA, tailles de tuiles, Nsight Systems | [Script Slurm](gpu/cuda/profile_gpu.sbatch) | [Appels, noyaux et gains](../results/profile/gpu/) |
 | Deux nœuds complets | [MPI et OpenMP](mpi/mpi.md) | [Résultats à 192 et 384 cœurs](../results/mpi/) |
+| Répartition des matrices entre Grace et Hopper | [Collecte et échauffements](hybrid/matrix/run.sbatch) | [Temps des matrices complètes](../results/hybrid/matrix-gh200/) |
 | Allocations GPU par lot | [Protocole Slurm](gpu/allocation/allocator.sbatch) | [Réutilisation des tampons](../results/allocator/) |
 | Portabilité CPU/GPU | [Kokkos](kokkos/kokkos.md) | [Comparaison aux versions natives](../results/kokkos/) |
 | Chromosome 21 | [Script Slurm](human/human.sbatch) | [Fenêtres et contrôle entier](../results/human/) |

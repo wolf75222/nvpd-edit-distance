@@ -129,6 +129,24 @@ build/editdist matrix --algorithm packed-wfa --unique --threads 8 \
 
 Sur 64 cœurs EPYC, les fronts bidirectionnels à deux bits calculent la matrice complète en 56,31 ± 0,32 ms. Les mêmes fronts sur octets prennent 54,51 ± 0,03 ms, WFA2 prend 74,24 ± 0,26 ms et Edlib 5,712 ± 0,002 s. Après regroupement, WFA2 prend 17,61 ± 0,12 ms et le front à deux bits 17,94 ± 0,33 ms, restitution des doublons comprise. Sur les cinq blocs appariés, l’écart entre le front à deux bits et WFA2 après regroupement vaut +0,33 ms en moyenne (IC à 95 % de −0,09 à +0,76 ms). [Mesures à charge fixe](results/human/packed-cohort/trials-64.csv) · [Compteurs matériels](results/human/packed-pmu/counters.csv)
 
+## Répartir une matrice entre CPU et GPU
+
+Sur un nœud équipé de CUDA, `editdist-route` calcule une matrice symétrique de distances globales. Il estime la ressemblance entre deux séquences à partir des mots de quinze bases qu’elles partagent. La commande suivante construit la matrice d’un lot de huit fenêtres du chromosome 21. Le script de préparation télécharge les références GRCh38 et CHM13 si son cache est vide.
+
+```sh
+cmake -S . -B build-route -DCMAKE_BUILD_TYPE=Release -DCHPS_CUDA=ON \
+  -DCMAKE_CUDA_ARCHITECTURES=90 -DCHPS_CUDA_TILE_ROWS=16 -DCHPS_CUDA_PACKED_MATCHES=ON
+cmake --build build-route --target editdist-route --parallel 4
+python3 bench/hybrid/matrix/prepare.py
+build-route/editdist-route --input build/hybrid-matrix/inputs/mixed.fa \
+  --policy hybrid-share --threads 4 --warmups 1 --repeats 1 \
+  --matrix build/hybrid-matrix/distances.tsv --decisions build/hybrid-matrix/decisions.tsv
+```
+
+L’architecture CUDA `90` correspond au GH200 de ROMEO. Avec `hybrid-share`, WFA2 traite les paires proches sur CPU. Les fils qui se libèrent traitent avec Edlib une partie des autres paires, en parallèle de NvPD sur GPU. La politique `hybrid-counts` choisit aussi Edlib lorsqu’une paire classée proche présente un écart d’effectifs suffisant entre symboles. Le CSV sur la sortie standard donne le temps de calcul de toute la matrice, estimation comprise. La lecture du FASTA et l’écriture des TSV ont lieu hors chronométrage. [Protocole et mesures sur ROMEO](results/hybrid/matrix-gh200/)
+
+Sur les 28 paires du lot à deux loci, le routage avec reprise ramène le temps moyen de 1,342 s avec Edlib sur quatre cœurs à 0,990 s. Pour les 2 016 paires de la cohorte virale, le choix selon les effectifs répartit le calcul entre Edlib et WFA2 sur CPU. Le temps moyen passe de 2,433 à 2,241 s face à Edlib seul. [Mesures sur les fenêtres humaines](results/hybrid/matrix-gh200/trials.csv) · [Mesures sur la matrice virale](results/hybrid/matrix-gh200/composition/trials.csv)
+
 ## Distribuer une matrice humaine
 
 Préparer le chromosome 1 de CHM13 comme indiqué plus haut, puis en extraire 768 régions disjointes de 512 à 3 072 bases. Le script Slurm réserve deux nœuds EPYC de 192 cœurs chacun et mesure la même matrice sur un puis deux nœuds. Placer les archives de dépendances dans `deps/` et définir `ROMEO_PROJECT` avec le nom du compte Slurm. [Campagne et mesures](results/mpi/chromosome/)

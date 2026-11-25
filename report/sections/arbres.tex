@@ -34,6 +34,7 @@ Les longueurs de branche de la figure~\ref{fig:arbres} sont exprimées en éditi
 
 \FloatBarrier
 \input{sections/matrice-surveillance}
+\input{sections/routage-composition}
 \subsubsection{Structure des groupes dans les arbres de surveillance}
 La cohorte comprend Wuhan-Hu-1~\cite{wuhanref} et neuf accessions par lignage pour sept lignages Pango~\cite{pango}. L’annexe~\ref{sec:accessions} donne les 64 identifiants versionnés et les décomptes de \texttt{N}. L’échantillonnage fixe l’effectif de chaque lignage indépendamment de sa fréquence dans la population. Le test cherche une arête qui isole exactement les neuf feuilles portant la même étiquette. Or la nomenclature Pango est hiérarchique~\cite{pango}. Le groupe étiqueté B.1 exclut notamment les feuilles étiquetées B.1.1.7, qui appartiennent à une de ses branches descendantes. Même dans un arbre fidèle à cette parenté, les neuf feuilles B.1 ne forment donc pas nécessairement un groupe exclusif. Dans un arbre enraciné, un groupe est retrouvé si les descendants d'une arête positive coïncident avec ses membres. Pour NJ, non enraciné, les deux côtés de l'arête sont examinés. Sur les 1\,905\,372 caractères lus, 65\,588 sont ambigus. La distance compte les différences entre caractères déposés, y compris aux positions ambiguës.
 \chart{biology/phylogenie_surveillance.png}{Les distances globales entre paires et les groupes isolés par une arête sont comparés aux partitions de l'arbre de surveillance sur les identifiants communs.}{fig:surveillance}{scripts/phylogeny/phylo_groups.py}

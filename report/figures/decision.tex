@@ -7,9 +7,9 @@
 \node[stage,fill=powderGrey!18,text width=1.65cm] (root) at (0,0) {Sortie\par demandée};
 \node[stage,fill=powderBlue!30] (score) at (3.1,2.1) {Score d'une paire};
 \node[stage,fill=powderRose!24] (trace) at (3.1,0) {Chemin optimal};
-\node[stage,fill=powderTeal!28] (batch) at (3.1,-2.1) {Matrice des scores};
+\node[stage,fill=powderTeal!28] (batch) at (3.1,-2.58) {Matrice des scores};
 \draw[branch] (root.east) -- (1.5,0);
-\draw[branch] (1.5,2.1) -- (1.5,-2.1);
+\draw[branch] (1.5,2.1) -- (1.5,-2.58);
 \foreach \id in {score,trace,batch}{\draw[next] (1.5,0 |- \id.west) -- (\id.west);}
 \node[option] (band) at (5.15,2.57)
   {\textbf{Révisions d’un haplotype}\\Étendre un front borné sur chaque fragment vérifié.};
@@ -21,12 +21,15 @@
   {\textbf{Coupe rejetée}\\Réunir les fragments adjacents et appliquer NvPD ou BiWFA.};
 \node[option] (length) at (5.15,-1.63)
   {\textbf{Haplotypes répétés}\\Regrouper les chaînes identiques avant le calcul.};
-\node[option] (locus) at (5.15,-2.57)
+\node[option] (locus) at (5.15,-2.58)
   {\textbf{Loci distincts}\\Répartir les paires entre les rangs et réutiliser les index.};
-\foreach \id/\upper/\lower in {score/band/wave,trace/cut/whole,batch/length/locus}{
+\node[option] (heterogeneous) at (5.15,-3.53)
+  {\textbf{Collection hétérogène}\\Répartir les paires entre CPU et GPU selon les mots partagés.};
+\foreach \id/\upper/\lower in {score/band/wave,trace/cut/whole,batch/length/heterogeneous}{
   \draw[branch] (\id.east) -- (4.77,0 |- \id.east);
   \draw[branch] (4.77,0 |- \upper.west) -- (4.77,0 |- \lower.west);
   \draw[next] (4.77,0 |- \upper.west) -- (\upper.west);
   \draw[next] (4.77,0 |- \lower.west) -- (\lower.west);
 }
+\draw[next] (4.77,0 |- locus.west) -- (locus.west);
 \end{tikzpicture}
