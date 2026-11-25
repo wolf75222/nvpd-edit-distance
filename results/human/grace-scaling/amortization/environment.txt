@@ -1,0 +1,14 @@
+romeo-a002
+2026-11-25T22:02:26+01:00
+JobId=841002 JobName=nvpd-e2e
+   Partition=instant AllocNode:Sid=romeo1:1636792
+   NumNodes=1 NumCPUs=4 NumTasks=4 CPUs/Task=1 ReqB:S:C:T=0:0:1:*
+   AllocTRES=cpu=4,mem=8G,node=1,billing=4
+     Nodes=romeo-a002 CPU_IDs=0,72,144,216 Mem=8192 GRES=
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+7cb957d97adca22e98b9d2ec5cfcf2e925620aa17e378583716879a727f6f06c  /dev/shm/grace-amortization-src.DjWO5d7c/bench/human/grace-numa/amortization/amortization.cpp
+085eed8baad3a216ce24865ce3239812d0f1d348a2f31719522dfc00164b09bd  /dev/shm/grace-amortization-src.DjWO5d7c/bench/human/grace-numa/amortization/amortization.cmake
+018a0e46940504f31bee79057dfb8e12f14603556feb008b30f7d3542114cecc  /dev/shm/grace-amortization-src.DjWO5d7c/bench/human/grace-numa/amortization/measure_e2e.py
+d0e8c888bbc7ce9e3dada24dcfbba9d1eb4e8ff21b6cf70ead7bcb6222db44eb  /dev/shm/grace-amortization-src.DjWO5d7c/bench/human/grace-numa/amortization/cache_probe.py
+474787c9d9db8312d134d8daf627a5e3d5562168067d01ac2bbb9f02bcb8606d  /dev/shm/grace-amortization-src.DjWO5d7c/bench/human/grace-numa/amortization/run.sbatch
+c16bd72522e5a25908f1ad432d322a42ef7184510bc8436a44706c7ee5589b0d  /tmp/grace-amortization.hdJAA87Q/build/grace_amortization

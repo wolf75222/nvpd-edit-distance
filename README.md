@@ -151,6 +151,8 @@ Sur les 28 paires du lot à deux loci, le routage avec reprise ramène le temps 
 
 Sur les chromosomes entiers 1 à 4 de CHM13, le solveur par fragments a aussi été testé sur quatre cœurs appartenant à quatre puces Grace du même nœud. Pour 28,345 Gnt cumulés en repassant sur les mêmes séquences, l’accélération entre un et quatre cœurs vaut 1,665. À charge par cœur constante, l’efficacité vaut 42,02 %. Sur quatre cœurs d’une même puce, confier à chaque cœur la lecture de son chromosome ramène le chargement de 1,826 à 0,619 s. Le calcul des 64 scores gagne 1,42 ms. Sur les cœurs 0 et 72 de deux puces, le même lot prend 0,683 s quand chacun lit sa copie locale et 1,471 s quand chacun lit sur la puce voisine. [Comparaison locale et distante](results/human/grace-scaling/interchip/) · [Passage à l’échelle](results/human/grace-scaling/) · [Lecture et placement mémoire](results/human/grace-scaling/placement/)
 
+Lecture des FASTA et libération mémoire comprises, la copie locale par puce réduit le temps moyen de la commande dès 25 alignements sur ces quatre paires réutilisées. À 31 alignements, le gain atteint 73,1 ms (intervalle simultané à 95 % de 45,8 à 100,3 ms). À 64 alignements, la durée passe de 3,356 à 2,864 s. [Mesure de bout en bout sur ROMEO](results/human/grace-scaling/amortization/)
+
 ## Distribuer une matrice humaine
 
 Préparer le chromosome 1 de CHM13 comme indiqué plus haut, puis en extraire 768 régions disjointes de 512 à 3 072 bases. Le script Slurm réserve deux nœuds EPYC de 192 cœurs chacun et mesure la même matrice sur un puis deux nœuds. Placer les archives de dépendances dans `deps/` et définir `ROMEO_PROJECT` avec le nom du compte Slurm. [Campagne et mesures](results/mpi/chromosome/)

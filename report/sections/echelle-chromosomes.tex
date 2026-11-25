@@ -36,3 +36,22 @@ Sur les quatorze blocs, chaque séquence réside entièrement sur le domaine pr�
 Le témoin à un cœur prend 1,257\,s. Lorsque les deux cœurs lisent la même copie sur la puce A, le temps monte à 1,472\,s. Le ralentissement de 215,1\,ms (de 211,9 à 218,3\,ms) reproduit celui de la première campagne. Sur la puce A, remplacer la copie partagée par deux copies privées change le temps de 0,6\,ms (IC à 95\,\% de \(-3{,}1\) à 4,2\,ms, temps partagé moins temps privé). Placer ensuite la seconde copie auprès de son lecteur fait gagner 788,8\,ms (de 785,4 à 792,2\,ms). Placer la copie partagée sur la puce B donne un temps de 1,357\,s avec les mêmes lecteurs. La réplication porte la mémoire résidente des séquences de 1,65 à 3,30\,Gio.
 
 \synthese{Sur ces quatre chromosomes, une copie locale par lecteur transforme le ralentissement à deux cœurs en une accélération de 1,841 par rapport à un cœur (IC à 95\,\% de 1,834 à 1,848). Le gain vient du placement des copies auprès des lecteurs.}
+
+\subsubsection{Amortissement de la réplication des chromosomes}\label{sec:grace-amortissement}
+L’avantage des lectures locales dans la figure~\ref{fig:grace-numa} suppose que les chromosomes ont déjà été copiés. Pour mesurer le délai d’obtention des scores, le cœur~0 ouvre les quatre FASTA de CHM13 et décode les huit séquences. Dans le mode partagé, les deux cœurs lisent ces séquences sur la première puce. Dans le mode répliqué, le cœur~72 en crée une copie de 1,65\,Gio sur sa puce avant le premier alignement. Chaque processus relit les fichiers sur GPFS après un premier parcours de vérification. Le système de fichiers possède son propre cache, dont le taux de succès est inconnu~\cite{gpfs-pagepool}.
+
+Pour la politique \(p\) et un lot de \(K\) alignements, le temps mesuré de l’ouverture du premier FASTA au dernier score se décompose en
+\[
+ T_p(K)=R_p+C_p+A_p(K),\qquad
+ G(K)=T_{\mathrm{shared}}(K)-T_{\mathrm{local}}(K).
+\]
+\(R_p\) désigne la lecture, \(C_p\) la réplication et \(A_p\) le calcul des scores. La copie devient rentable pour le lot lorsque \(G(K)>0\). Le second chronomètre va du lancement du processus à sa sortie et comprend la libération des séquences.
+
+Un balayage par lots pairs jusqu’à 128 scores situe le croisement. La campagne de confirmation teste chaque taille de 1 à 32, puis 64 et 128. Chacun des seize blocs lance un processus neuf par taille et par politique, sans barrière entre alignements. L’ordre des deux politiques et le premier chromosome varient entre blocs. Si le lot est impair, le cœur~0 calcule un score de plus que le cœur~72. Les différences de la figure~\ref{fig:grace-amortissement} sont appariées par taille et par bloc. Pour chaque chronomètre, les intervalles simultanés à 95\,\% tiennent compte de l’ensemble des tailles confirmées par la correction de Bonferroni.
+\chart{comparison/grace_numa_amortization.pdf}{Gain de la copie locale au voisinage du seuil (a) et durée du processus pour les lots de 1 et 128 alignements (b). Les traits épais indiquent l’écart-type et les traits fins l’intervalle à 95\,\%, simultané en (a) et individuel en (b).}{fig:grace-amortissement}{bench/human/grace-numa/amortization/plot.py}
+
+Sur les 1\,088 processus de confirmation, le chargement des chromosomes prend en moyenne 1,856\,s. Préparer la copie sur la seconde puce demande 282,8\,ms en moyenne. Pour un seul alignement, le cœur~0 travaille seul et cette copie reste inutilisée. À 64 alignements, le temps de la commande passe de 3,356\,s en mémoire partagée à 2,864\,s avec réplication. Le gain atteint 492,4\,ms (intervalle simultané à 95\,\% de 417,7 à 567,2\,ms).
+
+À 25 alignements, la copie locale termine en premier dans six blocs sur seize. La commande gagne en moyenne 9,9\,ms, avec un intervalle de \(-38{,}7\) à 58,6\,ms. À 28, l’intervalle se situe au-dessus de zéro, puis il recouvre zéro à 29 et 30. À 31, les seize blocs favorisent la copie. Le gain moyen atteint 73,1\,ms (de 45,8 à 100,3\,ms). La borne inférieure reste positive à 32, 64 et 128 alignements. À 31 alignements, le lancement et la fin du processus réduisent ensemble de 18,9\,ms le gain mesuré jusqu’au dernier score.
+
+\synthese{Sur ces quatre paires réutilisées, la copie locale réduit en moyenne le délai du dernier score dès 24 alignements et la durée de la commande dès 25. Pour toutes les tailles mesurées à partir de 30 et 31 alignements respectivement, la borne inférieure du gain dépasse zéro.}

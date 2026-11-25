@@ -12,6 +12,8 @@ Le lot de 64 alignements prend 1,242 s avec un cœur, 1,467 s avec deux cœurs e
 
 La comparaison sur les cœurs 0 et 72 reprend ensuite le lot fixe avec sept placements. Le surcoût des lectures distantes atteint 788,1 ms pour 64 alignements. Avec une copie locale auprès de chaque lecteur, le temps à deux cœurs descend sous celui à un cœur. [Comparaison entre puces](interchip/)
 
+Lorsque chaque processus relit les quatre FASTA et prépare ses propres copies, la réplication réduit en moyenne le temps de la commande dès 25 alignements. À 31 alignements, le gain atteint 73,1 ms et sa borne inférieure reste positive pour les tailles supérieures mesurées. [Coût de bout en bout](amortization/)
+
 Depuis la racine du dépôt, la commande suivante recalcule les rapports appariés et la figure.
 
 ```sh

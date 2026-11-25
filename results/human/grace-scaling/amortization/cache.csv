@@ -1,0 +1,13 @@
+phase,file,bytes,page_bytes,pages,resident_pages,status
+initial,chr1.fa,505054438,65536,7707,0,ok
+initial,chr2.fa,493483423,65536,7530,0,ok
+initial,chr3.fa,408916128,65536,6240,0,ok
+initial,chr4.fa,393602915,65536,6006,0,ok
+after_hash,chr1.fa,505054438,65536,7707,0,ok
+after_hash,chr2.fa,493483423,65536,7530,0,ok
+after_hash,chr3.fa,408916128,65536,6240,0,ok
+after_hash,chr4.fa,393602915,65536,6006,0,ok
+after_trials,chr1.fa,505054438,65536,7707,0,ok
+after_trials,chr2.fa,493483423,65536,7530,0,ok
+after_trials,chr3.fa,408916128,65536,6240,0,ok
+after_trials,chr4.fa,393602915,65536,6006,0,ok
