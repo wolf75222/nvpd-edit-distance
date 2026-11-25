@@ -1,4 +1,5 @@
 #include "dp_internal.hpp"
+#include "nvpd_avx512.hpp"
 
 #include <algorithm>
 #include <climits>
@@ -63,7 +64,9 @@ MatchIndex::MatchIndex(std::string_view a, std::string_view b) {
         alphabet[symbols++] = c;
     }
     const std::size_t stride = b.size() + 1;
-    entries.resize(symbols * stride);
+    if (symbols && stride > entries.max_size() / static_cast<std::size_t>(symbols))
+        throw std::length_error("last-occurrence index exceeds addressable memory");
+    entries.resize(static_cast<std::size_t>(symbols) * stride);
     #pragma omp parallel for schedule(static)
     for (int s = 0; s < symbols; ++s) {
         int* row = entries.data() + s * stride;
@@ -130,6 +133,10 @@ Result nvpd_omp(std::string_view a, std::string_view b, bool trace) {
     if (a.empty() || b.empty()) return detail::empty_result(a, b, trace);
     if (!trace && a.size() > b.size()) std::swap(a, b);
     const int m = static_cast<int>(a.size()), n = static_cast<int>(b.size());
+#ifdef CHPS_NVPD_AVX512_DISPATCH
+    if (!trace && m >= detail::avx512::block_lanes && __builtin_cpu_supports("avx512f"))
+        return detail::avx512::score(a, b);
+#endif
     const std::size_t stride = b.size() + 1;
     const detail::MatchIndex matches(a, b);
     std::vector<int> table((trace ? a.size() + 1 : 2) * stride);

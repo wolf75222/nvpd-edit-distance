@@ -80,6 +80,17 @@ int main() {
         if (path.distance != edlib_distance(a, b).distance)
             throw std::runtime_error("wrong linear-space traceback beyond dense limit");
     }
+    // Absent symbols and a match preceding the whole block must also work on SIMD tails.
+    const std::string query = "RNNNAYNNNNNNNNNR";
+    for (int length : {16, 17, 31, 32, 33, 63, 64, 65}) {
+        std::string target(length, 'A');
+        target.front() = 'R';
+        target[15] = 'Y';
+        target.back() = 'G';
+        const int expected = sequential(query, target, false).distance;
+        if (nvpd_omp(query, target).distance != expected || nvpd_omp(target, query).distance != expected)
+            throw std::runtime_error("wrong NvPD score at a SIMD block boundary");
+    }
     // One DP row isolates column indexing, including million-column inputs.
     for (int length : {127, 128, 129, 254, 255, 256, 257, 65535, 1000000}) {
         const std::string absent(length, 'A');
