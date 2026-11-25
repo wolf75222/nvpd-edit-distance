@@ -30,7 +30,8 @@ Pour vérifier le certificat, considérons un chemin optimal de coût au plus \(
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=.99\linewidth,height=.57\textheight,keepaspectratio]{../figures/cpu/nvpd_adaptatif.png}
-\caption{Sur un cœur EPYC, chaque durée moyenne (a) est suivie de l'écart-type et de la demi-largeur de l'IC à 95\,\% pour cinq processus. La mention « n.m. » signale une combinaison absente. Les rapports en b) suivent les mêmes lignes. Les débits étalonnés en c) fixent le modèle de lecture en d), dont la zone grise représente un écart-type sur les paramètres.}\label{fig:nvpd-adaptatif}\sourcefig{bench/cpu/adaptive/measure.py}
+\sourcefig{bench/cpu/adaptive/measure.py}
+\caption{Sur un cœur EPYC, chaque durée moyenne (a) est suivie de l'écart-type et de la demi-largeur de l'IC à 95\,\% pour cinq processus. La mention « n.m. » signale une combinaison absente. Les rapports en b) suivent les mêmes lignes. Les débits étalonnés en c) fixent le modèle de lecture en d), dont la zone grise représente un écart-type sur les paramètres.}\label{fig:nvpd-adaptatif}
 \end{figure}
 
 Le banc de la figure~\ref{fig:nvpd-adaptatif} conserve les coûts unitaires et utilise Edlib comme contrôle indépendant. Deux paires synthétiques ont des taux de modification demandés de 2 et 10\,\%. Une troisième paire de 20\,000 bases contient deux chaînes tirées indépendamment. Les quatre fenêtres du chromosome 21 débutent aux coordonnées GRCh38 34\,500\,000 et CHM13 32\,882\,567. Leur distance va de 34 à 2\,336 opérations. Chaque mesure chronomètre un appel entier après une chauffe, sur le même cœur et dans un ordre tiré par bloc. Le comptage des cellules inclut les tentatives dont le budget s'est révélé insuffisant.

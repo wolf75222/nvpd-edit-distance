@@ -16,8 +16,8 @@
 Le coût d'une comparaison génomique dépend de la longueur des séquences et de leur distance d'édition. Sur le chromosome~1 maternel de HG002, un calcul par fragments et fronts bornés retrouve les 54 éditions en 28,19\,ms sur un cœur EPYC, contre 87,18\,ms pour WFA2. Sur deux loci distincts du chromosome~21 séparés par 138\,141 éditions, NvPD prend 0,637\,s sur GH200, contre 3,762\,s pour Edlib sur un cœur Grace. Sur 384 cœurs EPYC, Edlib précédé d’un test de sous-séquence calcule la matrice de 768 fenêtres en 0,1645\,s. Sur les 64 génomes du SARS-CoV-2, Neighbor-Joining isole trois des sept lignages Pango. Une bande de demi-largeur 323 conserve les topologies de Neighbor-Joining et d’UPGMA malgré deux scores surestimés.
 \end{abstract}
 \fullcontents\clearpage
-\input{sections/contexte}
 \input{sections/introduction}
+\input{sections/contexte}
 \section{Matériels et méthodes}\label{sec:algorithms}
 Les paires synthétiques permettent de faire varier la divergence à longueur fixée. Les assemblages humains et les collections virales servent ensuite à évaluer le calcul sur des séquences déposées.
 \input{sections/protocole}

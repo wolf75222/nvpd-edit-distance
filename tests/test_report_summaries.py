@@ -34,7 +34,7 @@ class ReportStructure(unittest.TestCase):
             with self.subTest(report=report):
                 body = expand_sections(REPORT / report).partition(r"\appendix")[0]
                 self.assertEqual(re.findall(r"^\\section\{([^}]+)\}", body, re.M), [
-                    "Contexte", "Introduction", "Matériels et méthodes", "Résultats et interprétations", "Conclusion",
+                    "Introduction", "Contexte", "Matériels et méthodes", "Résultats et interprétations", "Conclusion",
                 ])
 
     @unittest.skipUnless(shutil.which("pdftotext"), "Poppler is required to inspect the PDF cover")
@@ -57,6 +57,17 @@ class ReportStructure(unittest.TestCase):
                 for field in required:
                     self.assertIn(field, page)
                 self.assertNotRegex(page, r"\b(?:Sommaire|Introduction|Résumé)\b")
+
+    @unittest.skipUnless(shutil.which("pdftotext"), "Poppler is required to inspect the printed text")
+    def test_report_prose_has_no_repository_paths(self):
+        repository_path = r"\b(?:bench|data|figures|notebooks|python|report|results|scripts|src)/[\w.-]+"
+        for report in REPORTS:
+            pdf = (REPORT / report).with_suffix(".pdf")
+            with self.subTest(report=report):
+                text = subprocess.check_output(["pdftotext", "-layout", pdf, "-"], encoding="utf-8")
+                body = re.split(r"(?m)^Références\s*$", text, maxsplit=1)[0]
+                self.assertNotRegex(body, r"(?i)\bREADME(?:\.md)?\b")
+                self.assertNotRegex(body, repository_path)
 
     def test_figures_and_algorithms_have_text_references(self):
         for report in REPORTS:

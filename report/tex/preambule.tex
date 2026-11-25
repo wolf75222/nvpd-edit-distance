@@ -17,8 +17,10 @@
 \pretocmd{\section}{\FloatBarrier\Needspace{4\baselineskip}}{}{}
 \pretocmd{\subsection}{\Needspace{5\baselineskip}}{}{}
 \newcommand{\DocHeader}{Distance d'édition sur ROMEO}
-\newcommand{\reposource}[1]{\href{https://github.com/wolf75222/nvpd-edit-distance/blob/main/#1}{\nolinkurl{#1}}}
-\newcommand{\sourcefig}[1]{\par\vspace{1pt}{\raggedright\footnotesize Code\,: \reposource{#1}\par}}
+\DeclareCaptionLabelFormat{sourcefigure}{\href{\figuresourceurl}{#1~#2}}
+\newcommand{\sourcefig}[1]{%
+  \def\figuresourceurl{https://github.com/wolf75222/nvpd-edit-distance/blob/main/#1}%
+  \captionsetup{labelformat=sourcefigure}}
 \BeforeBeginEnvironment{figure}{\par}
 \AfterEndEnvironment{figure}{\par\FloatBarrier}
 \BeforeBeginEnvironment{algorithm}{\par}
@@ -28,9 +30,9 @@
 \widowpenalty=10000
 \newcommand{\chart}[5][.94\linewidth]{\begin{figure}[!htbp]\centering
   \includegraphics[width=#1,height=.35\textheight,keepaspectratio]{../figures/#2}
-  \caption{#3}\label{#4}\sourcefig{#5}\end{figure}}
+  \sourcefig{#5}\caption{#3}\label{#4}\end{figure}}
 \newcommand{\schema}[4]{\begin{figure}[!htbp]\centering
-  \input{figures/#1}\caption{#2}\label{#3}\sourcefig{#4}\end{figure}}
+  \input{figures/#1}\sourcefig{#4}\caption{#2}\label{#3}\end{figure}}
 \captionsetup{font=small,labelfont=bf,labelsep=period,skip=4pt}
 \setlength{\intextsep}{8pt plus 2pt minus 2pt}
 \setlength{\textfloatsep}{10pt plus 2pt minus 2pt}

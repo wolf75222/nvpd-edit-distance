@@ -24,7 +24,8 @@ L'algorithme~\ref{alg:biwfa} décrit cette décomposition pour le coût unitaire
 
 \begin{figure}[htbp]\centering
 \includegraphics[width=.97\linewidth,height=.44\textheight,keepaspectratio]{../figures/comparison/biwfa_humain.png}
-\caption{Les rapports de temps et de mémoire entre WFA2 et BiWFA distinguent le score et la reconstruction sur un cœur EPYC. Un rapport supérieur à un favorise BiWFA. Le tableau donne les temps d’une seconde allocation. Le terme « échéance » indique un arrêt du processus à 120\,s, chauffe comprise.}\label{fig:biwfa}\sourcefig{bench/human/algorithms/study.py}
+\sourcefig{bench/human/algorithms/study.py}
+\caption{Les rapports de temps et de mémoire entre WFA2 et BiWFA distinguent le score et la reconstruction sur un cœur EPYC. Un rapport supérieur à un favorise BiWFA. Le tableau donne les temps d’une seconde allocation. Le terme « échéance » indique un arrêt du processus à 120\,s, chauffe comprise.}\label{fig:biwfa}
 \end{figure}
 La figure~\ref{fig:biwfa} compare des appels complets après échauffement, sur cinq processus indépendants par cas. Les fenêtres se recouvrent en partie. À quatre millions de bases et \(s=12\,482\), BiWFA rend le chemin en \(218{,}72\pm1{,}00\)\,ms avec un pic RSS moyen de 54,02\,Mio. WFA2 unidirectionnel prend \(375{,}90\pm2{,}35\)\,ms et 627,02\,Mio pour le même résultat. La moyenne des rapports appariés de temps vaut 1,719 (IC à 95\,\% de 1,707 à 1,730). Sur les deux loci de 250\,000 bases, WFA2 unidirectionnel termine en \(1{,}25\pm0{,}24\) et \(1{,}45\pm0{,}16\)\,ms. BiWFA prend \(2{,}03\pm0{,}13\) et \(2{,}28\pm0{,}06\)\,ms.
 
@@ -32,7 +33,7 @@ La figure~\ref{fig:biwfa} compare des appels complets après échauffement, sur 
 Les panneaux a) et b) montrent pourquoi l'option de sortie importe. À quatre millions de bases, le score seul occupe 23,87\,Mio avec WFA2, qui réutilise ses fronts en mémoire circulaire, et 41,46\,Mio avec BiWFA. Un relevé séparé sur la fenêtre de deux millions de bases compte 62 choix de sous-intervalle pendant la reconstruction BiWFA et aucun en mode score seul.\par
 \end{samepage}
 
-Un second banc utilise le même cœur pour les méthodes comparées à taille fixée. A*PA2 et BiWFA rendent le chemin. L'adaptateur QuickEd vérifie son chemin en interne et rend le score. À huit millions de bases, A*PA2 de Groot Koerkamp~\cite{astar} prend \(10{,}040\pm0{,}628\)\,s et BiWFA \(2{,}845\pm0{,}008\)\,s. À deux millions, QuickEd de Doblas et ses coauteurs~\cite{quicked}, avec contrôle du chemin, prend \(1{,}6391\pm0{,}0002\)\,s. Les processus QuickEd sur quatre et huit millions de bases atteignent la limite de 120\,s, lecture et échauffement compris. Cette durée borne le protocole complet. Voir \reposource{bench/quicked/human/measure.py}.
+Un second banc utilise le même cœur pour les méthodes comparées à taille fixée. A*PA2 et BiWFA rendent le chemin. L'adaptateur QuickEd vérifie son chemin en interne et rend le score. À huit millions de bases, A*PA2 de Groot Koerkamp~\cite{astar} prend \(10{,}040\pm0{,}628\)\,s et BiWFA \(2{,}845\pm0{,}008\)\,s. À deux millions, QuickEd de Doblas et ses coauteurs~\cite{quicked}, avec contrôle du chemin, prend \(1{,}6391\pm0{,}0002\)\,s. Les processus QuickEd sur quatre et huit millions de bases atteignent la limite de 120\,s, lecture et échauffement compris.
 
 \synthese{Sur la fenêtre de quatre millions de bases, le pic RSS de WFA2 pour restituer le chemin vaut 11,61 fois celui de BiWFA en moyenne sur les cinq rapports appariés. Les deux méthodes donnent le même coût.}
 

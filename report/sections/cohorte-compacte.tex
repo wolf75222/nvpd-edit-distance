@@ -12,8 +12,8 @@ La figure~\ref{fig:cohortecompacte} compare les temps sur un nœud EPYC réserv�
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=.85\linewidth]{../figures/cpu/cohorte_compacte.pdf}
-\caption{Le temps de matrice comprend la préparation et la restitution des scores. La distribution porte sur toutes les paires. Les marques donnent les moyennes de cinq blocs après échauffement, les traits épais leur écart-type et les traits fins l’intervalle à 95\,\%. Pour l’efficacité, l’incertitude du rapport propage celle des deux temps.}\label{fig:cohortecompacte}
 \sourcefig{python/studies/cohorte_compacte.py}
+\caption{Le temps de matrice comprend la préparation et la restitution des scores. La distribution porte sur toutes les paires. Les marques donnent les moyennes de cinq blocs après échauffement, les traits épais leur écart-type et les traits fins l’intervalle à 95\,\%. Pour l’efficacité, l’incertitude du rapport propage celle des deux temps.}\label{fig:cohortecompacte}
 \end{figure}
 \FloatBarrier
 À codage fixé, les sentinelles réduisent le temps moyen de 16,3\,\%. Le parcours bidirectionnel réduit ensuite de 25,5\,\% le temps du front unique. Sur les 8\,128 paires du profil monocœur, le codage en deux bits ramène les défauts L1D de 1\,092,0 à 266,7 par paire. Les mots compactés occupent 8\,396\,968 octets en plus des séquences originales. La matrice directe prend 54,51~ms en octets et 56,31~ms en deux bits sur 64 cœurs.

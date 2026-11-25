@@ -1,5 +1,6 @@
+\Needspace{8\baselineskip}
 \subsection{Régimes de calcul et portée des mesures}
-Le choix de la décomposition dépend du travail par paire et du nombre de paires disponibles. Pour NvPD synchronisé à chaque ligne, sur une paire de \(m\) lignes et \(n\) colonnes réparties entre \(p\) unités, un modèle de durée sépare le calcul des synchronisations,
+Pour une seule paire, NvPD répartit les \(n\) colonnes entre \(p\) unités et les synchronise à chacune des \(m\) lignes. Le modèle distingue la durée de ce calcul, \(T_{\mathrm{dense}}\), et le nombre de cellules visitées en bande, \(W_{\mathrm{band}}\).
 \[
  T_{\rm dense}\simeq \frac{mn}{p\,v_p}+m\,\tau_p,
  \qquad W_{\mathrm{band}}=O(\max(m,n)(d+1)).

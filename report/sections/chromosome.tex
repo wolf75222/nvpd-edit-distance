@@ -17,7 +17,7 @@ Un témoin synthétique ajoute 64 bases à une copie des 45\,090\,682 bases de C
 
 \input{sections/cohorte-compacte}
 \subsubsection{Reconstruction et ajustement des arbres de phages}
-La collection réunit la référence du phage \(\phi\)X174 (\texttt{NC\_001422.1}) et 63 autres génomes complets obtenus avec NCBI Datasets~18.41.1~\cite{phixref,ncbidatasets}.\footnote{Le manifeste \reposource{results/ncbi/phix174.tsv} donne l’accession versionnée, la longueur et l’empreinte de chaque séquence.} L’ajustement se mesure par l’écart entre la distance d’édition de deux génomes et la longueur du chemin entre leurs feuilles. Une origine différente sur le génome circulaire peut modifier la distance entre les chaînes déposées. Une même édition observée peut aussi résulter de plusieurs événements évolutifs.
+La collection réunit la référence du phage \(\phi\)X174 (\texttt{NC\_001422.1}) et 63 autres génomes complets obtenus avec NCBI Datasets~18.41.1~\cite{phixref,ncbidatasets}. Chaque génome est identifié par son accession versionnée, sa longueur et son empreinte SHA-256. L’ajustement se mesure par l’écart entre la distance d’édition de deux génomes et la longueur du chemin entre leurs feuilles. Une origine différente sur le génome circulaire peut modifier la distance entre les chaînes déposées. Une même édition observée peut aussi résulter de plusieurs événements évolutifs.
 
 UPGMA, la méthode de classification moyenne de Sokal et Michener~\cite{upgma}, joint les groupes \(U,V\) de distance moyenne minimale et place leur parent à la hauteur \(d(U,V)/2\). Pour un troisième groupe \(W\), la nouvelle distance moyenne est pondérée par les effectifs. Saitou et Nei ont proposé Neighbor-Joining (NJ) pour construire un arbre non enraciné~\cite{nj}. NJ joint la paire qui minimise \(Q_{ij}\), où \(r\) est le nombre de groupes actifs et \(s_i=\sum_k d_{ik}\).
 \[
@@ -43,7 +43,8 @@ Les longueurs de branche de la figure~\ref{fig:arbres} sont exprimées en éditi
 
 \begin{figure}[!htbp]\centering
 \resizebox{!}{.68\textheight}{\input{figures/arbres}}
-\caption{Les deux phylogrammes partagent une échelle horizontale, marquée par une barre de dix éditions. Les pointillés relient les feuilles à leurs identifiants.}\label{fig:arbres}\sourcefig{report/figures/phylograms.py}
+\sourcefig{report/figures/phylograms.py}
+\caption{Les deux phylogrammes partagent une échelle horizontale, marquée par une barre de dix éditions. Les pointillés relient les feuilles à leurs identifiants.}\label{fig:arbres}
 \end{figure}
 \FloatBarrier
 

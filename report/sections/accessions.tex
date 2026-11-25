@@ -1,5 +1,5 @@
 \section{Accessions de la cohorte de surveillance}\label{sec:accessions}
-Le tableau~\ref{tab:accessions} identifie les séquences publiques utilisées pour construire la matrice de distances. Les 64 enregistrements sont déclarés complets par leurs déposants, selon le filtre \texttt{--complete-only} de NCBI Datasets~18.41.1~\cite{ncbidatasets}.\footnote{Voir la \href{https://ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/command-line/datasets/download/virus/genome/datasets_download_virus_genome_accession/}{documentation des filtres de NCBI Datasets} et le manifeste \reposource{results/ncbi/sars_metadata.tsv}.} La référence Wuhan-Hu-1 appartient au lignage B. Pour les sept groupes de neuf, le filtre \texttt{--lineage} est suivi d'une vérification de l'étiquette Pango de chaque accession.
+Le tableau~\ref{tab:accessions} identifie les séquences publiques utilisées pour construire la matrice de distances. Les 64 enregistrements sont déclarés complets par leurs déposants, selon le filtre \href{https://ncbi.nlm.nih.gov/datasets/docs/v2/reference-docs/command-line/datasets/download/virus/genome/datasets_download_virus_genome_accession/}{\texttt{--complete-only}} de NCBI Datasets~18.41.1~\cite{ncbidatasets}. La référence Wuhan-Hu-1 appartient au lignage B. Pour les sept groupes de neuf, le filtre \texttt{--lineage} est suivi d'une vérification de l'étiquette Pango de chaque accession. Pour chaque accession, le contrôle du téléchargement porte sur la longueur, les effectifs des symboles ambigus et l’empreinte SHA-256 de la séquence.
 
 \begin{table}[htbp]
 \centering
@@ -38,6 +38,5 @@ Les séquences comptent de 29\,580 à 29\,903 caractères. Sur 1\,905\,372 carac
 \[
 d(x,y)\;\geq\;|\nu(x)-\nu(y)|.
 \]
-Les effectifs par accession et les empreintes des séquences figurent dans \reposource{results/ncbi/sars_content.tsv}.
 
 \synthese{Sur 915 des 2\,016 paires, le seul écart entre nombres de \texttt{N} impose au moins la moitié de la distance observée. Pour la paire la plus distante, cette borne vaut 537 éditions sur 12\,229.}
