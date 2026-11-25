@@ -3,6 +3,7 @@
 import argparse
 import csv
 import hashlib
+import math
 import os
 from pathlib import Path
 import platform
@@ -12,6 +13,15 @@ import tempfile
 HERE = Path(__file__).resolve().parent
 FIELDS = ('job platform host lane cpu_ids threads case algorithm block order warmup m n distance seconds '
           'process_peak_rss_kib device_bytes input_sha256 binary_sha256').split()
+
+
+def read_csv(path):
+    with path.open(encoding="utf-8", newline="") as stream:
+        return list(csv.DictReader(stream))
+
+
+def executable(algorithm):
+    return "repeat_initial" if algorithm == "nvpd-initial" else "repeat_kernel"
 
 
 def digest(path):
@@ -66,7 +76,10 @@ def main():
     p.add_argument('out', type=Path)
     p.add_argument('--lane', type=int, default=0)
     args = p.parse_args()
-    cases = {x['case']:x for x in csv.DictReader((HERE/'inputs.csv').open())}
+    lanes = {'epyc': 6, 'epyc-scalar': 15, 'epyc-trace': 1, 'gh200': 1}
+    if not 0 <= args.lane < lanes[args.platform]:
+        p.error(f"lane must be between 0 and {lanes[args.platform] - 1} for {args.platform}")
+    cases = {row['case']: row for row in read_csv(HERE / 'inputs.csv')}
     common = dict(job=os.environ.get('SLURM_JOB_ID','local'), platform=args.platform,
                   host=platform.node().split('.')[0],
                   lane=args.lane, cpu_ids=';'.join(map(str,sorted(os.sched_getaffinity(0)))) if hasattr(os,'sched_getaffinity') else '',
@@ -85,9 +98,9 @@ def main():
         w.writeheader()
         for name, methods, nblocks in plan(args.platform,args.lane):
             case=cases[name]
-            path=Path(case['path'])
+            path = HERE.parents[1] / case['path']
             if name.startswith('prefix-'):
-                source = Path(cases['syn-100000-0.02']['path']).read_bytes()
+                source = (HERE.parents[1] / cases['syn-100000-0.02']['path']).read_bytes()
                 records=[b''.join(r.splitlines()[1:])[:int(case['m'])] for r in source.split(b'>')[1:]]
                 path=Path(tmp)/path.name
                 path.write_bytes(b'>A\n'+records[0]+b'\n>B\n'+records[1]+b'\n')
@@ -97,7 +110,7 @@ def main():
             blocks = [args.lane//3+1] if args.platform=='epyc-scalar' else range(1,nblocks+1)
             for block in blocks:
                 for pos,alg in enumerate(order(methods,block),1):
-                    binpath = args.build/('repeat_initial' if alg=='nvpd-initial' else 'repeat_kernel')
+                    binpath = args.build / executable(alg)
                     if binpath not in hashes:
                         hashes[binpath]=digest(binpath)
                     rows=subprocess.check_output([binpath.resolve(),path,alg,case['distance']],
@@ -106,7 +119,9 @@ def main():
                         raise ValueError(f'unexpected result for {name} {alg}: {rows}')
                     for warm, line in zip((1,0),rows[1:]):
                         m,n,dist,sec,rss,dev=line.split(',')
-                        if [m,n,dist]!=[case[k] for k in ('m','n','distance')] or not float(sec)>0:
+                        seconds = float(sec)
+                        if ([m,n,dist]!=[case[k] for k in ('m','n','distance')] or
+                                not math.isfinite(seconds) or seconds <= 0 or int(rss) < 0 or int(dev) < 0):
                             raise ValueError(f'result mismatch for {name} {alg}')
                         w.writerow(dict(**common,case=name,algorithm=alg,block=block,order=pos,
                                         warmup=warm,m=m,n=n,distance=dist,seconds=sec,process_peak_rss_kib=rss,

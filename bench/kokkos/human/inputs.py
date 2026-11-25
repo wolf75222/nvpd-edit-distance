@@ -3,13 +3,12 @@
 import argparse
 from bisect import bisect_right
 import csv
-import gzip
 import hashlib
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts/datasets"))
-from human_reference import CHAIN, CHAIN_HASH, REFS, chromosome, download
+from human_reference import REFS, alignment_blocks, chromosome
 
 
 def main():
@@ -20,30 +19,7 @@ def main():
     args.cache.mkdir(parents=True, exist_ok=True)
     args.out.mkdir(parents=True, exist_ok=True)
     a, b = (chromosome(args.cache, k) for k in ("hg38", "hs1"))
-    chain = args.cache / "hg38ToHs1.over.chain.gz"
-    download(CHAIN, chain)
-    if hashlib.sha256(chain.read_bytes()).hexdigest() != CHAIN_HASH:
-        raise ValueError("UCSC chain digest mismatch")
-    blocks = []
-    active = False
-    for line in gzip.open(chain, "rt"):
-        cols = line.split()
-        if len(cols) == 13:
-            active = (
-                cols[2:3] == ["chr21"]
-                and cols[4] == "+"
-                and cols[7] == "chr21"
-                and cols[9] == "+"
-                and cols[12] == "23"
-            )
-            if active:
-                t, q = int(cols[5]), int(cols[10])
-        elif active and cols:
-            n = int(cols[0])
-            blocks.append((t, t + n, q))
-            if len(cols) == 3:
-                t += n + int(cols[1])
-                q += n + int(cols[2])
+    blocks = alignment_blocks(args.cache)
     starts = [x[0] for x in blocks]
 
     def lift(k):

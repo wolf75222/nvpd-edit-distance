@@ -3,37 +3,12 @@
 import argparse
 import bisect
 import csv
-import gzip
 import hashlib
 from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts/datasets"))
-from human_reference import CHAIN, CHAIN_HASH, REFS, chromosome, download
-
-
-def alignment_blocks(cache):
-    path = cache / "hg38ToHs1.over.chain.gz"
-    download(CHAIN, path)
-    if hashlib.sha256(path.read_bytes()).hexdigest() != CHAIN_HASH:
-        raise ValueError("unexpected UCSC chain digest")
-    blocks = []
-    active = False
-    with gzip.open(path, "rt") as source:
-        for line in source:
-            if line.startswith("chain "):
-                _, _, chrom, _, strand, pos, _, query, _, sense, qpos, _, chain = line.split()
-                active = (chrom, strand, query, sense, chain) == ("chr21", "+", "chr21", "+", "23")
-                x, y = int(pos), int(qpos)
-            elif active and line.strip():
-                fields = [int(v) for v in line.split()]
-                blocks.append((x, x + fields[0], y))
-                if len(fields) == 3:
-                    x += fields[0] + fields[1]
-                    y += fields[0] + fields[2]
-    if not blocks:
-        raise ValueError("chain 23 is absent")
-    return blocks
+from human_reference import REFS, alignment_blocks, chromosome
 
 
 def generate(cache, out, manifest):
@@ -54,7 +29,7 @@ def generate(cache, out, manifest):
     def select(origin, length):
         for x in range(origin, origin + 8_192, 13):
             y, z = anchor(x), anchor(x + length)
-            if y is None or z is None or "N".encode() in hg[x:x+length] or b"N" in hs[y:z]:
+            if y is None or z is None or b"N" in hg[x:x+length] or b"N" in hs[y:z]:
                 continue
             return x, x+length, y, z
         return None

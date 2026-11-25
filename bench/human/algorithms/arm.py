@@ -2,7 +2,6 @@
 """Nested chain-23 chr21q alignments, one fixed EPYC core per window length."""
 import argparse
 import concurrent.futures
-import csv
 import gzip
 import hashlib
 import json

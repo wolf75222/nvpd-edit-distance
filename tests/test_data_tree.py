@@ -1,15 +1,36 @@
 import csv
+import hashlib
+import io
 import tempfile
 import unittest
 from decimal import Decimal
 from itertools import combinations
 from pathlib import Path
+from unittest.mock import patch
 
+from scripts.datasets import human_reference
 from scripts.datasets.synthetic import generate
 from scripts.phylogeny.tree import build_tree, read_matrix
 
 
 class DatasetTests(unittest.TestCase):
+    def test_chromosome_cache_recovers_only_with_verified_content(self):
+        reference = b">example.1\nac\ngt\n"
+        record = ("example.1", hashlib.sha256(b"ACGT").hexdigest())
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(human_reference.REFS, {"sample": record}):
+            cache = Path(tmp)
+            entry = cache / "sample.fa"
+            with patch("urllib.request.urlopen", return_value=io.BytesIO(b"")):
+                with self.assertRaisesRegex(ValueError, "FASTA accession"):
+                    human_reference.chromosome(cache, "sample")
+            self.assertEqual(list(cache.iterdir()), [])
+            entry.write_bytes(b">example.1\nA\n")
+            with patch("urllib.request.urlopen", return_value=io.BytesIO(reference)) as fetch:
+                self.assertEqual(human_reference.chromosome(cache, "sample"), b"ACGT")
+                self.assertEqual(human_reference.chromosome(cache, "sample"), b"ACGT")
+                fetch.assert_called_once()
+            self.assertEqual(entry.read_bytes(), reference)
+
     def test_edits_and_reproducible_subsets(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)

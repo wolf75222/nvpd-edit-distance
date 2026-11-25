@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "common"))
-from fasta_records import fasta_pair
+from fasta_records import fasta_pair, read_pair
 
 
 def historical_cases(tmp):

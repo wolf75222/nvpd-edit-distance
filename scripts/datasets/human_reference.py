@@ -4,6 +4,7 @@ import argparse
 import csv
 import gzip
 import hashlib
+import io
 import shutil
 import tempfile
 import urllib.request
@@ -21,40 +22,87 @@ START = 34_000_000
 ENDS = (36_000_000, 38_000_000)
 
 
-def download(url, path):
+def verified_cache(url, path, read):
+    """Publish a download after its reader has verified the pinned content."""
     if path.is_file():
-        return
-    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as tmp:
-        tmp_path = Path(tmp.name)
         try:
-            with urllib.request.urlopen(url, timeout=120) as source:
-                shutil.copyfileobj(source, tmp)
-            tmp.flush()
-            tmp_path.replace(path)
-        finally:
-            tmp_path.unlink(missing_ok=True)
+            return read(path)
+        except ValueError:
+            pass  # Re-fetch a damaged cached copy.
+    output = tempfile.NamedTemporaryFile(dir=path.parent, delete=False)
+    tmp_path = Path(output.name)
+    try:
+        with output, urllib.request.urlopen(url, timeout=120) as source:
+            shutil.copyfileobj(source, output)
+        value = read(tmp_path)
+        tmp_path.replace(path)
+        return value
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def chromosome(cache, alias):
     accession, digest = REFS[alias]
-    path = cache / (alias + ".fa")
     url = ("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore"
            f"&id={accession}&rettype=fasta&retmode=text")
-    download(url, path)
-    with path.open("rb") as fasta:
-        if fasta.readline().split()[0] != (">" + accession).encode():
-            raise ValueError(f"unexpected FASTA accession for {alias}")
-        seq = b"".join(line.strip() for line in fasta).upper()
-    if hashlib.sha256(seq).hexdigest() != digest:
-        raise ValueError(f"reference digest mismatch for {accession}")
-    return seq
+
+    def read(path):
+        with path.open("rb") as fasta, io.BytesIO() as bases:
+            if fasta.readline().split()[:1] != [(">" + accession).encode("ascii")]:
+                raise ValueError(f"unexpected FASTA accession for {alias}")
+            for line in fasta:
+                bases.write(line.strip().upper())
+            seq = bases.getvalue()
+        if hashlib.sha256(seq).hexdigest() != digest:
+            raise ValueError(f"reference digest mismatch for {accession}")
+        return seq
+
+    return verified_cache(url, cache / (alias + ".fa"), read)
+
+
+def chain_path(cache):
+    path = cache / "hg38ToHs1.over.chain.gz"
+
+    def verify(candidate):
+        if file_sha256(candidate) != CHAIN_HASH:
+            raise ValueError("UCSC chain digest mismatch")
+
+    verified_cache(CHAIN, path, verify)
+    return path
+
+
+def alignment_blocks(cache):
+    """Aligned intervals (hg38 start, hg38 end, hs1 start) on chr21 chain 23."""
+    path = chain_path(cache)
+    blocks = []
+    active = False
+    with gzip.open(path, "rt") as source:
+        for line in source:
+            if line.startswith("chain "):
+                _, _, chrom, _, strand, pos, _, query, _, sense, qpos, _, chain = line.split()
+                active = (chrom, strand, query, sense, chain) == ("chr21", "+", "chr21", "+", "23")
+                x, y = int(pos), int(qpos)
+            elif active and line.strip():
+                fields = [int(v) for v in line.split()]
+                blocks.append((x, x + fields[0], y))
+                if len(fields) == 3:
+                    x += fields[0] + fields[1]
+                    y += fields[0] + fields[2]
+    if not blocks:
+        raise ValueError("chain 23 is absent")
+    return blocks
 
 
 def anchor_points(cache):
-    path = cache / "hg38ToHs1.over.chain.gz"
-    download(CHAIN, path)
-    if hashlib.sha256(path.read_bytes()).hexdigest() != CHAIN_HASH:
-        raise ValueError("chain digest mismatch")
+    path = chain_path(cache)
     matches = {x: [] for x in (START, *ENDS)}
     active = False
     with gzip.open(path, "rt") as chains:
@@ -104,7 +152,7 @@ def main():
                 stream.write(f">{name}_{tag}\n".encode())
                 for i in range(0, len(sequence), 80):
                     stream.write(sequence[i:i+80] + b"\n")
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        digest = file_sha256(path)
         rows.append(dict(case=name, accession_a=accession_a, start_a=start_a, end_a=end_a,
                          accession_b=accession_b, start_b=start_b, end_b=end_b, edit=edit,
                          m=len(a), n=len(b), sha256=digest))

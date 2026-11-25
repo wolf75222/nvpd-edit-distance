@@ -2,13 +2,14 @@
 """Validate every warmup and timed block, then publish per-input Student intervals."""
 import argparse
 import csv
+import re
 from collections import defaultdict
 from itertools import combinations
 from math import isfinite, sqrt
 from pathlib import Path
 from statistics import mean, median, stdev
 
-from measure import HERE, FIELDS, order, plan
+from measure import HERE, FIELDS, executable, order, plan, read_csv
 
 # Two-sided 95% t critical values for the experiment's fixed sample sizes.
 T95 = {5: 2.7764451051977987, 8: 2.364624251592785, 9: 2.306004135204166, 31: 2.0422724563012373}
@@ -46,12 +47,22 @@ def memory_stats(peaks):
     return result
 
 
+def check_executables(rows):
+    hashes = {}
+    for row in rows:
+        binary = executable(row['algorithm'])
+        fingerprint = row['binary_sha256']
+        if (not re.fullmatch(r'[0-9a-f]{64}', fingerprint) or
+                hashes.setdefault(binary, fingerprint) != fingerprint):
+            raise ValueError(f"inconsistent executable hash for {binary} in lane {row['lane']}")
+
+
 def collect_scalar(raw, output, cases):
     trials, placement, summary = [], [], []
     for lane in range(15):
         case = next(plan('epyc-scalar',lane))[0]
         ref = cases[case]
-        rows = list(csv.DictReader((raw/f'lane-{lane}.csv').open()))
+        rows = read_csv(raw / f'lane-{lane}.csv')
         cpu,socket,core=(raw/f'lane-{lane}.affinity').read_text().strip().split(',')
         if len(rows)!=2 or [r['warmup'] for r in rows]!=['1','0']:
             raise ValueError(f'incomplete scalar lane {lane}')
@@ -60,14 +71,16 @@ def collect_scalar(raw, output, cases):
                     r['platform']=='epyc-scalar' and int(r['block'])==lane//3+1 and
                     r['threads']=='1' and r['cpu_ids']==cpu and r['order']=='1' and
                     all(r[k]==ref[k] for k in ('m','n','distance','input_sha256')) and
+                    int(r['process_peak_rss_kib']) >= 0 and int(r['device_bytes']) >= 0 and
                     isfinite(float(r['seconds'])) and float(r['seconds'])>0):
                 raise ValueError(f'inconsistent scalar lane {lane}')
         trials.extend(rows)
         placement.append(dict(lane=lane,case=case,block=lane//3+1,cpu=cpu,socket=socket,physical_core=core))
     if len({(r['socket'],r['physical_core']) for r in placement})!=15:
         raise ValueError('scalar tasks share a physical core')
-    if any(len({r[k] for r in trials})!=1 for k in ('host','job','binary_sha256')):
-        raise ValueError('scalar workers differ in placement, allocation or binary')
+    check_executables(trials)
+    if any(len({r[k] for r in trials})!=1 for k in ('host','job')):
+        raise ValueError('scalar workers differ in placement or allocation')
     for case in sorted({r['case'] for r in trials}):
         group=[r for r in trials if r['case']==case and r['warmup']=='0']
         if {int(r['block']) for r in group}!=set(range(1,6)):
@@ -89,7 +102,7 @@ def main():
     p.add_argument('raw',type=Path)
     p.add_argument('output',type=Path)
     args=p.parse_args()
-    cases={r['case']:r for r in csv.DictReader((HERE/'inputs.csv').open())}
+    cases = {row['case']: row for row in read_csv(HERE / 'inputs.csv')}
     if args.platform=='epyc-scalar':
         collect_scalar(args.raw,args.output,cases)
         return
@@ -98,8 +111,8 @@ def main():
     ratios=[]
     placement=set()
     for lane in range(6 if args.platform=='epyc' else 1):
-        rows=list(csv.DictReader((args.raw/f'lane-{lane}.csv').open()))
-        if list(rows[0])!=FIELDS:
+        rows = read_csv(args.raw / f'lane-{lane}.csv')
+        if not rows or list(rows[0]) != FIELDS:
             raise ValueError('unexpected raw columns')
         masks={r['cpu_ids'] for r in rows}
         if len(masks)!=1:
@@ -121,7 +134,9 @@ def main():
             for block in range(1,count+1):
                 for pos,alg in enumerate(order(methods,block),1):
                     for warm in (1,0):
-                        r=lookup.pop((name,alg,block,warm))
+                        r = lookup.pop((name, alg, block, warm), None)
+                        if r is None:
+                            raise ValueError(f"missing observation {name} {alg} block {block} warmup {warm}")
                         matches=all(r[k]==ref[k] for k in ('m','n','distance','input_sha256'))
                         t=float(r['seconds'])
                         if not (matches and r['platform']==args.platform and int(r['lane'])==lane
@@ -145,6 +160,7 @@ def main():
                 ratios.append(dict(**common,numerator=a,denominator=b,**stats(values)))
         if lookup:
             raise ValueError('unexpected observations')
+    check_executables(trials)
     if len({r['job'] for r in trials})!=1 or len({r['host'] for r in trials})!=1:
         raise ValueError('multiple allocations or hosts')
     args.output.mkdir(parents=True,exist_ok=True)
