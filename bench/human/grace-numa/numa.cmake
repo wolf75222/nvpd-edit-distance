@@ -1,0 +1,5 @@
+if(PROJECT_NAME STREQUAL "chps_edit_distance" AND NOT TARGET grace_numa)
+  add_executable(grace_numa "${CMAKE_CURRENT_LIST_DIR}/numa.cpp" "${CMAKE_SOURCE_DIR}/src/io/fasta.cpp")
+  set_target_properties(grace_numa PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+  target_link_libraries(grace_numa PRIVATE chps_warnings distances)
+endif()
