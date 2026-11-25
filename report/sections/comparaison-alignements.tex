@@ -22,7 +22,7 @@ Le second contrôle porte sur la lecture des prédécesseurs pendant la reconstr
 
 Dans QuickEd avec contrôle du chemin, l'adaptateur rejoue le CIGAR et compare son coût au score global d'Edlib. En cas d'écart, il relance Hirschberg avec une bande plus large. Si la dernière tentative échoue, il renvoie le score d'Edlib en indiquant son origine.
 
-Sur deux autres témoins EPYC, QuickEd amont renvoie 506 au lieu de 128 et 760 au lieu de 256, dans chacun des 80 appels par témoin. Pour les dix entrées chronométrées, le contrôle du chemin réussit dès la première tentative. Un test qui impose artificiellement une première bande de 1\,\% provoque une reprise réelle et ramène le candidat de 896 à la distance vérifiée 384.
+Sur deux autres témoins EPYC, QuickEd amont renvoie 506 au lieu de 128 et 760 au lieu de 256, dans chacun des 80 appels par témoin. Pour les dix entrées chronométrées, le contrôle du chemin réussit dès la première tentative. Un test qui impose artificiellement une première bande de 1\,\% déclenche un nouveau calcul et ramène le candidat de 896 à la distance vérifiée 384.
 
 \chart{comparison/quicked.png}{Scores et durées sur témoins contrôlés et entrées génomiques. Les 80 appels par méthode et par entrée sont répartis entre huit processus.}{fig:quicked}{bench/quicked/measure.py}
 \FloatBarrier
