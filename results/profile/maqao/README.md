@@ -6,4 +6,4 @@ Le premier calcule avec NvPD la distance entre deux fenêtres du chromosome 21. 
 
 Le second distribue les 2 016 paires d’une matrice entre Edlib et WFA2. Le profil couvre le processus entier sur quatre cœurs, depuis l’échauffement jusqu’à la dernière répétition. [Profil du répartiteur](route/README.md) · [Classement des fonctions](../../../report/figures/maqao/fonctions-routage.png)
 
-Les profils initiaux ont été établis avec MAQAO 2025.1.4. La relance avec 2026.1.1 compare les diagnostics sur des exécutables identiques et vérifie les avertissements de collecte. [NvPD](versions/README.md) · [Répartiteur Edlib et WFA2](route/versions/README.md)
+Pour NvPD, MAQAO 2026.1.1 permet aussi d’examiner l’effet de la fréquence d’échantillonnage et de la durée du profil. [NvPD](versions/README.md) · [Répartiteur Edlib et WFA2](route/versions/README.md)
