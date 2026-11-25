@@ -90,7 +90,7 @@ class ReportStructure(unittest.TestCase):
                 introduces_children = following is not None and following[1] == "sub" + heading[1]
                 with self.subTest(report=report, section=heading[2]):
                     summaries = re.findall(r"^\s*\\synthese(?:section)?\{", passage, re.M)
-                    self.assertEqual(len(summaries), 0 if introduces_children or heading[2] == "Conclusion" else 1)
+                    self.assertEqual(len(summaries), 0 if introduces_children or heading[2] in {"Introduction", "Conclusion"} else 1)
 
     def test_bibliography_identifiers_and_citations(self):
         source = (REPORT / "tex" / "references.bib").read_text(encoding="utf-8")
