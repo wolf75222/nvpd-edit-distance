@@ -13,7 +13,7 @@ public:
     KokkosSession& operator=(const KokkosSession&) = delete;
 
 private:
-    bool owner_;
+    const bool owner_;
 };
 
 const char* kokkos_execution_space();

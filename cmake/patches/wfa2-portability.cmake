@@ -72,3 +72,13 @@ file(GENERATE OUTPUT "${patched_dir}/mm_allocator.c" CONTENT "${source}")
 list(REMOVE_ITEM wfa_sources "${wfa_alloc}" "${wfa_trace}" "${wfa_pcigar}")
 list(APPEND wfa_sources "${patched_dir}/mm_allocator.c" "${patched_dir}/wavefront_backtrace.c"
                        "${patched_dir}/wavefront_pcigar.c")
+
+# Darwin uses unsigned long long for uint64_t in the memory diagnostics.
+foreach(unit IN ITEMS wavefront_debug wavefront_unialign)
+  set(original "${wfa2_SOURCE_DIR}/wavefront/${unit}.c")
+  file(READ "${original}" source)
+  string(REPLACE "%lu" [[%" PRIu64 "]] source "${source}")
+  file(GENERATE OUTPUT "${patched_dir}/${unit}.c" CONTENT "${source}")
+  list(REMOVE_ITEM wfa_sources "${original}")
+  list(APPEND wfa_sources "${patched_dir}/${unit}.c")
+endforeach()

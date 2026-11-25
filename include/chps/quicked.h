@@ -12,7 +12,8 @@ typedef struct {
     const char *source;
 } chps_quicked_result;
 
-// The caller supplies ACGT strings, lengths between zero and INT_MAX / 100.
+// Supply ACGT strings. A null pointer denotes an empty sequence only.
+// Negative lengths and lengths above INT_MAX / 100 return a distance of -1.
 int chps_quicked_default(const char *a, int m, const char *b, int n);
 chps_quicked_result chps_quicked_certified(const char *a, int m, const char *b, int n);
 

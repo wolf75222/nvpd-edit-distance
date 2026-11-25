@@ -3,9 +3,18 @@
 #include "chps/dp.hpp"
 
 #include <array>
+#include <cstddef>
 #include <vector>
 
 namespace chps::detail {
+
+// Clang vectorizes combined OpenMP worksharing/SIMD loops with a pointer-width
+// induction variable. GCC generates faster indexed loads with signed int on EPYC.
+#if defined(__clang__)
+using OmpColumn = std::size_t;
+#else
+using OmpColumn = int;
+#endif
 
 void validate(std::string_view a, std::string_view b, bool trace);
 Result empty_result(std::string_view a, std::string_view b, bool trace);

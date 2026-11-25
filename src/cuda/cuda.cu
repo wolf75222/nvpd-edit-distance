@@ -11,6 +11,9 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace chps {
 namespace {
@@ -93,19 +96,25 @@ void CudaWorkspace::Buffer::resize(std::size_t count) {
     bytes = requested_bytes;
 }
 
-CudaWorkspace::Buffer::~Buffer() {
+CudaWorkspace::Buffer::~Buffer() noexcept {
     if (data) cudaFree(data);
 }
 
 Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trace) {
     detail::validate(a, b, trace);
-    if (a.empty() || b.empty()) return detail::empty_result(a, b, trace);
+    auto peak_bytes = resident_bytes();
+    if (a.empty() || b.empty()) {
+        auto result = detail::empty_result(a, b, trace);
+        result.device_bytes = peak_bytes;
+        return result;
+    }
     if (!trace && a.size() > b.size()) std::swap(a, b);
     const int m = static_cast<int>(a.size()), n = static_cast<int>(b.size());
     const std::size_t stride = b.size() + 1;
     const detail::MatchIndex matches(a, b);
     auto& indices = indices_;
     indices.resize(matches.entries.size());
+    peak_bytes = std::max(peak_bytes, resident_bytes());
     check(cudaMemcpy(indices.data, matches.entries.data(), indices.bytes,
                      cudaMemcpyHostToDevice), "copy match index");
     const std::size_t table_size = (trace ? a.size() + 1 : 2) * stride;
@@ -128,7 +137,7 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
               "get SM count");
         // Wider blocks amortize the halo when at least two CTAs per SM remain.
         const int wide = 4 * threads;
-        columns = stride / wide >= 2 * multiprocessors ? wide : threads;
+        columns = stride / wide >= 2 * static_cast<std::size_t>(multiprocessors) ? wide : threads;
         if (consider_local) {
             int shared_limit;
             check(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlock, device),
@@ -139,6 +148,7 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
         }
     }
     if (!plan.left.empty()) {
+        peak_bytes = std::max(peak_bytes, resident_bytes());
         boundaries_.resize(plan.left.size() + (pack ? stride : 0));
         if (pack) {
             auto words = detail::pack_match_offsets(matches, n);
@@ -183,16 +193,16 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
             prev = curr;
         }
     }
-    const auto device_bytes = indices.bytes + table.bytes + boundaries_.bytes;
+    peak_bytes = std::max(peak_bytes, resident_bytes());
     if (trace) {
         std::vector<int> host(table_size);
         check(cudaMemcpy(host.data(), table.data, table.bytes, cudaMemcpyDeviceToHost),
               "copy traceback matrix");
-        return {host.back(), detail::traceback(host.data(), a, b), device_bytes};
+        return {host.back(), detail::traceback(host.data(), a, b), peak_bytes};
     }
     int cost;
     check(cudaMemcpy(&cost, prev + n, sizeof(cost), cudaMemcpyDeviceToHost), "copy distance");
-    return {cost, "", device_bytes};
+    return {cost, "", peak_bytes};
 }
 
 Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {

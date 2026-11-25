@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <cstdint>
 #include <climits>
 #include <exception>
 #include <fstream>
@@ -17,6 +18,9 @@
 #include <iostream>
 #include <numeric>
 #include <set>
+#include <string_view>
+#include <utility>
+#include <vector>
 #include <stdexcept>
 #include <sys/resource.h>
 #ifdef __linux__
@@ -38,11 +42,12 @@ struct Options {
 
 Options parse(int argc, char** argv) {
     if (argc < 2) throw std::invalid_argument("expected pair, pairs or matrix");
-    Options o{argv[1], {}};
+    Options o;
+    o.mode = argv[1];
     if (o.mode != "pair" && o.mode != "pairs" && o.mode != "matrix") throw std::invalid_argument("unknown mode");
     for (int i = 2; i < argc; i += 2) {
         if (i + 1 >= argc) throw std::invalid_argument("missing argument value");
-        std::string_view key = argv[i], value = argv[i+1];
+        const std::string_view key = argv[i], value = argv[i+1];
         if (key == "--input") { o.input = value; continue; }
         if (key == "--algorithm" && o.mode == "matrix") {
             if (value == "nvpd-omp" || value == "nvpd-indexed") o.score = chps::mpi::dense_score;
@@ -64,7 +69,7 @@ Options parse(int argc, char** argv) {
             continue;
         }
         int n = 0;
-        auto [end, ec] = std::from_chars(value.data(), value.data() + value.size(), n);
+        const auto [end, ec] = std::from_chars(value.data(), value.data() + value.size(), n);
         if (ec != std::errc{} || end != value.data() + value.size())
             throw std::invalid_argument("expected integer for " + std::string(key));
         if (key == "--threads" && n > 0) o.threads = n;
@@ -106,6 +111,8 @@ std::vector<chps::Record> input(const Options& o, int rank) {
     return records;
 }
 
+using chps::detail::OmpColumn;
+
 // Allgather recurrence, with the global last match before this stripe.
 int allgather_stripe(std::string_view a, std::string_view b, const std::vector<int>& starts,
                      const chps::detail::MatchIndex& matches, int rank, int team) {
@@ -135,7 +142,8 @@ int allgather_stripe(std::string_view a, std::string_view b, const std::vector<i
         const int outer = slot[c] >= 0 ? edges[slot[c]] : i-1;
         const int k_left = preceding[c];
         #pragma omp parallel for simd schedule(static) if(team > 1)
-        for (int x = 1; x <= width; ++x) {
+        for (OmpColumn column = 1; column <= static_cast<OmpColumn>(width); ++column) {
+            const int x = static_cast<int>(column);
             const int k = last[x];
             const int upper = 1 + std::min(prev[x-1], prev[x]);
             const int via = k ? prev[k-1] + (x-k) :
@@ -163,6 +171,7 @@ int pipeline_stripe(std::string_view a, int start, int width, int rank, int acti
         else std::iota(left.begin(), left.begin() + count, done + 1);
         #pragma omp parallel num_threads(workers) if(workers > 1)
         {
+            const bool primary = omp_get_thread_num() == 0;
             for (int t = 0; t < count; ++t) {
                 const int i = done + t + 1;
                 const int* prev = (i % 2 ? even : odd).data();
@@ -170,18 +179,17 @@ int pipeline_stripe(std::string_view a, int start, int width, int rank, int acti
                 const auto symbol = matches.symbol[static_cast<unsigned char>(a[i-1])];
                 const int* last = matches.entries.data() + symbol * stride;
                 const int edge = left[t];
-                #pragma omp master
-                curr[0] = edge;
+                if (primary) curr[0] = edge;
                 #pragma omp for simd schedule(static)
-                for (int x = 1; x <= width; ++x) {
+                for (OmpColumn column = 1; column <= static_cast<OmpColumn>(width); ++column) {
+                    const int x = static_cast<int>(column);
                     const int edit = 1 + std::min(prev[x], prev[x-1]);
                     const int from_edge = edge + x;
                     const int k = last[x];
                     const int match = k ? prev[k-1] + (x-k) : from_edge;
                     curr[x] = std::min({edit, from_edge, match});
                 } // All readers finish before the older buffer is overwritten.
-                #pragma omp master
-                right[t] = curr[width];
+                if (primary) right[t] = curr[width];
             }
         }
         if (rank + 1 < active_ranks)
@@ -214,18 +222,27 @@ int distributed_pair(std::string_view a, std::string_view b, int rank, int ranks
 
 std::vector<int> batch(const std::vector<chps::Record>& data, int rank, int ranks,
                        int team, bool adjacent, int& workers) {
-    const std::size_t count = adjacent ? data.size()/2 : data.size() * (data.size()-1) / 2;
-    if (count > INT_MAX) throw std::length_error("cohort exceeds MPI reduction count limit");
+    const auto n = static_cast<std::uint64_t>(data.size());
+    const auto pairs = adjacent ? n / 2 : n * (n - 1) / 2;
+    if (pairs > INT_MAX) throw std::length_error("cohort exceeds MPI reduction count limit");
+    const auto count = static_cast<std::size_t>(pairs);
+    const auto first = static_cast<std::size_t>(rank);
+    const auto stride = static_cast<std::size_t>(ranks);
+    const auto assigned = count / stride + (first < count % stride);
     std::vector<int> local(count), result(rank ? 0 : count);
-    std::vector<std::pair<std::size_t,std::size_t>> jobs;
+    std::vector<std::pair<std::size_t, std::size_t>> jobs;
+    jobs.reserve(assigned);
     if (adjacent) {
-        for (std::size_t p = rank; p < count; p += ranks) jobs.emplace_back(2*p, 2*p+1);
+        for (std::size_t p = first; p < count; p += stride) jobs.emplace_back(2*p, 2*p+1);
     } else {
-        std::size_t p = 0;
-        for (std::size_t i = 0; i < data.size(); ++i) {
-            for (std::size_t j = i+1; j < data.size(); ++j, ++p) {
-                if (p % ranks == static_cast<std::size_t>(rank)) jobs.emplace_back(i,j);
-            }
+        // Visit only this rank's slots in the row-major upper triangle.
+        std::size_t slot = first;
+        std::size_t row_begin = 0;
+        for (std::size_t i = 0; i < data.size() && slot < count; ++i) {
+            const auto row_end = row_begin + data.size() - i - 1;
+            for (; slot < row_end; slot += stride)
+                jobs.emplace_back(i, i + 1 + (slot - row_begin));
+            row_begin = row_end;
         }
     }
     workers = static_cast<int>(std::min<std::size_t>(team,jobs.size()));
@@ -236,7 +253,7 @@ std::vector<int> batch(const std::vector<chps::Record>& data, int rank, int rank
     for (std::size_t task = 0; task < jobs.size(); ++task) {
         const auto [i,j] = jobs[task];
         try {
-            local[rank + task*ranks] = chps::nvpd_omp(data[i].bases,data[j].bases).distance;
+            local[first + task * stride] = chps::nvpd_omp(data[i].bases,data[j].bases).distance;
         } catch (...) {
             #pragma omp critical
             { if (!failure) failure = std::current_exception(); }
@@ -279,7 +296,7 @@ int placement(int threads, int& team) {
     int rank, size;
     MPI_Comm_rank(node,&rank);
     MPI_Comm_size(node,&size);
-    std::vector<int> ids(rank ? 0 : threads*size);
+    std::vector<int> ids(rank ? 0 : static_cast<std::size_t>(threads) * size);
     MPI_Gather(cpus.data(),threads,MPI_INT,ids.data(),threads,MPI_INT,0,node);
     MPI_Comm_free(&node);
     std::set<std::pair<int,int>> physical;
@@ -307,9 +324,13 @@ int main(int argc, char** argv) {
     for (int i = 1; i+1 < argc; ++i)
         if (std::string_view(argv[i]) == "--schedule" && std::string_view(argv[i+1]) == "steal")
             required = MPI_THREAD_SERIALIZED;
-    MPI_Init_thread(&argc, &argv, required, &support);
+    if (MPI_Init_thread(&argc, &argv, required, &support) != MPI_SUCCESS) {
+        std::cerr << "editdist-mpi: MPI initialization failed\n";
+        return 1;
+    }
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &ranks);
+    // The default fatal MPI handler terminates all ranks on communication errors.
     try {
         if (support < required) throw std::runtime_error("MPI thread support insufficient for chosen schedule");
         const auto o = parse(argc,argv);
@@ -345,8 +366,8 @@ int main(int argc, char** argv) {
             MPI_Reduce(&elapsed, &slowest, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             int total_workers = 0;
             MPI_Reduce(&workers, &total_workers, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-            if (!rank) {
-                if (trial == -o.warmups) { first_distance = distance; first_matrix = matrix; }
+            if (!rank && (o.trials > 1 || o.warmups > 0)) {
+                if (trial == -o.warmups) { first_distance = distance; first_matrix = std::move(matrix); }
                 else if (first_distance != distance || first_matrix != matrix)
                     throw std::runtime_error("repeated MPI distances disagree");
             }
@@ -389,5 +410,8 @@ int main(int argc, char** argv) {
         MPI_Abort(MPI_COMM_WORLD, 1);
         return 1;
     }
-    MPI_Finalize();
+    if (MPI_Finalize() != MPI_SUCCESS) {
+        std::cerr << "editdist-mpi: MPI finalization failed\n";
+        return 1;
+    }
 }

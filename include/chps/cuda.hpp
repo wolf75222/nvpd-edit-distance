@@ -17,13 +17,20 @@ public:
 
 private:
     struct Buffer {
+        Buffer() = default;
+        Buffer(const Buffer&) = delete;
+        Buffer& operator=(const Buffer&) = delete;
+        ~Buffer() noexcept;
+
         int* data = nullptr;
         std::size_t bytes = 0;
         void resize(std::size_t count);
-        ~Buffer();
     };
-    CudaHalo halo_;
+    const CudaHalo halo_;
     Buffer indices_, table_, boundaries_;
+    std::size_t resident_bytes() const noexcept {
+        return indices_.bytes + table_.bytes + boundaries_.bytes;
+    }
 };
 
 } // namespace chps

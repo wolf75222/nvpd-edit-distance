@@ -12,6 +12,12 @@ static quicked_params_t narrow_start(void) {
 #include "../src/libraries/quicked/quicked_adapter.c"
 
 int main(void) {
+    if (chps_quicked_default(NULL, 1, "A", 1) != -1 ||
+        chps_quicked_certified("A", -1, "", 0).distance != -1 ||
+        chps_quicked_certified("A", INT_MAX, "A", 1).distance != -1 ||
+        chps_quicked_certified(NULL, 0, "AC", 2).distance != 2 ||
+        valid_path("2147483648M", "A", 1, "A", 1, 0))
+        return 1;
     enum { length = 1152 };
     char a[length], b[length];
     for (int i = 0; i < length; ++i) {

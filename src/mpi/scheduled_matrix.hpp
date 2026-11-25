@@ -2,7 +2,6 @@
 #include "chps/baselines.hpp"
 #include "chps/fasta.hpp"
 #include "indexed_rows.hpp"
-#include <optional>
 #include <mpi.h>
 #ifdef CHPS_KOKKOS
 #include <Kokkos_Core.hpp>
@@ -15,8 +14,10 @@
 #include <cstdint>
 #include <exception>
 #include <iomanip>
+#include <iterator>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <thread>
 #include <stdexcept>
 #include <string>
@@ -56,7 +57,7 @@ inline std::vector<long long> weighted_cuts(const std::vector<Task>& tasks,
             throw std::length_error("weighted matrix exceeds 64-bit cell count");
         prefix[i+1] = prefix[i]+a*b;
     }
-    std::vector<long long> cuts(ranks+1);
+    std::vector<long long> cuts(static_cast<std::size_t>(ranks) + 1);
     cuts.back() = static_cast<long long>(tasks.size());
     const auto total = prefix.back();
     for (int rank=1; rank<ranks; ++rank) {
@@ -88,9 +89,10 @@ struct Range {
 // from the front, and remote thieves receive disjoint intervals from the back.
 class VictimQueues {
     static constexpr int request_tag = 21900, reply_tag = 21901;
-    int rank_, ranks_, grain_, gift_, victim_step_ = 1;
+    const int rank_, ranks_, grain_, gift_;
+    int victim_;
     Range own_, received_;
-    bool waiting_ = false;
+    std::optional<MPI_Request> request_;
     std::vector<std::array<long long,2>> replies_;
     std::vector<MPI_Request> sends_;
 
@@ -110,24 +112,29 @@ class VictimQueues {
             reply[0] = own_.last;
             MPI_Isend(reply.data(),2,MPI_LONG_LONG_INT,source,reply_tag,MPI_COMM_WORLD,&sends_[source]);
         }
-        if (waiting_) {
-            const int victim = (rank_+victim_step_)%ranks_;
-            MPI_Iprobe(victim,reply_tag,MPI_COMM_WORLD,&ready,MPI_STATUS_IGNORE);
+        if (request_) {
+            MPI_Iprobe(victim_,reply_tag,MPI_COMM_WORLD,&ready,MPI_STATUS_IGNORE);
             if (ready) {
                 std::array<long long,2> reply;
-                MPI_Recv(reply.data(),2,MPI_LONG_LONG_INT,victim,reply_tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-                received_ = {reply[0],reply[1],victim};
-                if (received_.first==received_.last) ++victim_step_;
-                waiting_ = false;
+                MPI_Recv(reply.data(),2,MPI_LONG_LONG_INT,victim_,reply_tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                // Receiving the reply proves that the victim matched this request.
+                MPI_Wait(&*request_, MPI_STATUS_IGNORE);
+                request_.reset();
+                received_ = {reply[0], reply[1], victim_};
+                if (received_.first == received_.last)
+                    victim_ = victim_ + 1 == ranks_ ? 0 : victim_ + 1;
             }
         }
     }
 
 public:
     VictimQueues(long long count, int rank, int ranks, int grain, int team)
-        : rank_(rank), ranks_(ranks), grain_(grain), gift_(grain * static_cast<long long>(team) > INT_MAX
-            ? INT_MAX : grain*team), own_{count*rank/ranks,count*(rank+1)/ranks,rank},
+        : rank_(rank), ranks_(ranks), grain_(grain), gift_(static_cast<int>(std::min<long long>(static_cast<long long>(grain) * team, INT_MAX))),
+          victim_(rank + 1 == ranks ? 0 : rank + 1), own_{count*rank/ranks,count*(rank+1)/ranks,rank},
           replies_(ranks), sends_(ranks,MPI_REQUEST_NULL) {}
+
+    VictimQueues(const VictimQueues&) = delete;
+    VictimQueues& operator=(const VictimQueues&) = delete;
 
     bool next(Range& chunk) {
         // All MPI calls from the OpenMP team pass this serialized region.
@@ -138,14 +145,9 @@ public:
             auto& source = own_.first<own_.last ? own_ : received_;
             chunk = {source.first,std::min(source.last,source.first+grain_),source.owner};
             source.first = chunk.last;
-            keep_polling = chunk.first!=chunk.last || victim_step_<ranks_;
-            if (chunk.first==chunk.last && victim_step_<ranks_ && !waiting_) {
-                MPI_Request request;
-                const int victim=(rank_+victim_step_)%ranks_;
-                MPI_Isend(nullptr,0,MPI_BYTE,victim,request_tag,MPI_COMM_WORLD,&request);
-                MPI_Request_free(&request);
-                waiting_=true;
-            }
+            keep_polling = chunk.first != chunk.last || victim_ != rank_;
+            if (chunk.first == chunk.last && victim_ != rank_ && !request_)
+                MPI_Isend(nullptr, 0, MPI_BYTE, victim_, request_tag, MPI_COMM_WORLD, &request_.emplace());
         }
         return keep_polling;
     }
@@ -191,7 +193,8 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
     std::vector<RankWork> per_worker(team);
     std::atomic<long long> next{0};
     std::exception_ptr failure;
-    VictimQueues queues(count,rank,ranks,grain,team);
+    std::optional<VictimQueues> queues;
+    if (steal) queues.emplace(count, rank, ranks, grain, team);
     const auto cuts = weighted ? weighted_cuts(tasks,data,ranks) : std::vector<long long>{};
     const auto begin = weighted ? cuts[rank] : cyclic ? rank : count*rank/ranks;
     const auto stride = cyclic ? ranks : 1;
@@ -205,7 +208,7 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
         for (;;) {
             Range chunk;
             if (steal) {
-                if (!queues.next(chunk)) break;
+                if (!queues->next(chunk)) break;
                 if (chunk.first==chunk.last) {
                     std::this_thread::yield();
                     continue;
@@ -258,7 +261,7 @@ inline std::vector<int> scheduled_matrix(const std::vector<Record>& data, const 
         #pragma omp parallel num_threads(team)
         run_worker(omp_get_thread_num());
     }
-    if (steal) queues.finish();
+    if (queues) queues->finish();
     if (failure) std::rethrow_exception(failure);
     for (const auto& r : per_worker) {
         work.active_workers += r.pairs > 0;
@@ -283,16 +286,18 @@ inline std::vector<int> node_leaders(int rank, int ranks) {
 }
 
 inline void rank_diagnostics(const RankWork& work, int rank, int ranks, int trial) {
-    unsigned long long counters[]{work.pairs,work.cells,work.stolen,work.cross_node,work.certified};
-    std::vector<unsigned long long> all(rank ? 0 : 5*ranks);
+    const unsigned long long counters[]{work.pairs,work.cells,work.stolen,work.cross_node,work.certified};
+    const auto fields = std::size(counters);
+    std::vector<unsigned long long> all(rank ? 0 : fields * static_cast<std::size_t>(ranks));
     std::vector<double> times(rank ? 0 : ranks);
-    MPI_Gather(counters,5,MPI_UNSIGNED_LONG_LONG,all.data(),5,MPI_UNSIGNED_LONG_LONG,0,MPI_COMM_WORLD);
+    MPI_Gather(counters, static_cast<int>(fields), MPI_UNSIGNED_LONG_LONG, all.data(),
+               static_cast<int>(fields), MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
     MPI_Gather(&work.busy_seconds,1,MPI_DOUBLE,times.data(),1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-    if (!rank) for (int i=0;i<ranks;++i)
+    if (!rank) for (std::size_t i = 0; i < times.size(); ++i)
         std::cerr << std::setprecision(12) << "{\"rank\":" << i << ",\"trial\":" << trial
-                  << ",\"pairs\":" << all[5*i] << ",\"cells\":" << all[5*i+1]
-                  << ",\"stolen_pairs\":" << all[5*i+2] << ",\"cross_node_pairs\":" << all[5*i+3]
-                  << ",\"certified_pairs\":" << all[5*i+4]
+                  << ",\"pairs\":" << all[fields*i] << ",\"cells\":" << all[fields*i+1]
+                  << ",\"stolen_pairs\":" << all[fields*i+2] << ",\"cross_node_pairs\":" << all[fields*i+3]
+                  << ",\"certified_pairs\":" << all[fields*i+4]
                   << ",\"busy_seconds\":" << times[i] << "}\n";
 }
 } // namespace chps::mpi

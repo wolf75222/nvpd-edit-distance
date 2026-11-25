@@ -122,6 +122,12 @@ def main():
             if not result.returncode or "FAI" not in result.stderr:
                 raise AssertionError("indexed reader accepted missing nonempty record")
         vector_boundaries(binary, path, index)
+        full_device = Path("/dev/full")
+        if full_device.is_char_device():
+            with full_device.open("wb") as sink:
+                result = subprocess.run(matrix_args, stdout=sink, stderr=subprocess.PIPE)
+            if result.returncode == 0:
+                raise AssertionError("matrix reported success after its output device filled")
     print("FASTA normalization, indexed pair/matrix, empty records, and stale/malformed index checks passed")
 
 

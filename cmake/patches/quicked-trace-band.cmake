@@ -12,4 +12,4 @@ string(REPLACE [[if (Pv[bdp_idx_r] & mask_r)]]
 string(REPLACE [[else if (Mv[(bdp_idx)] & mask)]]
                [[else if (has_v && (Mv[bdp_idx] & (1ULL << (effective_v % BPM_W64_LENGTH))))]]
                source "${source}")
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/quicked_banded.c" "${source}")
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/quicked_banded.c" CONTENT "${source}")

@@ -87,6 +87,26 @@ int main() {
             throw std::runtime_error("wrong NvPD distance for absent symbol");
     }
 #ifdef CHPS_CUDA
+    {
+        CudaWorkspace workspace(CudaHalo::local);
+        std::string target(5179, 'A');
+        for (std::size_t j = 0; j + 3 <= target.size(); j += 263) target.replace(j, 3, "CGT");
+        const std::string query = "CGTACGTACGTACGTAC";
+        if (workspace.distance(query, target).distance != edlib_distance(query, target).distance)
+            throw std::runtime_error("wrong local CUDA score across packed-offset escape and tile tails");
+    }
+    {
+        CudaWorkspace workspace;
+        const std::string first(530, 'A'), second(500, 'A');
+        const auto path = workspace.distance(std::string(17, 'A'), first, true);
+        replay(std::string(17, 'A'), first, path);
+        const auto cost = workspace.distance("ACGT", second);
+        const auto expected_peak = (18 * (first.size() + 1) + 4 * (second.size() + 1)) * sizeof(int);
+        const auto idle = workspace.distance("", second);
+        if (cost.distance != edlib_distance("ACGT", second).distance ||
+            cost.device_bytes != expected_peak || idle.device_bytes != 6 * (second.size() + 1) * sizeof(int))
+            throw std::runtime_error("wrong score or allocation accounting after CUDA workspace resize");
+    }
     for (int spacing : {4, 64, 65}) {
         std::string target(400003, 'A');
         for (std::size_t j = 0; j < target.size(); j += spacing) target[j] = 'C';

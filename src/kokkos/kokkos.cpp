@@ -13,6 +13,7 @@ using Exec = Kokkos::DefaultExecutionSpace;
 using Memory = Exec::memory_space;
 using Index = Kokkos::RangePolicy<Exec, Kokkos::IndexType<int>>;
 using Buffer = Kokkos::View<int*, Memory>;
+constexpr bool host_memory = std::is_same_v<Memory, Kokkos::HostSpace>;
 
 // One host team stays in the same parallel region for all rows. Each worker
 // owns contiguous columns, and the team barrier makes the next row readable.
@@ -67,9 +68,10 @@ const char* kokkos_execution_space() {
 }
 
 namespace {
+// A HostSpace-only build dispatches to the persistent host team.
 // Evaluate an intermediate row directly from the previous completed row. A
 // second-row cell needs at most three such values, regardless of match reach.
-KOKKOS_INLINE_FUNCTION
+[[maybe_unused]] KOKKOS_INLINE_FUNCTION
 int intermediate(const int* prev, const int* last, int i, int j) {
     if (j == 0) return i;
     const int k = last[j];
@@ -82,7 +84,7 @@ int intermediate(const int* prev, const int* last, int i, int j) {
     return edit < match ? edit : match;
 }
 
-std::size_t fused_rows(const Index& row, std::string_view a, const detail::MatchIndex& matches,
+[[maybe_unused]] std::size_t fused_rows(const Index& row, std::string_view a, const detail::MatchIndex& matches,
                        const Buffer& indices, const Buffer& table, std::size_t stride) {
     std::size_t current = 0;
     for (int i = 1; i <= static_cast<int>(a.size()); i += 2) {
@@ -120,22 +122,30 @@ Result compute_distance(std::string_view a, std::string_view b, bool trace, bool
     const std::size_t rows = trace ? a.size() + 1 : 2;
     const detail::MatchIndex matches(a, b);
     Exec exec;
-    Buffer indices(Kokkos::view_alloc(exec, Kokkos::WithoutInitializing, "match indices"),
-                   matches.entries.size());
+    // MatchIndex owns the host row storage until the final execution-space fence.
+    Buffer device_indices;
+    if constexpr (!host_memory) {
+        device_indices = Buffer(Kokkos::view_alloc(exec, Kokkos::WithoutInitializing, "match indices"),
+                                matches.entries.size());
+    }
     Buffer table(Kokkos::view_alloc(exec, Kokkos::WithoutInitializing, "score rows"), rows * stride);
-    using HostIndices = Kokkos::View<const int*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>;
-    Kokkos::deep_copy(exec, indices, HostIndices(matches.entries.data(), matches.entries.size()));
+    const int* indices = matches.entries.data();
+    if constexpr (!host_memory) {
+        using HostIndices = Kokkos::View<const int*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>;
+        Kokkos::deep_copy(exec, device_indices, HostIndices(indices, matches.entries.size()));
+        indices = device_indices.data();
+    }
     const Index row(exec, 0, n + 1);
     Kokkos::parallel_for("NvPD first row", row, KOKKOS_LAMBDA(int j) { table(j) = j; });
 
     bool complete = false;
     std::size_t current = (trace ? m : m % 2) * stride;
     if (persistent) {
-        if constexpr (std::is_same_v<Memory, Kokkos::HostSpace>) {
+        if constexpr (host_memory) {
             complete = host_team_rows(Kokkos::DefaultHostExecutionSpace{}, a.data(), matches.symbol.data(),
-                                      indices.data(), table.data(), m, n, trace);
+                                      indices, table.data(), m, n, trace);
         } else if (!trace) {
-            current = fused_rows(row, a, matches, indices, table, stride);
+            current = fused_rows(row, a, matches, device_indices, table, stride);
             complete = true;
         }
     }
@@ -147,7 +157,7 @@ Result compute_distance(std::string_view a, std::string_view b, bool trace, bool
             const auto offset = symbol * stride;
             Kokkos::parallel_for("NvPD row", row, KOKKOS_LAMBDA(int j) {
                 if (!j) { table(current) = i; return; }
-                const int k = indices(offset + j);
+                const int k = indices[offset + j];
                 const int upper = table(previous + j), diagonal = table(previous + j - 1);
                 const int edit = 1 + (upper < diagonal ? upper : diagonal);
                 const int match = table(previous + (k > 0 ? k - 1 : 0)) + (j - k);
@@ -156,8 +166,7 @@ Result compute_distance(std::string_view a, std::string_view b, bool trace, bool
         }
     }
     exec.fence("NvPD last row ready");
-    const auto bytes = std::is_same_v<Memory, Kokkos::HostSpace> ? std::size_t{0}
-                       : (indices.extent(0) + table.extent(0)) * sizeof(int);
+    const auto bytes = host_memory ? std::size_t{0} : (device_indices.extent(0) + table.extent(0)) * sizeof(int);
     if (trace) {
         const auto host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, table);
         return {host(current + n), detail::traceback(host.data(), a, b), bytes};

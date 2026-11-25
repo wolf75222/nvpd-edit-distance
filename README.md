@@ -34,6 +34,8 @@ cmake --build build --parallel 4
 ctest --test-dir build --output-on-failure
 ```
 
+Pour contrôler les sources du projet, ajouter `-DCHPS_WARNINGS_AS_ERRORS=ON` à la commande de configuration. La CI active cette option pour C, C++ et les backends OpenMP, MPI et Kokkos.
+
 CMake télécharge edlib et WFA2-lib à la première configuration et vérifie leurs empreintes SHA-256. Pour compiler hors ligne, placer les archives dans `deps/edlib.tar.gz` et `deps/wfa2.tar.gz`. [Révisions et empreintes](CMakeLists.txt)
 
 ## Aligner deux séquences
@@ -115,7 +117,7 @@ build/editdist pair --algorithm nvpd-split --threads 8 --trace --input data/huma
 
 ## Comparer une cohorte de 1000 Genomes
 
-Le préparateur reconstruit les deux haplotypes de 512 individus de la phase 3 de 1000 Genomes dans une fenêtre de 32 768 bases du chromosome 21 (GRCh37). Les 1 024 séquences donnent 523 776 paires et 386 séquences distinctes. L’option `--unique` aligne les 74 305 paires distinctes et restitue la matrice dans l’ordre initial, avec les 1 024 identifiants. [Manifeste et protocole](results/human/packed-cohort/)
+Le préparateur reconstruit les deux haplotypes de 512 individus de la phase 3 de 1000 Genomes dans une fenêtre de 32 768 bases du chromosome 21 (GRCh37). Les 1 024 séquences donnent 523 776 paires et 386 séquences distinctes. L’option `--unique` aligne les 74 305 paires distinctes et restitue la matrice dans l’ordre initial, avec les 1 024 identifiants. Pour $u$ séquences à comparer, la commande `editdist matrix` stocke $u(u-1)/2$ scores et écrit les deux moitiés du tableau TSV. [Manifeste et protocole](results/human/packed-cohort/)
 
 ```sh
 python3.12 -m venv build/phase3-env

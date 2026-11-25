@@ -3,7 +3,7 @@
 #include "chps/adaptive.hpp"
 #include "chps/split.hpp"
 #include "chps/packed.hpp"
-#include <unordered_map>
+#include "symmetric_scores.hpp"
 #ifdef CHPS_CUDA
 #include "chps/cuda.hpp"
 #endif
@@ -22,6 +22,8 @@
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
+#include <string_view>
+#include <unordered_map>
 
 namespace {
 using namespace chps;
@@ -45,11 +47,11 @@ Options parse(int argc, char** argv) {
     o.mode = argv[1];
     if (o.mode != "pair" && o.mode != "matrix") throw std::invalid_argument("unknown mode");
     for (int i = 2; i < argc; ++i) {
-        View arg = argv[i];
+        const View arg = argv[i];
         if (arg == "--trace") { o.trace = true; continue; }
         if (arg == "--unique" && o.mode == "matrix") { o.unique = true; continue; }
         if (++i == argc) throw std::invalid_argument("missing value for " + std::string(arg));
-        View value = argv[i];
+        const View value = argv[i];
         if (arg == "--algorithm") o.algorithm = value;
         else if (arg == "--input") o.path = value;
         else if (arg == "--fai") {
@@ -120,7 +122,7 @@ void run_pair(const Options& o, Kernel kernel, const std::vector<Record>& record
     const auto& b = records[1].bases;
     const auto start = std::chrono::steady_clock::now();
     const auto result = kernel(a, b, o.trace);
-    std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
+    const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
     std::cout << std::setprecision(12) << "{\"algorithm\":\"" << o.algorithm
               << "\",\"distance\":" << result.distance << ",\"m\":" << a.size() << ",\"n\":" << b.size()
               << ",\"seconds\":" << elapsed.count() << ",\"peak_rss_kib\":" << peak_rss_kib()
@@ -138,6 +140,8 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
     std::vector<std::string_view> sequences;
     std::vector<std::size_t> group_of;
     std::unordered_map<std::string_view, std::size_t> by_bases;
+    group_of.reserve(records.size());
+    sequences.reserve(records.size());
     for (const auto& r : records) {
         if (o.unique) {
             const auto [it, added] = by_bases.emplace(r.bases, sequences.size());
@@ -149,10 +153,10 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
         sequences.push_back(r.bases);
     }
     const auto n = sequences.size();
-    std::vector<std::vector<int>> distances(n, std::vector<int>(n));
+    cli::SymmetricScores distances(n);
     const auto team = static_cast<std::size_t>(o.threads);
     const bool grouped = o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-adaptive" || o.algorithm == "nvpd-split" || o.algorithm == "nvpd-sparse";
-    const bool pair_parallel = grouped && team > 1 && n * (n - 1) / 2 >= team;
+    const bool pair_parallel = grouped && team > 1 && distances.pair_count() >= team;
     const bool library = o.algorithm == "edlib" || o.algorithm == "wfa2" || o.algorithm == "biwfa" || o.algorithm == "packed-wfa";
     const bool across = pair_parallel || (team > 1 &&
         (library || o.algorithm == "seq" ||
@@ -191,7 +195,7 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
                 distance = nvpd_split_profile(a, b, false, stats, SplitPolicy::retain_verified,
                                               composition[i].lower_bound(composition[j])).distance;
             }
-            distances[j][i] = distances[i][j] = distance;
+            distances.upper(i, j) = distance;
         }
     };
     if (across) {
@@ -219,7 +223,7 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
     std::cout << '\n';
     for (std::size_t i = 0; i < records.size(); ++i) {
         std::cout << records[i].id;
-        for (auto j : group_of) std::cout << '\t' << distances[group_of[i]][j];
+        for (auto j : group_of) std::cout << '\t' << distances.score(group_of[i], j);
         std::cout << '\n';
     }
 }
@@ -227,7 +231,12 @@ void run_matrix(const Options& o, Score&& kernel, const std::vector<Record>& rec
 
 int main(int argc, char** argv) {
     try {
-        if (argc == 2 && View(argv[1]) == "--help") { std::cout << help; return 0; }
+        std::ios::sync_with_stdio(false);
+        std::cout.exceptions(std::ios::badbit | std::ios::failbit);
+        if (argc == 2 && View(argv[1]) == "--help") {
+            std::cout << help << std::flush;
+            return 0;
+        }
         const auto o = parse(argc, argv);
         const auto kernel = resolve(o.algorithm);
         const auto records = o.fai.empty() ? chps::read_fasta(o.path) : chps::read_fasta(o.path, o.fai);
@@ -250,6 +259,7 @@ int main(int argc, char** argv) {
         } else {
             run_matrix(o, kernel, records);
         }
+        std::cout.flush();
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "editdist: " << e.what() << '\n';

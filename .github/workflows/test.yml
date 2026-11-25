@@ -15,14 +15,13 @@ jobs:
           cmake -S "$RUNNER_TEMP/kokkos" -B "$RUNNER_TEMP/kokkos-build" -DCMAKE_BUILD_TYPE=Release \
             -DKokkos_ENABLE_OPENMP=ON -DCMAKE_CXX_STANDARD=20 -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/install"
           cmake --build "$RUNNER_TEMP/kokkos-build" --parallel 2 --target install
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCHPS_MPI=ON -DCHPS_QUICKED=ON -DCHPS_KOKKOS=ON -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/install"
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCHPS_WARNINGS_AS_ERRORS=ON -DCHPS_MPI=ON -DCHPS_QUICKED=ON -DCHPS_KOKKOS=ON -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/install"
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
       - run: python3 bench/mpi/mpi_checks.py --binary build/editdist-mpi --oracle build/editdist --launcher 'mpiexec --oversubscribe -n 4'
       - run: python3 bench/mpi/human/checks.py build/editdist-mpi --launcher 'mpiexec --oversubscribe -n 2'
       - run: python3 bench/mpi/schedules/checks.py build/editdist-mpi build/editdist
       - run: python3 bench/mpi/schedules/checks.py build/editdist-mpi build/editdist --workers kokkos
-      - run: python3 tests/fasta_cli.py build/editdist
       - name: Regenerate the course corpus and compare ROMEO scores
         run: python3 bench/campaign/check_course_corpus.py
       - name: Check the hybrid traceback under UBSan

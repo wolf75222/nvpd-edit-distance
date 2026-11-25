@@ -1,7 +1,12 @@
 #include "chps/quicked.h"
 #include <quicked.h>
 #include <edlib.h>
+#include <limits.h>
 #include <string.h>
+
+static bool valid_input(const char *bases, int length) {
+    return length >= 0 && length <= INT_MAX / 100 && (length == 0 || bases != NULL);
+}
 
 // Upstream uses M for equality, X for substitution, I for consuming b,
 // D for consuming a. Replay the path before accepting its proposed cost.
@@ -11,8 +16,9 @@ static bool valid_path(const char *p, const char *a, int m, const char *b, int n
     while (*p) {
         int k = 0;
         while (*p >= '0' && *p <= '9') {
-            if (k > (m + n) / 10) return false;
-            k = k * 10 + (*p++ - '0');
+            const int digit = *p++ - '0';
+            if (k > (INT_MAX - digit) / 10) return false;
+            k = k * 10 + digit;
         }
         const char op = *p;
         if (!op || !strchr("MXID", op) || !k) return false;
@@ -41,6 +47,7 @@ static int run(const char *a, int m, const char *b, int n, quicked_params_t para
 }
 
 int chps_quicked_default(const char *a, int m, const char *b, int n) {
+    if (!valid_input(a, m) || !valid_input(b, n)) return -1;
     return run(a, m, b, n, quicked_default_params(), false);
 }
 
@@ -53,8 +60,11 @@ static int exact_score(const char *a, int m, const char *b, int n) {
 }
 
 chps_quicked_result chps_quicked_certified(const char *a, int m, const char *b, int n) {
+    if (!valid_input(a, m) || !valid_input(b, n))
+        return (chps_quicked_result){-1, -1, 0, 0, "invalid-input"};
     const int first = run(a, m, b, n, quicked_default_params(), true);
     chps_quicked_result result = {first, first, 0, 0, "quicked-default"};
+    if (m == 0 || n == 0) return result;
     const int exact = exact_score(a, m, b, n);
     if (exact < 0) {
         result.distance = -1;

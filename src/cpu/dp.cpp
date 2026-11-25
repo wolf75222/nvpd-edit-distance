@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <climits>
 #include <numeric>
+#include <omp.h>
 #include <stdexcept>
+#include <utility>
 
 namespace chps::detail {
 
@@ -18,7 +20,7 @@ Result empty_result(std::string_view a, std::string_view b, bool trace) {
     const int cost = static_cast<int>(std::max(a.size(), b.size()));
     std::string cigar;
     if (trace && cost > 0) cigar = std::to_string(cost) + (a.empty() ? 'I' : 'D');
-    return {cost, cigar, 0};
+    return {cost, std::move(cigar), 0};
 }
 
 std::string traceback(const int* table, std::string_view a, std::string_view b) {
@@ -53,16 +55,17 @@ std::string traceback(const int* table, std::string_view a, std::string_view b) 
 
 MatchIndex::MatchIndex(std::string_view a, std::string_view b) {
     symbol.fill(-1);
-    std::vector<unsigned char> alphabet;
+    std::array<unsigned char, 256> alphabet;
+    int symbols = 0;
     for (unsigned char c : a) {
         if (symbol[c] >= 0) continue;
-        symbol[c] = static_cast<int>(alphabet.size());
-        alphabet.push_back(c);
+        symbol[c] = symbols;
+        alphabet[symbols++] = c;
     }
     const std::size_t stride = b.size() + 1;
-    entries.resize(alphabet.size() * stride);
+    entries.resize(symbols * stride);
     #pragma omp parallel for schedule(static)
-    for (int s = 0; s < static_cast<int>(alphabet.size()); ++s) {
+    for (int s = 0; s < symbols; ++s) {
         int* row = entries.data() + s * stride;
         int last = 0;
         for (int j = 1; j <= static_cast<int>(b.size()); ++j) {
@@ -133,15 +136,16 @@ Result nvpd_omp(std::string_view a, std::string_view b, bool trace) {
     std::iota(table.begin(), table.begin() + stride, 0);
     #pragma omp parallel
     {
+        const bool primary = omp_get_thread_num() == 0;
         for (int i = 1; i <= m; ++i) {
             const int* prev = table.data() + (trace ? i - 1 : (i - 1) % 2) * stride;
             int* curr = table.data() + (trace ? i : i % 2) * stride;
             const auto s = matches.symbol[static_cast<unsigned char>(a[i-1])];
             const int* last = matches.entries.data() + s * stride;
-            #pragma omp master
-            curr[0] = i;
+            if (primary) curr[0] = i;
             #pragma omp for simd schedule(static)
-            for (int j = 1; j <= n; ++j) {
+            for (detail::OmpColumn column = 1; column <= static_cast<detail::OmpColumn>(n); ++column) {
+                const int j = static_cast<int>(column);
                 const int k = last[j];
                 // k=j gives the matching diagonal. If k=0, this candidate
                 // is (i-1)+j >= max(i,j), a valid upper bound on the cost.
