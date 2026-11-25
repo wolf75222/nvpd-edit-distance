@@ -29,7 +29,8 @@ def score(proc, item, method):
     seconds, device = float(seconds), int(device)
     if (int(m) != int(item["length"]) or int(n) != int(item["mutant_length"])
             or int(distance) != item["distance"] or not math.isfinite(seconds) or seconds <= 0
-            or device < 0 or (method == "nvpd-hybrid-score" and backend not in ("nvpd-cuda", "wfa2"))):
+            or device < 0 or (method == "nvpd-hybrid-score"
+                              and backend not in ("nvpd-cuda", "nvpd-cuda-persistent", "wfa2"))):
         raise ValueError(f"Invalid result: {item['path']}, {method}, {values}")
     return seconds, device, backend
 

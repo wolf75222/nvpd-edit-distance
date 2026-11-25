@@ -1,0 +1,16 @@
+romeo-a002
+job=840884
+9101ecd8286599cd8b4b8ebfbb947d9ba46250b58832e5ba447a14aa5b0d7027  /dev/shm/nvpd-placement-src.VuYWrswX/bench/repeated/divergence/launch/placement.cpp
+e5970e24895f8e03b92a604147122d3fc25fcf9115e938fba333639c661fc0bd  /dev/shm/nvpd-placement-src.VuYWrswX/bench/repeated/divergence/launch/placement.cmake
+61861f5b28d13a755fbe26b0f672d03d34b10c61c7e9f0ffe383e63325f00b92  /dev/shm/nvpd-placement-src.VuYWrswX/bench/repeated/divergence/launch/placement.sbatch
+d401c292a79c4391cb1d406869e92979433563401da4fe94ca359ae17b6c1ff8  /dev/shm/nvpd-placement-src.VuYWrswX/bench/repeated/divergence/launch/placement.py
+a3e166b5b7efc9d697eb1663745862b44895499e32898d49fc903a2b1c15c55a  /tmp/chps-placement.P6AcRCqd/build/grace_placement
+0baaef5206f4e5171a4825d320090e2348d822751916fe1c7979a1b739c22b33 chr1.fa
+fc5a5ae54fcb8ae8a2e4d5583db0cc3ac77a6c61307bb401f489745d7c575a9c chr2.fa
+11c76fa5797bb4b5d4fc631574f3ff399c92d8436913be8c15c65166a125bfac chr3.fa
+9bbf7ac0d8ef809fefa12ccdce171fc4a02b814d3728b2228548d645326b718f chr4.fa
+affinity=0,1,2,3
+cpu=0 package=268435456 core=2 numa=node0
+cpu=1 package=268435456 core=4 numa=node0
+cpu=2 package=268435456 core=5 numa=node0
+cpu=3 package=268435456 core=6 numa=node0

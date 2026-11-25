@@ -11,9 +11,11 @@ Result nvpd_cuda_local(std::string_view a, std::string_view b, bool trace = fals
 // Batch exact score frontiers on cooperatively resident CUDA blocks.
 Result nvpd_cuda_persistent(std::string_view a, std::string_view b, bool trace = false);
 
-enum class HybridPairBackend { wfa2, nvpd_cuda };
+enum class HybridPairBackend { wfa2, nvpd_cuda, nvpd_cuda_persistent };
 constexpr std::string_view hybrid_backend_name(HybridPairBackend backend) {
-    return backend == HybridPairBackend::wfa2 ? "wfa2" : "nvpd-cuda";
+    if (backend == HybridPairBackend::wfa2) return "wfa2";
+    if (backend == HybridPairBackend::nvpd_cuda_persistent) return "nvpd-cuda-persistent";
+    return "nvpd-cuda";
 }
 HybridPairBackend hybrid_pair_backend(std::string_view a, std::string_view b);
 Result nvpd_hybrid_score(std::string_view a, std::string_view b, bool trace = false,

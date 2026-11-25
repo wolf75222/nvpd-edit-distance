@@ -1,0 +1,2 @@
+JobID	State	NodeList	Partition	AllocCPUS	ReqMem	AllocTRES	Elapsed	ExitCode
+840841	FAILED	romeo-a002	instant	4	8G	billing=4,cpu=4,gres/gpu=1,mem=8G,node=1	00:12:33	3:0

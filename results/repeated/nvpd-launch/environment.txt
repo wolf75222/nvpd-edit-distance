@@ -1,0 +1,11 @@
+romeo-a002
+job=840841
+baseline_source_revision=9a9e23e
+name, pci.bus_id, memory.total [MiB], driver_version, compute_mode
+NVIDIA GH200 120GB, 00000009:01:00.0, 97871 MiB, 590.48.01, Default
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+NVIDIA Nsight Systems version 2025.3.2.474-253236389321v0
+e18f530e9e09462f1ea81233175449906e66b5ef53ece27ddd09f70c76dacffa  bench/repeated/kernel.cpp
+335f87e5b422b154e18e31b0d7454bfcc8995a8ef6a2b210b743e67a2795b1ee  bench/repeated/divergence/launch/measure.py

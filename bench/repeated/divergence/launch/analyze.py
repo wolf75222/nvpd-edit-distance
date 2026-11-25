@@ -26,17 +26,23 @@ def read(directory):
     keys = ["group", "rep"]
     if manifest.duplicated(keys).any() or manifest.sha256.duplicated().any():
         raise ValueError("Duplicate input in manifest")
+    groups = set(manifest.group)
+    required = {"100k-2pct", "control-5pct", "original-five"}
+    if not required <= groups <= GROUP_LABELS.keys() or not manifest.groupby("group").size().eq(5).all():
+        raise ValueError("Expected five pairs at each declared divergence")
     data = raw.merge(manifest[keys + ["sha256", "distance"]], on=keys, how="left",
                      suffixes=("", "_oracle"), validate="many_to_one")
-    if (not data.distance.eq(data.distance_oracle).all() or not data.groupby("group").sha256.nunique().eq(5).all()
-            or not set(data.group) <= GROUP_LABELS.keys() or set(data.method) != set(METHODS)
+    if (not data.distance.eq(data.distance_oracle).all() or data.sha256.nunique() != len(manifest)
+            or set(data.method) != set(METHODS) or set(data.block) != set(range(1, 6)) or set(data.order) != set(range(1, 6))
             or data.duplicated(keys + ["block", "method"]).any() or data.duplicated(keys + ["block", "order"]).any()
             or not data.groupby(keys + ["block"]).method.nunique().eq(5).all()
             or not data.groupby(keys + ["method"]).order.nunique().eq(5).all()
             or not data.groupby(keys + ["method"]).size().eq(5).all()):
         raise ValueError("Incomplete or unbalanced five-block design")
+    hybrid = data.method.eq("nvpd-hybrid-score")
     if (not data.groupby(keys + ["method"]).backend.nunique().eq(1).all() or
-            not data.loc[data.method.eq("nvpd-hybrid-score"), "backend"].isin(["wfa2", "nvpd-cuda"]).all()):
+            not data.loc[hybrid, "backend"].isin(["wfa2", "nvpd-cuda", "nvpd-cuda-persistent"]).all()
+            or not data.loc[~hybrid, "backend"].eq(data.loc[~hybrid, "method"]).all()):
         raise ValueError("Unexpected hybrid dispatch")
     measurements = data[["seconds", "warmup_seconds", "after_warmup_pss_kib", "after_warmup_rss_kib"]]
     if (not np.isfinite(measurements).all().all() or measurements.le(0).any().any()
@@ -55,7 +61,9 @@ def analyze(data):
         comparisons.append((times[method] / times[reference]).rename("ratio").reset_index()
                            .assign(method=method, reference=reference))
     selected = data.query("method == 'nvpd-hybrid-score'").set_index(index).backend
-    underlying = times["wfa2"].where(selected.eq("wfa2"), times["nvpd-cuda"])
+    underlying = times.stack().reindex(
+        pd.MultiIndex.from_frame(selected.reset_index().rename(columns={"backend": "method"}))
+    ).set_axis(selected.index)
     comparisons.append((times["nvpd-hybrid-score"] / underlying).rename("ratio").reset_index()
                        .assign(method="nvpd-hybrid-score", reference="selected"))
     all_ratios = pd.concat(comparisons, ignore_index=True)
@@ -98,9 +106,10 @@ def figure(summary):
             ax.text(col+.5, row+.69, f"[{number(r.low95, digits)} ; {number(r.high95, digits)}]",
                     ha="center", va="center", fontsize=8)
     for col, group in enumerate(cohorts):
-        ax.text(col+.5, -.16, GROUP_LABELS[group], ha="center", va="bottom", fontweight="bold")
-    ax.text(-.07, -.16, "Éditions introduites", ha="right", va="bottom", fontweight="bold")
-    ax.set(xlim=(-1.70, len(cohorts)+.01), ylim=(len(LABELS)+.01, -.55))
+        title = GROUP_LABELS[group] if group == "held-out" else GROUP_LABELS[group] + " d’éditions"
+        ax.text(col+.5, -.16, title, ha="center", va="bottom", fontweight="bold")
+    ax.text(-.07, -.16, r"$T/T_{\mathrm{WFA2}}$ [1]", ha="right", va="bottom", fontweight="bold")
+    ax.set(xlim=(-.72, len(cohorts)+.01), ylim=(len(LABELS)+.01, -.55))
     ax.set_axis_off()
     ct_plot.legend_above(fig, [ax], ncol=len(seen))
     return fig

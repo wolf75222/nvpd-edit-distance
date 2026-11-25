@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /dev/shm/nvpd-refine.LiWGKyuT/reference
+Test project /dev/shm/nvpd-refine.LiWGKyuT/reference
+    Start 6: hybrid_pair
+1/1 Test #6: hybrid_pair ......................   Passed    0.38 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.39 sec

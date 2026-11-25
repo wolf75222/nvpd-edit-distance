@@ -1,0 +1,18 @@
+romeo-a002
+job=840841
+reference_source_revision=148ecdd
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+name, pci.bus_id, driver_version
+NVIDIA GH200 120GB, 00000009:01:00.0, 590.48.01
+ca2fc2fe74ad7d8342094b15e201ead2d63c8f5014a4376d2ef623ee8a23d7ff  /gpfs/home/rmdraux/chps-divergence-20261125/deps/edlib.tar.gz
+a178c6c4eea8fb5d0aa315da25d70fd8700c3d5e9ca91cbdbef750094f358021  /gpfs/home/rmdraux/chps-divergence-20261125/deps/wfa2.tar.gz
+3e1a4494387aa79f3cac3b0bb9099df5e8e8165780e5035df478a4e3052d285a  reference/src/hybrid/pair.cpp
+12ff74aedc9ece7e28d6c811b2c5d1c60711dbf9cf37116478648b9117e4a276  reference/src/cuda/cuda.cu
+e18f530e9e09462f1ea81233175449906e66b5ef53ece27ddd09f70c76dacffa  reference/bench/repeated/kernel.cpp
+491a5eb2fc2698f5ff0b6381f853f916d75a89f4bfed42b654f7882e564d912f  candidate/src/hybrid/pair.cpp
+e4e755e7b642ef2feda2aee42524843ef3e35f6263dd63deb3939cf6085e25d2  candidate/src/cuda/cuda.cu
+e18f530e9e09462f1ea81233175449906e66b5ef53ece27ddd09f70c76dacffa  candidate/bench/repeated/kernel.cpp
+4a19d7748aeb36d835ca7c1a2ad8a0370ab6843765fbafd3da7e87d23c0610d5  bench/repeated/divergence/launch/measure.py
+2ebcbf33d4cb3b933ebcfb0783c33d9b90443ec00d292b7dcb6f299103ba40c2  bench/repeated/divergence/launch/refine.py

@@ -1,0 +1,13 @@
+romeo-a002
+job=840841
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Architecture:                            aarch64
+Model name:                              Neoverse-V2
+Thread(s) per core:                      1
+L2 cache:                                288 MiB (288 instances)
+L3 cache:                                456 MiB (4 instances)
+d3715f310f76db97af101d5786afdac0a84651137eb3e5b5d6e1ed211dbcbc49  /dev/shm/nvpd-launch-src.DlibhV0t/candidate/bench/repeated/divergence/launch/scaling.cpp
+47eafd15c2a172658f3a608ebb8a47702aa685108c0cb8359c0d05ba71855afa  /dev/shm/nvpd-launch-src.DlibhV0t/candidate/bench/repeated/divergence/launch/scaling.cmake
+fb44d292bc40a3053170264729ca6efd107bc1acdf90e8e78934ebbd35fbfbcd  /dev/shm/nvpd-launch-src.DlibhV0t/candidate/bench/repeated/divergence/launch/scaling.sbatch
+e1223d9b0c1027d9f756326761c848a8e06e144efcaf37e69868ed087f89f8be  /tmp/chps-grace.peKHuB8F/build/grace_scaling
+physical_package/core:logical_cpu {('268435456', '2'): 0, ('285212672', '84'): 72, ('301989888', '170'): 144, ('318767104', '254'): 216}

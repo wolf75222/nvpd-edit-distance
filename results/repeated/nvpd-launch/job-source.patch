@@ -1,0 +1,95 @@
+--- a/bench/repeated/divergence/launch/measure.py
++++ b/bench/repeated/divergence/launch/measure.py
+@@ -10,7 +10,7 @@
+ import sys
+ from tempfile import TemporaryDirectory
+ 
+-sys.path.append(str(Path(__file__).resolve().parents[1]))
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ from cohort_memory import memory_snapshot
+ from focus import pin_timing_process, prepare, sha256
+ 
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -133,10 +133,6 @@
+   add_executable(check_hybrid_pair tests/hybrid_pair.cpp)
+   target_link_libraries(check_hybrid_pair PRIVATE chps_warnings distances)
+   add_test(NAME hybrid_pair COMMAND check_hybrid_pair)
+-  if(CHPS_CUDA)
+-    set_tests_properties(hybrid_pair PROPERTIES ENVIRONMENT "CUDA_VISIBLE_DEVICES=-1")
+-    add_test(NAME hybrid_pair_gpu COMMAND check_hybrid_pair --cuda)
+-  endif()
+   add_executable(check_split tests/split.cpp)
+   target_link_libraries(check_split PRIVATE chps_warnings distances)
+   add_test(NAME split COMMAND check_split)
+--- a/src/cuda/corridor_persistent.cuh
++++ b/src/cuda/corridor_persistent.cuh
+@@ -115,13 +115,8 @@
+         int count = std::min(batch_slabs,total_slabs-slab);
+         void* args[] = {&table.data, &device_index, &boundaries.data, &device_query, &length_a, &length_b,
+                         &margin, &right, &upper, &row_capacity, &shared_pitch, &slab, &count};
+-        const auto status = cudaLaunchCooperativeKernel(reinterpret_cast<const void*>(persistent_tile),
+-                                                         blocks, threads, args, smem, nullptr);
+-        if (slab == 0 && (status == cudaErrorCooperativeLaunchTooLarge || status == cudaErrorNotSupported)) {
+-            cudaGetLastError();
+-            return std::nullopt;
+-        }
+-        check(status, "launch persistent NvPD corridor");
++        check(cudaLaunchCooperativeKernel(reinterpret_cast<const void*>(persistent_tile), blocks,
++                                           threads, args, smem, nullptr), "launch persistent NvPD corridor");
+         slab += count;
+     }
+     const auto slice = output_slice(m,m,n,upper);
+--- a/src/cuda/cuda.cu
++++ b/src/cuda/cuda.cu
+@@ -230,17 +230,11 @@
+     if (trace || a.empty() || b.empty()) return nvpd_cuda(a,b,trace);
+     detail::validate(a,b,false);
+     if (a.size() > b.size()) std::swap(a,b);
+-    std::size_t attempted_bytes;
+-    {
+-        CudaWorkspace workspace;
+-        if (auto score = detail::corridor::persistent_score(a,b,workspace.indices_,workspace.table_,
+-                                                             workspace.boundaries_))
+-            return *score;
+-        attempted_bytes = workspace.resident_bytes();
+-    }
+-    auto result = nvpd_cuda(a,b);
+-    result.device_bytes = std::max(result.device_bytes, attempted_bytes);
+-    return result;
++    CudaWorkspace workspace;
++    const auto score = detail::corridor::persistent_score(a,b,workspace.indices_,workspace.table_,
++                                                           workspace.boundaries_);
++    if (score) return *score;
++    return nvpd_cuda(a,b);
+ }
+ 
+ Result nvpd_cuda_local(std::string_view a, std::string_view b, bool trace) {
+--- a/tests/hybrid_pair.cpp
++++ b/tests/hybrid_pair.cpp
+@@ -12,7 +12,7 @@
+ }
+ }
+ 
+-int main(int argc, char** argv) {
++int main() {
+     const std::string reference(100, 'A');
+     const std::string six = std::string(94, 'A') + "NCCCCC";
+     check(reference, six, Backend::wfa2);
+@@ -28,11 +28,11 @@
+     const auto score = chps::nvpd_hybrid_score(reference, six, false, &selected);
+     if (selected != Backend::wfa2 || score.distance != 6 || score.device_bytes != 0)
+         throw std::runtime_error("invalid CPU result");
+-    if (argc == 2 && std::string_view(argv[1]) == "--cuda") {
+-        const auto gpu = chps::nvpd_hybrid_score(reference, std::string(100, 'C'), false, &selected);
+-        if (selected != Backend::nvpd_cuda || gpu.distance != 100)
+-            throw std::runtime_error("invalid CUDA result");
+-    }
++#ifdef CHPS_CUDA
++    const auto gpu = chps::nvpd_hybrid_score(reference, std::string(100, 'C'), false, &selected);
++    if (selected != Backend::nvpd_cuda || gpu.distance != 100)
++        throw std::runtime_error("invalid CUDA result");
++#endif
+     try { chps::nvpd_hybrid_score(reference, six, true); }
+     catch (const std::invalid_argument&) { return 0; }
+     throw std::runtime_error("traceback accepted by score-only policy");
