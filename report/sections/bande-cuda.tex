@@ -1,0 +1,18 @@
+\subsubsection{Réduction de la grille par une borne de distance}\label{sec:bande-cuda}
+Deux séquences proches peuvent s’aligner dans une bande étroite autour de la diagonale. Pour choisir sa largeur, le programme construit un premier alignement de coût \(U\). À la position \((i,j)\), le décalage \(t=j-i\) exige au moins \(|t|\) insertions ou délétions depuis l’origine. Il en faut au moins \(|\Delta-t|\) pour rejoindre l’extrémité, où \(\Delta=n-m\geq0\). Tout chemin optimal satisfait donc
+\[
+ |t|+|\Delta-t|\leq d(A,B)\leq U,
+ \qquad -h\leq j-i\leq\Delta+h,\qquad h=\left\lfloor\frac{U-\Delta}{2}\right\rfloor .
+\]
+Pour construire la borne, le programme essaie deux chemins. Le premier suit les correspondances voisines. Le second relie des mots identiques de six bases par de courts alignements calculés avec la récurrence bit-vectorielle de Myers~\cite{myers}. Le programme retient le plus petit coût obtenu. À l’intérieur de la bande, chaque tuile applique la récurrence de NvPD (algorithme~\ref{alg:nvpd}). L’arrondi vers l’extérieur et le recalcul du bord gauche conservent les prédécesseurs nécessaires. La bande contient au plus \(U+1\) colonnes par ligne avant arrondi. Lorsque les séquences se ressemblent, cette largeur peut rester très inférieure à \(n\), même en comptant les halos que les blocs recalculent. Si le chemin construit coûte plus de \(n/4\), le programme utilise le noyau dense.
+
+La figure~\ref{fig:nvpd-focus} compare les deux noyaux à WFA2, en incluant dans le temps GPU la construction de l’index et les transferts. Le réglage des tuiles porte sur une paire distincte d’un million de bases à 2\,\%. La première paire de 100\,000 bases à 10\,\% sert de témoin. Pour chaque paire, les quatre méthodes passent chacune deux fois à chaque position au cours des huit blocs. Un appel d’échauffement précède chaque mesure dans le même processus. La figure donne le même poids à chacune des cinq paires du groupe.
+\chart{comparison/nvpd_focused.png}{Temps de chaque noyau NvPD rapporté à celui de WFA2 sur un cœur Grace. Les intervalles à 95\,\% portent sur cinq paires distinctes dans chaque groupe. La verticale en 1 indique l’égalité des temps.}{fig:nvpd-focus}{bench/repeated/divergence/focus_analysis.py}
+
+Les tuiles retenues couvrent 16 lignes et 128 colonnes. Sur la paire de réglage à un million de bases, passer de 32 à 16 lignes par tuile ramène le nombre de cellules calculées de 44,52 à 32,98 milliards, halos compris. À géométrie fixée, les petits alignements entre mots communs resserrent la borne de 22\,131 à 19\,880 pour une distance de 19\,845. Le nombre de cellules descend à 29,63 milliards. Le temps moyen passe de 0,752 à 0,749\,s sur six blocs. Chaque calcul demande encore 62\,500 lancements CUDA.
+
+À 100\,000 bases et 10\,\%, le noyau en bande devance WFA2 sur les dix paires. Le rapport NvPD/WFA2 vaut en moyenne 0,740 pour les cinq paires initiales (IC à 95\,\% de 0,733 à 0,747) et 0,742 pour les cinq supplémentaires (de 0,731 à 0,752). Les rapports moyens correspondants face à Edlib valent 0,861 et 0,864, avec dix paires favorables à NvPD. Sur la première paire, Nsight Systems relève 6\,250 lancements et 66,87\,ms d’activité du noyau en bande, contre 12\,500 lancements et 95,95\,ms pour le noyau initial.
+
+À 100\,000 bases et 2\,\%, le GPU prend 71,5\,ms et WFA2 5,2\,ms. Le calcul reste réparti sur environ 6\,250 lancements, même quand la bande ne représente que 3,1 à 3,2\,\% de la grille, halos compris.
+
+\synthese{À un million de bases et 2\,\%, la bande réduit le temps de NvPD de 79,0\,\%. Le rapport NvPD/WFA2 passe de 4,737 à 0,996 (IC à 95\,\% de 0,986 à 1,007). L’intervalle recouvre l’égalité des temps.}

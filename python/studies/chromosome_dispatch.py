@@ -2,12 +2,11 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from matplotlib.ticker import FixedFormatter, FixedLocator, NullLocator
 
 from bench_stats import sample
-from ct_plot import COLORS, INK, estimate, legend_above, use_style
+from ct_plot import COLORS, INK, column_titles, estimate, label_panels, legend_above, use_style
 
 
 def read_trials(root: Path):
@@ -31,43 +30,60 @@ def read_trials(root: Path):
     return trials
 
 
-def make_figure(trials):
+def read_flanks(root: Path):
+    trials = pd.read_csv(root / "results/human/chromosome-dispatch/flanks/trials.csv")
+    front = trials.loc[(trials.block > 0) & trials.method.isin(["sparse", "reuse"])]
+    times = front.pivot(index=["chrom", "threads", "block"], columns="method", values="seconds")
+    if (len(times) != 56 or times.isna().any().any() or (times <= 0).any().any()
+            or not times.groupby(level=["chrom", "threads"]).size().eq(7).all()):
+        raise ValueError("expected seven paired warm timings for each chromosome and core count")
+    return (times["sparse"] / times["reuse"]).rename("flank_speedup")
+
+
+def make_figure(trials, flanks):
     use_style()
-    fig, ax = plt.subplots(figsize=(8.6, 3.55))
-    config = [("edlib", 1, "edlib · 1"), ("biwfa", 1, "BiWFA · 1"),
-              ("split", 8, "Fragments · 8"), ("sparse", 1, "Front · 1"),
-              ("sparse", 8, "Front · 8")]
+    fig, (ax, after) = plt.subplots(1, 2, sharey=True, figsize=(8.75, 3.6),
+                                    width_ratios=(1.15, 1))
+    config = [("edlib", "Edlib"), ("split", "Fragments"), ("sparse", "Front borné")]
     chroms = ["chr1_MATERNAL", "chr1_PATERNAL", "chr21_MATERNAL", "chr21_PATERNAL"]
     labels = []
     limits = []
-    palette = [COLORS[i] for i in (4, 1, 0, 3, 2)]
     for row, chrom in enumerate(chroms):
-        case = trials[trials.chrom == chrom]
+        case = trials[(trials.chrom == chrom) & (trials.threads == 1)]
         number, hap = chrom[3:].split("_")
         hap = "maternel" if hap == "MATERNAL" else "paternel"
         labels.append(f"Chr. {number} {hap}\n$d={int(case.score.iloc[0])}$")
-        for i, (method, threads, label) in enumerate(config):
-            ratios = case[(case.method == method) & (case.threads == threads)].speedup_wfa
-            stat = sample(ratios)
-            limits.extend([stat["low95"], stat["mean"], stat["high95"]])
-            y = row + (i - 2) * .15
-            ax.barh(y, abs(stat["mean"] - 1), left=min(1, stat["mean"]), height=.115,
-                    color=palette[i], edgecolor=INK, linewidth=.45,
-                    label=label if not row else None, zorder=2)
+        for k, (method, label) in enumerate(config):
+            stat = sample(case.loc[case.method == method, "speedup_wfa"])
+            limits.extend([stat["low95"], stat["high95"]])
+            y = row + (k - 1) * .21
+            ax.barh(y, abs(stat["mean"] - 1), left=min(1, stat["mean"]), height=.15,
+                    color=COLORS[[4, 0, 2][k]], edgecolor=INK, linewidth=.5,
+                    label=label if row == 0 else None)
             estimate(ax, y, stat, INK, marker="|", horizontal=True)
+        for cores, offset, color, marker in [(1, -.13, COLORS[0], "o"), (8, .13, COLORS[3], "s")]:
+            ratios = flanks.xs((chrom, cores), level=("chrom", "threads"))
+            y = row + offset
+            after.hlines(y, ratios.min(), ratios.max(), colors=INK, linewidth=.55)
+            estimate(after, y, sample(ratios, independent=False), color, marker=marker, horizontal=True,
+                     label=(f"{cores} cœur" if cores == 1 else f"{cores} cœurs") if row == 0 else None)
     ax.set_xscale("log")
-    positive = [x for x in limits if np.isfinite(x) and x > 0]
-    ax.set_xlim(min(positive) * .85, max(positive) * 1.16)
-    ticks = [x for x in (.01,.02,.05,.1,.2,.5,1,2,5,10,20,50,100) if ax.get_xlim()[0] <= x <= ax.get_xlim()[1]]
+    ax.set_xlim(min(x for x in limits if x > 0) * .8, max(limits) * 1.22)
+    ticks = [x for x in (.01,.02,.05,.1,.2,.5,1,2,5,10) if ax.get_xlim()[0] <= x <= ax.get_xlim()[1]]
     ax.xaxis.set_major_locator(FixedLocator(ticks))
     ax.xaxis.set_major_formatter(FixedFormatter([f"{x:g}".replace(".", ",") for x in ticks]))
     ax.xaxis.set_minor_locator(NullLocator())
     ax.set_yticks(range(len(chroms)), labels)
-    ax.set_ylim(len(chroms)-.55, -.55)
-    ax.grid(False, axis="y")
-    for row in range(len(chroms)-1):
-        ax.axhline(row+.5, color=INK, linestyle=":", linewidth=.5)
-    ax.axvline(1, color=INK, linewidth=1)
-    ax.set_xlabel(r"Rapport des temps $T_{\mathrm{WFA2},1}/T_{a,p}$ [1]")
-    legend_above(fig, [ax], len(config))
+    ax.set_ylim(len(chroms) - .55, -.55)
+    for axis in (ax, after):
+        axis.grid(False, axis="y")
+        for row in range(len(chroms)-1):
+            axis.axhline(row + .5, color=INK, linestyle=":", linewidth=.5)
+        axis.axvline(1, color=INK, linewidth=.85)
+    ax.set_xlabel(r"$T_{\mathrm{WFA2},1} / T_{\mathrm{method},1}$ [1]")
+    after.set_xlabel(r"$T_{\mathrm{rescan},p} / T_{\mathrm{reuse},p}$ [1]")
+    after.margins(x=.09)
+    label_panels([ax, after])
+    column_titles([ax, after], ["Choix du solveur sur un cœur", "Réutilisation des extrémités"])
+    legend_above(fig, [ax, after], ncol=5)
     return fig

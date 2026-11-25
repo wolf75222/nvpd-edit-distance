@@ -7,7 +7,13 @@ Les révisions de dix-huit chromosomes de CHM13 et des deux haplotypes de HG002 
 
 NCBI Datasets fournit deux collections de 64 génomes, l’une de phages et l’autre du SARS-CoV-2~\cite{ncbidatasets}. Pour ce dernier, le jeu comprend Wuhan-Hu-1 et neuf génomes complets de chacun des sept lignages Pango retenus. La comparaison porte sur les caractères du FASTA. Apparier \texttt{N} avec \texttt{N} coûte zéro, et l’apparier avec une base déterminée coûte une substitution. L’annexe~\ref{sec:accessions} donne les accessions versionnées.
 
-Sur les nœuds AMD EPYC~9654 de ROMEO, OpenMP répartit les colonnes ou les paires entre cœurs d’un même processus C++20. CUDA exécute les noyaux sur le GPU des superpuces NVIDIA GH200~\cite{romeohardware}. Sur deux nœuds, MPI assure les échanges de données entre processus. Slurm, l'ordonnanceur développé à l'origine au Lawrence Livermore National Laboratory, réserve les ressources et lance les étapes sur les nœuds de calcul~\cite{slurm}. Les mesures de durée proviennent de ROMEO. Deux tests sur Apple M1 Pro complètent le diagnostic du chemin rendu par QuickEd. Le temps noyau, le temps de l'appel complet et le temps du processus sont indiqués séparément quand ils sont disponibles. Le pic de mémoire résidente (RSS) inclut le programme, ses entrées et les allocations hôtes. La mémoire du GPU est comptée séparément, en octets réservés par le programme.
+Sur les nœuds AMD EPYC~9654 de ROMEO, OpenMP répartit les colonnes ou les paires entre cœurs d’un même processus C++20. CUDA exécute les noyaux sur le GPU des superpuces NVIDIA GH200~\cite{romeohardware}. Sur deux nœuds, MPI assure les échanges de données entre processus. Slurm, l'ordonnanceur développé à l'origine au Lawrence Livermore National Laboratory, réserve les ressources et lance les étapes sur les nœuds de calcul~\cite{slurm}.
+
+Les mesures de durée proviennent de ROMEO. Deux tests sur Apple M1 Pro complètent le diagnostic du chemin rendu par QuickEd. Le temps noyau, le temps de l'appel complet et le temps du processus sont indiqués séparément quand ils sont disponibles. Le pic de mémoire résidente (RSS) inclut le programme, ses entrées et les allocations hôtes. La mémoire du GPU est comptée séparément, en octets réservés par le programme.
+
+Sur EPYC, MAQAO~2026.1.1 échantillonne l’exécution avec LProf pour repérer les boucles qui concentrent les cycles. Son module CQA analyse leurs instructions machine et estime le coût d’une itération. Les compteurs Linux de \texttt{perf stat} mesurent les instructions exécutées et les défauts de cache~\cite{maqao,perfstat}.
+
+Sur GH200, Nsight Systems situe les transferts et les lancements de noyaux sur une même chronologie~\cite{nsysdocs}. La différence entre deux lectures du compteur d’énergie par la bibliothèque NVML donne l’énergie consommée par le GPU pendant un lot~\cite{nvmldocs}. Les compteurs matériels de Nsight Compute étaient inaccessibles dans ces allocations~\cite{ncudocs}. Avant les mesures, le module \texttt{memcheck} de Compute Sanitizer recherche les accès mémoire invalides dans les noyaux dense et en bande~\cite{computesanitizer}.
 
 Le tableau~\ref{tab:scope} précise le chronomètre et l'unité expérimentale des principales campagnes. Il distingue la variabilité entre chaînes de celle des mesures répétées sur une même entrée.
 \begin{table}[!htbp]\centering\small
@@ -16,7 +22,8 @@ Le tableau~\ref{tab:scope} précise le chronomètre et l'unité expérimentale d
 Expérience & Observation chronométrée & Unité de dispersion \\\midrule
 Paires synthétiques initiales & Appel sur chaque FASTA & Paire distincte à taux fixé \\
 Répétitions sur entrée fixée & Appel après échauffement & Processus ou bloc apparié \\
-Comparaison sur cinq paires & Trois rapports par paire après échauffement & Paire à longueur et taux fixés \\
+Noyau initial sur cinq paires & Trois rapports par paire après échauffement & Paire à longueur et taux fixés \\
+Noyau en bande sur 25 paires & Huit rapports par paire après échauffement & Cinq paires par groupe \\
 Profil du GPU & Domaine temporel de la capture & Processus profilé \\
 MPI entre nœuds & Maximum des durées de rang & Bloc de lancements \\\bottomrule
 \end{tabular}\end{table}

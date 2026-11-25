@@ -4,7 +4,9 @@
 
 [Rapport complet](report/rapport.pdf) · [Synthèse courte](report/tldr.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Bibliographie](report/tex/references.bib) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
 
-Sur le GH200 de ROMEO, la comparaison porte sur 60 paires synthétiques, cinq pour chaque combinaison de longueur et de taux d’édition. À un million de bases et 10 % d’éditions introduites, NvPD sur GPU réduit le temps de calcul du score de 62,9 % en moyenne face à WFA2 et de 37,9 % face à Edlib, chacun sur un cœur Grace. À 100 000 bases au même taux, NvPD devance WFA2 sur deux paires sur cinq. [Mesures et protocole](results/repeated/divergence-gh200/)
+Sur le GH200 de ROMEO, le noyau NvPD en bande devance WFA2 sur un cœur Grace pour les dix paires synthétiques de 100 000 bases à 10 % d’éditions introduites. À un million de bases et 2 %, le rapport de temps NvPD/WFA2 passe de 4,737 pour le noyau dense à 0,996 pour la bande (IC à 95 % de 0,986 à 1,007). WFA2 reste plus rapide à 100 000 bases et 2 %. [Comparaison appariée](results/repeated/nvpd-focus/) · [Étude du noyau dense sur 60 paires](results/repeated/divergence-gh200/)
+
+Sur huit cœurs EPYC, NvPD vectorisé calcule le score de deux séquences d’un million de bases à 5 % en 14,79 s en moyenne, contre 196,86 s par anti-diagonales. Sur les deux révisions du chromosome 1 paternel de HG002, conserver les extrémités déjà alignées ramène le temps du solveur par fragments de 21,07 à 10,76 ms pour 111 éditions. [Essais OpenMP](results/romeo/completion-1m/paired/) · [Chromosomes complets](results/human/chromosome-dispatch/flanks/)
 
 ## Compiler et tester sur CPU
 
@@ -183,7 +185,7 @@ Avec le noyau NvPD indexé et le vol de tâches, les travailleurs Kokkos traiten
 | `packed-wfa` | Pour le score sur A, C, G et T, le front bidirectionnel compare 32 bases par mot de 64 bits. BiWFA prend le relais si la paire dépasse le budget de 96 éditions ou contient un autre symbole. |
 | `banded`, `banded-trim` | Le calcul élargit la bande jusqu’à couvrir la distance. `banded-trim` retire d’abord le préfixe et le suffixe identiques. |
 | `hirschberg` | Reconstruit le chemin en mémoire linéaire. `--trace` fonctionne aussi avec Edlib et, jusqu’à 20 000 bases par séquence, avec `seq` et NvPD. |
-| `-DCHPS_CUDA=ON` | Active `nvpd-cuda` et `nvpd-cuda-local` avec un compilateur CUDA C++20. La variante `nvpd-cuda-local` calcule le halo nécessaire à chaque bloc de colonnes. Sur GH200, ajouter `-DCMAKE_CUDA_ARCHITECTURES=90`. |
+| `-DCHPS_CUDA=ON` | Active `nvpd-cuda` et `nvpd-cuda-local` avec un compilateur CUDA C++20. Le mode automatique utilise une borne de distance pour limiter la grille. La variante `nvpd-cuda-local` parcourt la grille dense avec un halo propre à chaque bloc de colonnes. Sur GH200, ajouter `-DCMAKE_CUDA_ARCHITECTURES=90`. |
 | `-DCHPS_KOKKOS=ON` | Active `nvpd-kokkos` avec Kokkos ≥ 4. Le mode score garde une équipe sur CPU et fusionne deux lignes sur GPU. |
 | `-DCHPS_MPI=ON` | Construit `editdist-mpi`. `pair` répartit un alignement entre les rangs, `pairs` traite les paires consécutives du FASTA et `matrix` calcule toutes les distances par paires. |
 | `-DCHPS_QUICKED=ON` | Construit `editdist-quicked`, avec contrôle du score par Edlib. |
@@ -206,7 +208,7 @@ Sur quatre cœurs EPYC 9654, deux fenêtres homologues de 100 000 bases passen
 
 ## Profiler les tuiles CUDA
 
-Sur GH200, `CHPS_CUDA_TILE_ROWS` fixe le nombre de lignes traitées par tuile (de 1 à 32, avec 8 par défaut). L’option `CHPS_CUDA_PACKED_MATCHES` active la mise en mémoire partagée de quatre décalages sur huit bits par colonne. Les décalages trop grands utilisent l’index entier.
+Le mode `nvpd-cuda` utilise le coût d’un premier alignement pour borner les colonnes à visiter. Sur les entrées à quatre bases, son index décrit 32 colonnes par quatre masques et quatre positions. Quand la bande est trop large, le calcul revient aux tuiles denses. Dans ce noyau, `CHPS_CUDA_TILE_ROWS` fixe la hauteur des tuiles (16 par défaut). Avec `CHPS_CUDA_PACKED_MATCHES=ON`, quatre décalages tiennent dans un mot de 32 bits. Les occurrences trop éloignées sont retrouvées au début de chaque tranche de 256 colonnes.
 
 ```sh
 cmake -S . -B build-gpu -DCMAKE_BUILD_TYPE=Release -DCHPS_CUDA=ON \
