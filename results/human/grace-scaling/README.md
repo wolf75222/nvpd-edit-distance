@@ -10,6 +10,8 @@ Pour chaque bloc, l’accélération à charge fixe vaut $S_p=T_1(W)/T_p(W)$ et 
 
 Le lot de 64 alignements prend 1,242 s avec un cœur, 1,467 s avec deux cœurs et 0,746 s avec quatre cœurs. À quatre cœurs, l’accélération atteint 1,665 (écart-type 0,008, IC à 95 % [1,657 ; 1,674]). L’efficacité vaut 41,6 % à charge fixe et 42,0 % à charge par cœur fixe. Sur quatre cœurs d’une même puce, une seconde expérience attribue la lecture de chaque fichier au cœur qui traite la paire. Le temps de lecture passe de 1,826 à 0,619 s. Les pages des séquences résident sur le même nœud NUMA dans les deux modes. [Mesure du placement](placement/README.md) · [Figure](../../../figures/comparison/grace_chromosome_scaling.png)
 
+La comparaison sur les cœurs 0 et 72 reprend ensuite le lot fixe avec sept placements. Le surcoût des lectures distantes atteint 788,1 ms pour 64 alignements. Avec une copie locale auprès de chaque lecteur, le temps à deux cœurs descend sous celui à un cœur. [Comparaison entre puces](interchip/)
+
 Depuis la racine du dépôt, la commande suivante recalcule les rapports appariés et la figure.
 
 ```sh

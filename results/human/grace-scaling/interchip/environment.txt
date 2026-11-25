@@ -1,0 +1,46 @@
+romeo-a002
+2026-11-25T21:36:44+01:00
+JobId=840942 JobName=nvpd-interchip
+   UserId=rmdraux(100267) GroupId=rmdraux(100267) MCS_label=N/A
+   Priority=1854 Nice=0 Account=r260105 QOS=normal
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   DerivedExitCode=0:0
+   RunTime=00:00:02 TimeLimit=00:15:00 TimeMin=N/A
+   SubmitTime=2026-11-25T21:36:42 EligibleTime=2026-11-25T21:36:42
+   AccrueTime=2026-11-25T21:36:42
+   StartTime=2026-11-25T21:36:42 EndTime=2026-11-25T21:51:42 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-25T21:36:42 Scheduler=Main
+   Partition=instant AllocNode:Sid=romeo1:1604922
+   ReqNodeList=romeo-a002 ExcNodeList=(null)
+   NodeList=romeo-a002
+   BatchHost=romeo-a002
+   NumNodes=1 NumCPUs=4 NumTasks=4 CPUs/Task=1 ReqB:S:C:T=0:0:1:*
+   ReqTRES=cpu=4,mem=8G,node=1,billing=4
+   AllocTRES=cpu=4,mem=8G,node=1,billing=4
+   Socks/Node=* NtasksPerN:B:S:C=0:0:1:* CoreSpec=*
+   JOB_GRES=(null)
+     Nodes=romeo-a002 CPU_IDs=0,72,144,216 Mem=8192 GRES=
+   MinCPUsNode=1 MinMemoryNode=8G MinTmpDiskNode=0
+   Features=armgpu DelayBoot=00:00:00
+   Reservation=maqao
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=/gpfs/home/rmdraux/chps-numa.Ns3qZ7Qc/submit.sbatch
+   WorkDir=/gpfs/home/rmdraux/chps-numa.Ns3qZ7Qc
+   StdErr=/gpfs/home/rmdraux/chps-numa.Ns3qZ7Qc/interchip-840942.log
+   StdIn=/dev/null
+   StdOut=/gpfs/home/rmdraux/chps-numa.Ns3qZ7Qc/interchip-840942.log
+   Power=
+   TresPerTask=cpu:1
+
+
+CPU NODE SOCKET CORE
+  0    0      0    0
+ 72    1      1   72
+0
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+2a78caa4d355635feb908b1d8feb7686308353c2fc49c01deaf9d1cbf09119a5  /dev/shm/grace-numa-src.N0sld1pX/bench/human/grace-numa/numa.cpp
+e96dd98bed0e4bc4608939b43ab004036a0e95ca00921b157d94d5d5b996dcb8  /dev/shm/grace-numa-src.N0sld1pX/bench/human/grace-numa/numa.cmake
+6f0f49ec10cd918759286c9a0041c061827794bc697b3f58e62845f5d380b660  /dev/shm/grace-numa-src.N0sld1pX/bench/human/grace-numa/measure.py
+dddb43f18bad40a7f1a51a51c708194cfc50b0395b7534db476ef963d937bf2e  /dev/shm/grace-numa-src.N0sld1pX/bench/human/grace-numa/run.sbatch
+a5254686e330c611a083e9d726d4c99adf485b78df484a0b0749f5a0da228a65  /tmp/grace-numa.Z9j7PR2W/build/grace_numa
