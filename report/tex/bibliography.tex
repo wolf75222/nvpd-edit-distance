@@ -7,5 +7,8 @@
 \setlength{\bibitemsep}{2pt}
 \DefineBibliographyExtras{french}{\let\mkbibnamefamily\textnormal}
 \AtBeginBibliography{\raggedright}
+\setcounter{biburllcpenalty}{600}
+\setcounter{biburlucpenalty}{600}
+\setcounter{biburlnumpenalty}{600}
 \DeclareFieldFormat{doi}{\href{https://doi.org/#1}{\nolinkurl{doi:#1}}}
-\DeclareFieldFormat{url}{\href{#1}{\mkbibacro{URL}}}
+\DeclareFieldFormat{url}{\url{#1}}

@@ -9,7 +9,7 @@ from urllib.parse import unquote
 
 
 REPORT = Path(__file__).resolve().parents[1] / "report"
-REPORTS = ("rapport.tex", "rapport-court.tex")
+REPORTS = ("rapport.tex", "tldr.tex")
 FOUNDATIONAL_DOIS = {
     "sadiq": "10.1007/s10586-019-02962-w",
     "wfagpu": "10.1109/access.2022.3182714",

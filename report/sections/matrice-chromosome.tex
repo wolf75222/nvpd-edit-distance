@@ -31,6 +31,6 @@ Le rapport \(W_{768}/(2W_{544})\) vaut 0,9973. Pour Edlib et WFA2, \(W_q\) décr
 
 Sur 384 cœurs, le partage des index et des tampons ramène NvPD de \(1{,}7449\pm0{,}0053\) à \(1{,}3402\pm0{,}0035\)\,s en ordre de Hilbert pondéré. Avec les mêmes index, le vol de travail prend \(1{,}1679\pm0{,}0039\)\,s, contre \(1{,}4777\pm0{,}0041\)\,s par blocs statiques. Le produit des longueurs prédit le nombre de cellules denses. L'ordre d'accès aux cibles et le coût de la file interviennent aussi dans le temps mesuré. L'efficacité forte du calcul indexé est de 75,0\,\% et son efficacité à charge par cœur fixée de 75,6\,\%.
 
-Le test de sous-séquence résout 39\,679 paires parmi les 110\,592 examinées. Avec WFA2, il ramène la durée de \(1{,}2931\pm0{,}0021\) à \(1{,}0742\pm0{,}0053\)\,s. Le solveur bit-parallèle d'Edlib traite déjà plusieurs états d'une colonne dans un mot machine. Son temps passe de 0,1680 à 0,1645\,s.
+Le test de sous-séquence résout 39\,679 paires parmi les 110\,592 examinées. Avec WFA2, il ramène la durée de \(1{,}2931\pm0{,}0021\) à \(1{,}0742\pm0{,}0053\)\,s. Le solveur bit-parallèle d'Edlib traite déjà plusieurs états d'une colonne dans un mot machine. Avec le test de sous-séquence, Edlib termine en \(0{,}1645\pm0{,}0007\)\,s.
 
-\synthese{Sur les 294\,528 paires, Edlib termine en \(0{,}1680\pm0{,}0006\)\,s sur 384 cœurs. L'écart restant avec NvPD indexé atteint un facteur de 7,98. Les comparaisons suivantes portent sur des régions homologues dont la distance est plus faible.}
+\synthese{Sur 384 cœurs en ordre de Hilbert pondéré, Edlib seul traite les 294\,528 paires en \(0{,}1680\pm0{,}0006\)\,s. Sans test de sous-séquence, NvPD indexé prend 7,98 fois ce temps.}

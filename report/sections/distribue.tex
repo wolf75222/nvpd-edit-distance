@@ -47,6 +47,7 @@ Pour une paire, 1\,024 lignes sont conservées et la largeur vaut 256 ou 4\,096 
 \chart{distributed/mpi_faible.png}{Au doublement du travail et du nombre de cœurs, sept blocs donnent les temps et l’efficacité faible. Les crochets délimitent les intervalles de confiance à 95\,\%.}{fig:mpifaible}{bench/mpi/scaling.py}
 Sur la figure~\ref{fig:mpifaible}, le passage à deux nœuds porte la durée du lot de \(691{,}97\pm7{,}28\) à \(890{,}94\pm3{,}47\)\,ms. Sur une paire, l'efficacité passe de 10,07 à 30,57\,\% lorsque le travail local par ligne est multiplié par seize. Le nombre de collectifs reste fixé à 1\,024.
 
+\FloatBarrier
 \synthese{Pour le lot indépendant, l'efficacité faible atteint \(77{,}67\pm0{,}76\)\,\%. Sur la paire large, l'IC à 95\,\% s'étend de 19,33 à 41,80\,\%. La dispersion sur un nœud limite la précision du rapport.}
 
 \input{sections/mpi-humain}

@@ -1,6 +1,6 @@
 \subsubsection{Réduction du domaine de NvPD par borne de distance}\label{sec:nvpd-adaptatif}
 
-Les colonnes indépendantes de NvPD~\cite{sadiq} permettent de vectoriser une ligne. La version dense évalue encore toutes ses colonnes, même pour deux chaînes presque identiques. Notre variante reprend le principe d'un seuil croissant~\cite{ukkonen}. Elle conserve l'index de dernière occurrence de NvPD entre les essais. Elle calcule le score global avec des coûts unitaires.
+Les colonnes indépendantes de NvPD~\cite{sadiq} permettent de vectoriser une ligne. La version dense évalue encore toutes ses colonnes, même pour deux chaînes presque identiques. La variante en bande reprend le principe d'un seuil croissant~\cite{ukkonen}. Elle conserve l'index de dernière occurrence de NvPD entre les essais. Elle calcule le score global avec des coûts unitaires.
 
 Après retrait des extrémités identiques, on oriente les chaînes pour avoir \(m\leq n\). On note \(\Delta=n-m\) et \(e=j-i\). Pour atteindre la cellule \((i,j)\), il faut au moins \(|e|\) insertions ou délétions, puis au moins \(|\Delta-e|\) pour atteindre la cellule finale. Un budget de \(k\geq\Delta\) impose donc
 \[
@@ -16,6 +16,7 @@ Pour vérifier le certificat, considérons un chemin optimal de coût au plus \(
 \caption{Score NvPD par budgets certifiés}\label{alg:nvpd-adaptatif}
 \begin{algorithmic}[1]
 \Require Nonempty trimmed strings \(A,B\), \(m\leq n\), lower and upper bounds \(L,V\)
+\Ensure Unit-cost global edit distance \(d(A,B)\)
 \If{\(L=V\)} \State \Return \(L\) \EndIf
 \State \(K\gets\max(1,L)\), \(T\gets\Call{LastOccurrences}{A,B}\)
 \Loop
@@ -34,7 +35,7 @@ Pour vérifier le certificat, considérons un chemin optimal de coût au plus \(
 
 Le banc de la figure~\ref{fig:nvpd-adaptatif} conserve les coûts unitaires et utilise edlib comme contrôle indépendant. Deux paires synthétiques ont des taux de modification demandés de 2 et 10\,\%. Une troisième paire de 20\,000 bases contient deux chaînes tirées indépendamment. Les quatre fenêtres du chromosome 21 débutent aux coordonnées GRCh38 34\,500\,000 et CHM13 32\,882\,567. Leur distance va de 34 à 2\,336 opérations. Chaque mesure chronomètre un appel entier après une chauffe, sur le même cœur et dans un ordre tiré par bloc. Le comptage des cellules inclut les tentatives dont le budget s'est révélé insuffisant.
 
-À 250\,000 bases, NvPD dense prend \(25{,}116\pm0{,}016\)\,s et la variante en bande \(97{,}65\pm0{,}21\)\,ms. Le rapport apparié moyen des temps atteint 257,20 (IC à 95\,\% de 256,58 à 257,82). Seules 307 bases ont été retirées aux extrémités de chaque chaîne. Les essais successifs visitent 216 millions de cellules sur une grille de 62,5 milliards. Sur les deux chaînes indépendantes, la distance atteint 10\,373 pour 20\,000 bases et le rapport des temps retombe à 1,421 (IC de 1,405 à 1,436).
+À 250\,000 bases, NvPD dense prend \(25{,}116\pm0{,}016\)\,s et la variante en bande \(97{,}65\pm0{,}21\)\,ms. Le gain moyen apparié vaut 257,20 (IC à 95\,\% de 256,58 à 257,82). Après retrait de 307 bases par chaîne, le noyau visite 216 millions de cellules sur 62,5 milliards. Sur les chaînes indépendantes de 20\,000 bases, la distance atteint 10\,373 et le gain vaut 1,421 \mbox{(IC à 95\,\% de 1,405 à 1,436)}.
 
 Le contrôle scalaire conserve les mêmes bandes et les mêmes cellules. À 10\,\% de modifications synthétiques, les minima imbriqués permettent à GCC de traiter huit indices de match par instruction \texttt{vpgatherdd}. Le nombre d'instructions retirées par cellule passe de 25,07 à 2,74. Le temps passe de \(70{,}30\pm0{,}05\) à \(21{,}71\pm0{,}07\)\,ms. Sur la fenêtre humaine d'un million de bases, la variante en bande prend \(1{,}608\pm0{,}003\)\,s. La bande classique prend 10,485\,s, edlib 243\,ms, WFA2 7,07\,ms et BiWFA 5,41\,ms pour le même score de 2\,336. Le temps dense à cette longueur n'a pas été mesuré.
 

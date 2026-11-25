@@ -2,7 +2,7 @@
 
 `editdist` calcule la distance de Levenshtein globale entre deux séquences d’ADN. Chaque insertion, suppression ou substitution coûte une unité. NvPD utilise la dernière occurrence de chaque symbole pour calculer en parallèle les colonnes d’une ligne. Le projet compare son coût sur CPU et GPU, puis utilise les distances pour construire des arbres. [Article de Sadiq et coll.](https://doi.org/10.1007/s10586-019-02962-w)
 
-[Rapport complet](report/rapport.pdf) · [Synthèse courte](report/rapport-court.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Bibliographie](report/tex/references.bib) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
+[Rapport complet](report/rapport.pdf) · [Synthèse courte](report/tldr.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Bibliographie](report/tex/references.bib) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
 
 Sur ROMEO, NvPD sur GH200 devance edlib et WFA2-lib sur un cœur Grace pour une des douze paires synthétiques chronométrées à chaud. Cette paire compte un million de bases de référence et 10 % d’éditions injectées. En cinq répétitions, NvPD prend 3,591 ± 0,011 s, edlib 5,903 ± 0,060 s et WFA2-lib 9,835 ± 0,023 s (moyenne ± écart-type). [Mesures sur GH200](results/repeated/gh200/summary.csv)
 
@@ -187,7 +187,7 @@ Sur la fenêtre avec insertion de 524 288 bases de référence, à seize lignes 
 
 ## Se repérer dans le dépôt
 
-Les noyaux et la ligne de commande se trouvent dans `src/`, les interfaces dans `include/chps/` et les tests dans `tests/`. Les outils de `scripts/` préparent les données et les arbres. Les bancs de `bench/` produisent les tables de `results/`. Le carnet dans `notebooks/` utilise les fonctions de tracé de `python/`. Les figures de `figures/` alimentent le rapport et sa synthèse courte, qui se compile depuis `report/rapport-court.tex` ou `report/tldr.tex`. [Sources](src/) · [Tests](tests/) · [Résultats](results/)
+Les noyaux et la ligne de commande se trouvent dans `src/`, les interfaces dans `include/chps/` et les tests dans `tests/`. Les outils de `scripts/` préparent les données et les arbres. Les bancs de `bench/` produisent les tables de `results/`. Le carnet dans `notebooks/` utilise les fonctions de tracé de `python/`. Les figures de `figures/` alimentent le rapport et sa synthèse courte, qui se compile depuis `report/tldr.tex`. [Sources](src/) · [Tests](tests/) · [Résultats](results/)
 
 Depuis la racine, les commandes suivantes régénèrent le carnet, les figures et les deux PDF avec Python 3.11 et Tectonic. La conversion du schéma TikZ en SVG utilise `pdftocairo` (Poppler).
 
@@ -198,5 +198,5 @@ python -m pip install -r notebooks/requirements.txt
 python report/figures/phylograms.py
 python report/figures/render_decision.py
 python -m jupyter nbconvert --to notebook --execute --inplace notebooks/profil_nvpd.ipynb
-(cd report && tectonic rapport.tex && tectonic rapport-court.tex)
+(cd report && tectonic rapport.tex && tectonic tldr.tex)
 ```

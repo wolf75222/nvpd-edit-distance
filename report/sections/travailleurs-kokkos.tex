@@ -12,4 +12,5 @@ Avec le parcours de Hilbert pondéré, deux nœuds donnent \(0{,}3960\pm0{,}0039
 
 Sur les 768 loci décrits dans la section~\ref{sec:matrice-chromosome}, les deux moteurs utilisent des index partagés. Avec vol de tâches, Kokkos passe de \(2{,}015\pm0{,}014\)\,s sur 192 cœurs à \(1{,}183\pm0{,}006\)\,s sur 384 cœurs. Son efficacité forte atteint \(85{,}17\pm0{,}44\)\,\%, contre \(75{,}33\pm0{,}47\)\,\% dans l'ordre de Hilbert pondéré.\footnote{Les quarante matrices de la campagne retrouvent les distances d'Edlib. Voir les \reposource{results/mpi/chromosome/workers/839351/trials.csv}.}
 
+\FloatBarrier
 \synthese{Sur les 294\,528 paires à deux nœuds avec vol, le rapport de temps OpenMP/Kokkos vaut 1,0009 (IC à 95\,\% de 0,9962 à 1,0056). Dans cette configuration, l'ordonnancement influence davantage le temps que le choix du pool de travailleurs.}

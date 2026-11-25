@@ -15,9 +15,9 @@ L'algorithme~\ref{alg:tile} précise les lectures globales et les échanges inte
 \State Write the final scores in \([u,v]\) to global memory
 \end{algorithmic}
 \end{algorithm}
-Les 256 fils d'un bloc produisent 256 ou 1\,024 colonnes. La grille choisit la largeur supérieure si sa taille moyenne atteint au moins deux blocs par multiprocesseur. Le calcul par ligne s'applique quand \(R>64\), quand la paire contient moins de huit lignes ou pour le traceback.
-\chart{gpu/variantes_gpu.png}{Sur le GH200, la largeur de tuile modifie la durée du calcul sur les premières paires synthétiques à deux pour cent d'éditions injectées.}{fig:tuiles}{bench/gpu/cuda/profile_gpu.cu}
-La figure~\ref{fig:tuiles} compare des appels après échauffement. Trois appels chauds fournissent une moyenne par processus. La dispersion entre les trois processus porte sur ces moyennes. À un million de bases et 2\,\% d'erreur, la tuile fixe prend \(5{,}351\pm0{,}088\)\,s et le noyau par ligne \(5{,}178\pm0{,}012\)\,s dans la même allocation.
+Les 256 fils d'un bloc produisent 256 ou 1\,024 colonnes. La grille choisit la largeur supérieure si sa taille moyenne atteint au moins deux blocs par multiprocesseur. Dans cette version à portée globale, le calcul par ligne s’applique quand \(R>64\), quand la paire contient moins de huit lignes ou pour le traceback.
+\chart{gpu/variantes_gpu.png}{Sur GH200, les durées du noyau par ligne et des tuiles de largeur adaptative sont mesurées sur la première paire de chaque longueur à 2\,\% d’éditions, au premier appel puis après chauffe.}{fig:tuiles}{bench/gpu/cuda/profile_gpu.cu}
+Le panneau b) de la figure~\ref{fig:tuiles} compare les appels après échauffement. Trois appels chauds fournissent une moyenne par processus. La dispersion entre les trois processus porte sur ces moyennes. À un million de bases et 2\,\% d'erreur, la tuile fixe prend \(5{,}351\pm0{,}088\)\,s et le noyau par ligne \(5{,}178\pm0{,}012\)\,s dans la même allocation.
 
 \synthese{À un million de bases dans la campagne adaptative, les temps moyens passent de \(5{,}222\pm0{,}188\) à \(3{,}711\pm0{,}099\)\,s. Le rapport de 1,41 inclut le recalcul des colonnes du halo.}
 

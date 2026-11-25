@@ -1,7 +1,7 @@
 \usepackage[english,french]{babel}
 \usepackage{tex/popsnotes}
 \selectcolormodel{natural}
-\usepackage{algpseudocode,placeins,needspace,multicol}
+\usepackage{algpseudocode,flafter,placeins,needspace,multicol}
 \floatstyle{ruled}
 \newfloat{algorithm}{htbp}{loa}
 \floatname{algorithm}{Algorithme}
@@ -11,7 +11,7 @@
 \setlength{\headwidth}{\textwidth}
 \setcounter{secnumdepth}{2}
 \setcounter{tocdepth}{2}
-\addto\captionsfrench{\renewcommand{\contentsname}{Sommaire}\renewcommand{\figurename}{Figure}}
+\addto\captionsfrench{\renewcommand{\contentsname}{Sommaire}\renewcommand{\figurename}{Figure}\renewcommand{\tablename}{Tableau}}
 \titleformat{\section}{\normalfont\rmfamily\bfseries\Large}{\thesection}{.65em}{}[{\vspace{1pt}\titlerule[.35pt]}]
 \titleformat{\subsection}{\normalfont\rmfamily\bfseries\large}{\thesubsection}{.65em}{}[{\vspace{.5pt}\titlerule[.2pt]}]
 \pretocmd{\section}{\FloatBarrier\Needspace{4\baselineskip}}{}{}
@@ -20,9 +20,12 @@
 \newcommand{\reposource}[1]{\href{https://github.com/wolf75222/nvpd-edit-distance/blob/main/#1}{\nolinkurl{#1}}}
 \newcommand{\sourcefig}[1]{\par\vspace{1pt}{\raggedright\footnotesize Code\,: \reposource{#1}\par}}
 \BeforeBeginEnvironment{figure}{\par}
-\AfterEndEnvironment{figure}{\par}
+\AfterEndEnvironment{figure}{\par\FloatBarrier}
 \BeforeBeginEnvironment{algorithm}{\par}
-\AfterEndEnvironment{algorithm}{\par}
+\AfterEndEnvironment{algorithm}{\par\FloatBarrier}
+\AfterEndEnvironment{table}{\par\FloatBarrier}
+\clubpenalty=10000
+\widowpenalty=10000
 \newcommand{\chart}[5][.94\linewidth]{\begin{figure}[!htbp]\centering
   \includegraphics[width=#1,height=.35\textheight,keepaspectratio]{../figures/#2}
   \caption{#3}\label{#4}\sourcefig{#5}\end{figure}}

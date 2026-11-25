@@ -17,4 +17,5 @@ Sur la fenêtre colinéaire de 65\,536 bases, une capture Nsight Systems compte 
 
 Le panneau c) donne le pic RSS, la taille des tableaux hôtes et, sur GH200, les octets réservés sur le GPU pour les noyaux natif et Kokkos retenu. Sur la fenêtre de 65\,536 bases avec insertion, chacune des trois implémentations atteint un pic RSS de 180\,Mio dans ses cinq processus et réserve 1\,802\,376 octets sur le GPU. L'appel courant de Kokkos emploie l'équipe persistante sur l'hôte lorsque sa taille est admise, et les lignes fusionnées sur le GPU pour le score seul.
 
+\FloatBarrier
 \synthese{Sur les fenêtres humaines du GH200, fusionner deux lignes accélère Kokkos d’un facteur de 1,71 à 1,87. La portée des prédécesseurs impose au noyau CUDA natif de traiter ces mêmes fenêtres ligne par ligne.}
