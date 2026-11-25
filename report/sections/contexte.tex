@@ -5,9 +5,30 @@ Sadiq et ses coauteurs (2020) s’appuient sur la programmation dynamique. Leur 
 
 \schema{contexte-nvpd}{La flèche indique le calcul de la distance entre \texttt{A} et \texttt{AGC}. Les deux \texttt{A} se correspondent. Depuis le préfixe vide \(\varepsilon\), le coût est donc celui des deux insertions, soit \(D_{1,3}=D_{0,0}+2=2\).}{fig:contexte-nvpd}{report/figures/contexte-nvpd.tex}
 
+L’algorithme~\ref{alg:article-nvpd} reproduit le pseudocode de Sadiq et coll. Les lignes 5 à 9 construisent la table des dernières occurrences. Les lignes 10 à 14 remplissent ensuite la table des distances, une ligne après l’autre.
+\begin{algorithm}[!htbp]
+\centering\includegraphics[width=.83\linewidth]{figures/articles/sadiq-nvpd.png}
+\caption{Pseudocode original de NvPD, reproduit de Sadiq et coll.~\cite[alg.~1, p.~885]{sadiq}.}\label{alg:article-nvpd}
+\end{algorithm}
+
 Aguado-Puig et ses coauteurs (2022) prennent pour point de départ le nombre d’éditions que l’on autorise~\cite[alg.~1 à~4 et fig.~1 à~3]{wfagpu}. Tant que les lettres se correspondent, on peut avancer dans les deux séquences sans augmenter le coût de l’alignement. Chaque diagonale de la grille correspond à un décalage entre les deux séquences. Pour un coût donné, l’algorithme retient la position la plus avancée sur chaque diagonale accessible. Ces positions forment un \emph{front} (figure~\ref{fig:contexte-ewfa}). Le premier front qui atteint la fin des deux séquences donne leur distance. Sur GPU, chaque bloc peut traiter une paire et répartir ses diagonales entre ses fils de calcul.
 
 \schema{contexte-ewfa}{Les deux \texttt{A} se correspondent au coût zéro. L’insertion de \texttt{G} ouvre la diagonale \(k=-1\), où la correspondance des deux \texttt{C} conduit au point \((2,3)\), à la fin des deux séquences.}{fig:contexte-ewfa}{report/figures/contexte-ewfa.tex}
+
+Les algorithmes~\ref{alg:article-wfa-operators} et~\ref{alg:article-wfa-align} reproduisent les trois premiers blocs de l’article. L’opérateur \textit{extend} prolonge les correspondances sur chaque diagonale. L’opérateur \textit{computeNext} prépare le front suivant à partir des trois opérations d’édition. La boucle principale répète ces deux étapes jusqu’à atteindre l’extrémité des séquences. Les auteurs présentent aussi la reconstruction du chemin à partir du vecteur de retour dans l’algorithme~\ref{alg:article-wfa-trace}.
+\begin{algorithm}[!htbp]
+\centering\includegraphics[width=.64\linewidth]{figures/articles/wfa-extend.png}\par\medskip
+\includegraphics[width=.64\linewidth]{figures/articles/wfa-next.png}
+\caption{Opérateurs originaux d’extension et de calcul du front suivant, reproduits d’Aguado-Puig et coll.~\cite[alg.~1 et 2, p.~63784]{wfagpu}.}\label{alg:article-wfa-operators}
+\end{algorithm}
+\begin{algorithm}[!htbp]
+\centering\includegraphics[width=.64\linewidth]{figures/articles/wfa-align.png}
+\caption{Boucle principale originale de WFA, reproduite d’Aguado-Puig et coll.~\cite[alg.~3, p.~63785]{wfagpu}.}\label{alg:article-wfa-align}
+\end{algorithm}
+\begin{algorithm}[!htbp]
+\centering\includegraphics[width=.64\linewidth,height=.42\textheight,keepaspectratio]{figures/articles/wfa-trace.png}
+\caption{Reconstruction originale de l’alignement, reproduite d’Aguado-Puig et coll.~\cite[alg.~4, p.~63788]{wfagpu}.}\label{alg:article-wfa-trace}
+\end{algorithm}
 
 Les essais publiés éclairent deux usages de l’alignement. Sur une paire de séquences de 1,02 et 1,17~Mnt, Sadiq et coll. mesurent le temps nécessaire pour obtenir la distance seule. Leur GPU GTX TITAN Black effectue ce calcul 92,04 fois plus vite que leur référence séquentielle sur Core~i7~\cite[tabl.~3]{sadiq}. Aguado-Puig et coll. mesurent aussi le temps de reconstruction des alignements. Pour dix millions de paires de 1\,000 bases à 5\,\% d’erreurs, les chemins sont obtenus en 689~ms sur V100, transferts compris, contre 3\,900~ms avec eWFA sur les 80 fils du POWER9~\cite[tabl.~1]{wfagpu}.
 
