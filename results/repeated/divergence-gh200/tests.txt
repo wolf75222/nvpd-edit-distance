@@ -1,0 +1,20 @@
+Internal ctest changing into directory: build
+Test project build
+    Start 1: fasta_cli
+1/7 Test #1: fasta_cli ........................   Passed    0.31 sec
+    Start 2: cohort_cli
+2/7 Test #2: cohort_cli .......................   Passed    0.11 sec
+    Start 3: packed_frontiers
+3/7 Test #3: packed_frontiers .................   Passed    0.03 sec
+    Start 4: adaptive
+4/7 Test #4: adaptive .........................   Passed    0.11 sec
+    Start 5: split
+5/7 Test #5: split ............................   Passed    0.04 sec
+    Start 6: distances
+6/7 Test #6: distances ........................   Passed    0.55 sec
+    Start 7: wfa_packed_cigar
+7/7 Test #7: wfa_packed_cigar .................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =   1.15 sec

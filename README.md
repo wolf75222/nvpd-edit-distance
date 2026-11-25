@@ -4,7 +4,7 @@
 
 [Rapport complet](report/rapport.pdf) · [Synthèse courte](report/tldr.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Bibliographie](report/tex/references.bib) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
 
-Sur les douze paires synthétiques chronométrées à chaud, NvPD sur GPU devance les deux bibliothèques sur une seule paire. Elle compte un million de bases de référence et 10 % d’éditions injectées. Sur cinq répétitions, NvPD prend 3,591 ± 0,011 s sur le GPU du GH200. Sur un cœur Grace du même nœud, Edlib prend 5,903 ± 0,060 s et WFA2-lib 9,835 ± 0,023 s (moyenne ± écart-type). [Mesures sur GH200](results/repeated/gh200/summary.csv)
+Sur ROMEO, cinq paires synthétiques sont mesurées pour chacune des douze combinaisons de longueur et de taux d’éditions. À un million de bases et 10 %, NvPD sur GPU devance Edlib et WFA2 sur un cœur Grace pour les cinq paires. Le rapport moyen NvPD/WFA2 vaut 0,3706 ± 0,0038 entre paires. À 100 000 bases et 10 %, NvPD devance WFA2 sur deux paires sur cinq. [Mesures et protocole](results/repeated/divergence-gh200/)
 
 ## Compiler et tester sur CPU
 
