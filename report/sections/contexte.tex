@@ -9,8 +9,20 @@ Dans l’algorithme~\ref{alg:article-nvpd}, \(A\) et \(B\) désignent les séque
 
 La seconde boucle remplit la table \(ED\). Chaque case correspond à une paire de préfixes de \(A\) et \(B\). Sur une même ligne, les colonnes utilisent la ligne précédente et les positions mémorisées dans \(MI\). Elles peuvent donc être traitées simultanément. Une fois la ligne terminée, le calcul passe à la suivante. La case finale donne la distance entre les deux séquences entières. Les auteurs écrivent \(MI\) et \(ED\) dans la déclaration des tables, puis \(MIT\) et \(EDT\) dans le texte de l’article.
 \begin{algorithm}[!htbp]
-\centering\includegraphics[width=.83\linewidth]{figures/articles/sadiq-nvpd.png}
-\caption{Pseudocode original de NvPD, reproduit de Sadiq et coll.~\cite[alg.~1, p.~885]{sadiq}.}\label{alg:article-nvpd}
+\caption{NvPD de Sadiq et coll.~\cite[alg.~1, p.~885]{sadiq}}\label{alg:article-nvpd}
+\small
+\begin{algorithmic}[1]
+\Require Sequences \(A,B\) and alphabet \(\Sigma\)
+\Ensure Edit distance table
+\State \(u\gets|\Sigma|,\; m\gets|A|,\; n\gets|B|\)
+\State Allocate \(MI[0\mathinner{\ldotp\ldotp}u-1,0\mathinner{\ldotp\ldotp}n-1]\) and \(ED[0\mathinner{\ldotp\ldotp}m,0\mathinner{\ldotp\ldotp}n]\)
+\ForAll{\(i=0,\ldots,u-1\) in parallel}
+  \For{\(j=0,\ldots,n-1\)} \State Compute \(MI_{i,j}\) according to Equation (2) \EndFor
+\EndFor
+\For{\(i=0,\ldots,m\)}
+  \ForAll{\(j=0,\ldots,n\) in parallel} \State Compute \(EDT_{i,j}\) according to Equation (3) \EndFor
+\EndFor
+\end{algorithmic}
 \end{algorithm}
 
 Aguado-Puig et ses coauteurs (2022) prennent pour point de départ le nombre d’éditions que l’on autorise~\cite[alg.~1 à~4 et fig.~1 à~3]{wfagpu}. Tant que les lettres se correspondent, on peut avancer dans les deux séquences sans augmenter le coût de l’alignement. Chaque diagonale de la grille correspond à un décalage entre les deux séquences. Pour un coût donné, l’algorithme retient la position la plus avancée sur chaque diagonale accessible. Ces positions forment un \emph{front} (figure~\ref{fig:contexte-ewfa}). Le premier front qui atteint la fin des deux séquences donne leur distance. Sur GPU, chaque bloc peut traiter une paire et répartir ses diagonales entre ses fils de calcul.
@@ -23,17 +35,52 @@ Lorsque les lettres ne coïncident plus, \textit{computeNext} examine les positi
 
 Le score ne donne pas à lui seul la suite des opérations. L’algorithme~\ref{alg:article-wfa-trace} utilise le vecteur de retour conservé pendant le calcul pour reconstruire cette suite. Il ajoute les lettres correspondantes, puis lit l’opération enregistrée et met à jour la position et la diagonale avant de poursuivre.
 \begin{algorithm}[!htbp]
-\centering\includegraphics[width=.64\linewidth]{figures/articles/wfa-extend.png}\par\medskip
-\includegraphics[width=.64\linewidth]{figures/articles/wfa-next.png}
-\caption{Opérateurs originaux d’extension et de calcul du front suivant, reproduits d’Aguado-Puig et coll.~\cite[alg.~1 et 2, p.~63784]{wfagpu}.}\label{alg:article-wfa-operators}
+\caption{Opérateurs de WFA~\cite[alg.~1 et 2, p.~63784]{wfagpu}}\label{alg:article-wfa-operators}
+\small
+\begin{algorithmic}[1]
+\Require Sequences \(P,T\), score \(e\), front \(\widetilde W_e\)
+\Ensure Extended front and next front \(\widetilde W_{e+1}\)
+\For{\(k=-e,\ldots,e\)}
+  \State \(v\gets\widetilde W_{e,k}-k,\quad h\gets\widetilde W_{e,k}\)
+  \While{\(P_v=T_h\)}
+    \State \(v\gets v+1,\quad h\gets h+1,\quad \widetilde W_{e,k}\gets\widetilde W_{e,k}+1\)
+  \EndWhile
+\EndFor
+\For{\(k=-(e+1),\ldots,e+1\)}
+  \State \(\widetilde W_{e+1,k}\gets\max\{\widetilde W_{e,k-1}+1,\widetilde W_{e,k}+1,\widetilde W_{e,k+1}\}\)
+\EndFor
+\end{algorithmic}
 \end{algorithm}
 \begin{algorithm}[!htbp]
-\centering\includegraphics[width=.64\linewidth]{figures/articles/wfa-align.png}
-\caption{Boucle principale originale de WFA, reproduite d’Aguado-Puig et coll.~\cite[alg.~3, p.~63785]{wfagpu}.}\label{alg:article-wfa-align}
+\caption{Boucle principale de WFA~\cite[alg.~3, p.~63785]{wfagpu}}\label{alg:article-wfa-align}
+\small
+\begin{algorithmic}[1]
+\Require Sequences \(P,T\) and wavefronts \(\widetilde W_e,\widetilde W_{e+1}\)
+\Ensure Global edit distance
+\State \(\widetilde W_{0,0}\gets0\); \(\Call{extend}{\widetilde W_{0,0}}\); \(e\gets0\)
+\While{\(\widetilde W_{e,m-n}\ne m\)}
+  \State \(\Call{computeNext}{\widetilde W_e,\widetilde W_{e+1}}\)
+  \State \(e\gets e+1\); \(\Call{extend}{P,T,\widetilde W_e}\)
+\EndWhile
+\end{algorithmic}
 \end{algorithm}
 \begin{algorithm}[!htbp]
-\centering\includegraphics[width=.64\linewidth,height=.42\textheight,keepaspectratio]{figures/articles/wfa-trace.png}
-\caption{Reconstruction originale de l’alignement, reproduite d’Aguado-Puig et coll.~\cite[alg.~4, p.~63788]{wfagpu}.}\label{alg:article-wfa-trace}
+\caption{Reconstruction du chemin dans eWFA~\cite[alg.~4, p.~63788]{wfagpu}}\label{alg:article-wfa-trace}
+\small
+\begin{algorithmic}[1]
+\Require Sequences \(P,T\), backtrace vector \(\widetilde B\), score \(e\)
+\Ensure Alignment \(A\)
+\State \(\mathit{offset}\gets0,\; k\gets0,\; A\gets\varnothing\)
+\For{\(i=0,\ldots,e\)}
+  \State \(m\gets\Call{extend}{P,T,k,\mathit{offset}}\); append \(m\) matches to \(A\)
+  \State \(op\gets\widetilde B_k[i]\)
+  \If{\(op\) is deletion} \State \(k\gets k-1\); append \(D\) to \(A\)
+  \ElsIf{\(op\) is mismatch} \State \(\mathit{offset}\gets \mathit{offset}+1\); append \(X\) to \(A\)
+  \ElsIf{\(op\) is insertion} \State \(\mathit{offset}\gets \mathit{offset}+1,\; k\gets k+1\); append \(I\) to \(A\)
+  \EndIf
+\EndFor
+\State \(m\gets\Call{extend}{P,T,k,\mathit{offset}}\); append \(m\) matches to \(A\)
+\end{algorithmic}
 \end{algorithm}
 
 Les essais publiés éclairent deux usages de l’alignement. Sur une paire de séquences de 1,02 et 1,17~Mnt, Sadiq et coll. mesurent le temps nécessaire pour obtenir la distance seule. Leur GPU GTX TITAN Black effectue ce calcul 92,04 fois plus vite que leur référence séquentielle sur Core~i7~\cite[tabl.~3]{sadiq}. Aguado-Puig et coll. mesurent aussi le temps de reconstruction des alignements. Pour dix millions de paires de 1\,000 bases à 5\,\% d’erreurs, les chemins sont obtenus en 689~ms sur V100, transferts compris, contre 3\,900~ms avec eWFA sur les 80 fils du POWER9~\cite[tabl.~1]{wfagpu}.
