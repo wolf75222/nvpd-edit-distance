@@ -1,0 +1,20 @@
+\subsubsection{Passage à l’échelle sur chromosomes humains complets}\label{sec:grace-chromosomes}
+Sur un nœud GH200, quatre cœurs Grace peuvent traiter simultanément des paires de chromosomes. Le lot comprend les chromosomes~1 à~4 de CHM13, chacun comparé entre les versions~1.0 et~1.1 du même assemblage~\cite{chmreleases}. Chaque cœur parcourt les quatre paires dans un ordre décalé et calcule leurs distances avec le solveur par fragments à fronts bornés. La somme des longueurs des deux versions vaut 1,772 milliard de bases sur les quatre chromosomes. La lecture du FASTA précède le chronométrage.
+
+Soit \(T_p(W)\) la durée du lot de charge \(W\) sur \(p\) cœurs. À charge fixe, l’accélération vaut \(S_p=T_1(W)/T_p(W)\) et l’efficacité \(E_p=S_p/p\). À charge par cœur constante, l’efficacité vaut \(E_p^{\mathrm{weak}}=T_1(w)/T_p(pw)\). L’étude forte conserve seize passages sur les quatre paires à chaque effectif. L’étude faible en attribue quatre à chaque cœur. Les passages supplémentaires réutilisent les mêmes séquences.
+
+La figure~\ref{fig:grace-scaling} suit le temps de calcul sur un, deux et quatre cœurs. Chacun des six processus essaie les trois effectifs dans un ordre différent après échauffement. Slurm place les quatre cœurs sur quatre puces Grace du même nœud. Le fil principal charge les séquences. À charge fixe de 28,345~Gnt, le temps passe de 1,242 à 1,467\,s entre un et deux cœurs, puis descend à 0,746\,s sur quatre cœurs. À charge par cœur fixe de 7,086~Gnt, les durées correspondantes valent 0,312, 0,736 et 0,744\,s.
+\chart{comparison/grace_chromosome_scaling.png}{Durées et efficacités à charge totale fixe et à charge par cœur fixe. Chaque observation porte sur un processus. Les intervalles à 95\,\% utilisent les six blocs appariés.}{fig:grace-scaling}{bench/repeated/divergence/launch/scaling_analysis.py}
+
+Le tableau~\ref{tab:grace-read} distingue ensuite la préparation des entrées du calcul. Dans cet essai, Slurm attribue quatre cœurs d’une même puce. Un seul fil lit les quatre fichiers FASTA à la suite, ou bien chaque fil lit celui du chromosome qu’il traitera. Après un échauffement, chaque fil calcule seize fois le score de sa paire. Les six blocs alternent l’ordre des deux modes. Dans les deux cas, les régions mémoire qui contiennent les huit séquences occupent 1\,689,75\,Mio sur le même domaine NUMA. Cette allocation permet de mesurer le gain de lecture parallèle sur une puce. La cause du ralentissement à deux puces dans la figure~\ref{fig:grace-scaling} reste ouverte.
+\begin{table}[htbp]\centering\small
+\caption{Durées moyennes et écarts-types sur six blocs appariés. La lecture comprend le décodage des fichiers FASTA. Le calcul porte sur 64 alignements après échauffement.}\label{tab:grace-read}
+\begin{tabular}{@{}lrr@{}}\toprule
+Phase & Un lecteur & Quatre lecteurs \\ \midrule
+Lecture des chromosomes [s] & \(1{,}826\pm0{,}007\) & \(0{,}619\pm0{,}026\) \\
+Calcul des scores [ms] & \(339{,}31\pm1{,}45\) & \(337{,}90\pm1{,}04\) \\ \bottomrule
+\end{tabular}
+\end{table}
+À quatre lecteurs, la lecture accélère d’un facteur 2,96 (IC à 95\,\% de 2,81 à 3,10). Le gain sur le calcul des scores vaut 1,42\,ms (de 0,58 à 2,26\,ms).
+\FloatBarrier
+\synthese{Entre un et quatre cœurs situés sur quatre puces Grace, l’accélération en charge fixe vaut 1,665 (IC à 95\,\% de 1,657 à 1,674). Les efficacités forte et faible valent respectivement 41,63 et 42,02\,\%.}

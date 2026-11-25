@@ -40,9 +40,14 @@ Sur les cinq paires historiques à 100 knt et 10 %, deux modes exécutent le mê
 
 ## Reproduction sur ROMEO
 
-Depuis un clone du dépôt, préparer le FASTA synthétique et compiler l’exécutable initial sur un nœud Grace Hopper. Le script de confirmation utilise les archives des dépendances du dépôt lorsqu’elles se trouvent dans `deps/`.
+Les sept empreintes SHA-256 des sources CUDA enregistrées lors de la confirmation correspondent au commit `9a9e23e`. Depuis un clone du dépôt, créer un arbre de travail à cette révision et y compiler les deux exécutables sur un nœud Grace Hopper. Le script de confirmation utilise les archives de dépendances lorsqu’elles se trouvent dans `deps/`. [Sources du candidat](https://github.com/wolf75222/nvpd-edit-distance/tree/9a9e23e) · [Empreintes des sources](confirmation/environment.txt) · [Empreintes des exécutables](confirmation/timing/binaries.tsv)
 
 ```bash
+project_root=$PWD
+mkdir -p build
+git worktree add --detach build/focus-candidate 9a9e23e
+cd build/focus-candidate
+if [ -d "$project_root/deps" ]; then ln -s "$project_root/deps" deps; fi
 python3 scripts/datasets/synthetic.py
 mkdir -p build/focus-repro
 git worktree add --detach build/focus-repro/base-src 0c916d5

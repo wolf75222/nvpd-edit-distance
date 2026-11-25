@@ -4,6 +4,8 @@ Les campagnes ROMEO couvrent les 60 paires synthétiques et les 2 016 paires de 
 
 Le calcul en bande sur GH200 est comparé au noyau dense sur 25 paires. Sur EPYC, les mesures appariées portent sur les anti-diagonales à huit cœurs et sur les extrémités communes de quatre chromosomes de HG002. [Comparaison CUDA](repeated/nvpd-focus/) · [Calcul à huit cœurs](romeo/completion-1m/paired/) · [Chromosomes de HG002](human/chromosome-dispatch/flanks/)
 
+Sur quinze autres paires de 100 000 bases, deux règles de choix entre WFA2 et NvPD sont comparées après échauffement. Sur les chromosomes entiers 1 à 4 de CHM13, six blocs mesurent le passage à l’échelle entre puces Grace. Un essai sur une seule puce sépare le temps de lecture des chromosomes de celui du calcul. [Choix du solveur](repeated/nvpd-launch/refinement/) · [Passage à l’échelle](human/grace-scaling/) · [Lecture parallèle](human/grace-scaling/placement/)
+
 | Objet du sujet | Contrôle réalisé | Données et résultats |
 |---|---|---|
 | Paires synthétiques | Quatre longueurs, trois taux, cinq paires distinctes par combinaison. La graine 2026 permet de reproduire les bases tirées uniformément et le tirage équiprobable des types d’édition. | [Manifeste des 60 paires](../data/synthetic/manifest.tsv) · [Régénération et contrôle des scores](../bench/campaign/check_course_corpus.py) |

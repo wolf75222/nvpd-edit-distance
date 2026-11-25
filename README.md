@@ -4,7 +4,7 @@
 
 [Rapport complet](report/rapport.pdf) · [Synthèse courte](report/tldr.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Bibliographie](report/tex/references.bib) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
 
-Sur le GH200 de ROMEO, le noyau NvPD en bande devance WFA2 sur un cœur Grace pour les dix paires synthétiques de 100 000 bases à 10 % d’éditions introduites. À un million de bases et 2 %, le rapport de temps NvPD/WFA2 passe de 4,737 pour le noyau dense à 0,996 pour la bande (IC à 95 % de 0,986 à 1,007). WFA2 reste plus rapide à 100 000 bases et 2 %. [Comparaison appariée](results/repeated/nvpd-focus/) · [Étude du noyau dense sur 60 paires](results/repeated/divergence-gh200/)
+Sur le GH200 de ROMEO, le mode `nvpd-hybrid-score` choisit le solveur sans connaître le taux d’édition. Sur quinze nouvelles paires de 100 000 bases, il utilise WFA2 sur CPU à 2 et 5 %, puis NvPD sur GPU à 10 %. À 5 %, la seconde borne réduit le temps moyen de 72,96 à 28,36 ms. À 10 %, l’hybride prend 68,82 ms, contre 99,30 ms pour WFA2 sur un cœur Grace. Pour le GPU seul à un million de bases et 2 %, le rapport NvPD/WFA2 atteint 0,996 (IC à 95 % de 0,986 à 1,007). [Choix du solveur](results/repeated/nvpd-launch/refinement/) · [Calcul en bande](results/repeated/nvpd-focus/)
 
 Sur huit cœurs EPYC, NvPD vectorisé calcule le score de deux séquences d’un million de bases à 5 % en 14,79 s en moyenne, contre 196,86 s par anti-diagonales. Sur les deux révisions du chromosome 1 paternel de HG002, conserver les extrémités déjà alignées ramène le temps du solveur par fragments de 21,07 à 10,76 ms pour 111 éditions. [Essais OpenMP](results/romeo/completion-1m/paired/) · [Chromosomes complets](results/human/chromosome-dispatch/flanks/)
 
@@ -149,6 +149,8 @@ L’architecture CUDA `90` correspond au GH200 de ROMEO. Avec `hybrid-share`, WF
 
 Sur les 28 paires du lot à deux loci, le routage avec reprise ramène le temps moyen de 1,342 s avec Edlib sur quatre cœurs à 0,990 s. Pour les 2 016 paires de la cohorte virale, le choix selon les effectifs répartit le calcul entre Edlib et WFA2 sur CPU. Le temps moyen passe de 2,433 à 2,241 s face à Edlib seul. [Mesures sur les fenêtres humaines](results/hybrid/matrix-gh200/trials.csv) · [Mesures sur la matrice virale](results/hybrid/matrix-gh200/composition/trials.csv)
 
+Sur les chromosomes entiers 1 à 4 de CHM13, le solveur par fragments a aussi été testé sur quatre cœurs appartenant à quatre puces Grace du même nœud. Pour 28,345 Gnt cumulés en repassant sur les mêmes séquences, l’accélération entre un et quatre cœurs vaut 1,665. À charge par cœur constante, l’efficacité vaut 42,02 %. Sur quatre cœurs d’une même puce, confier à chaque cœur la lecture de son chromosome ramène le chargement de 1,826 à 0,619 s. Le calcul des 64 scores gagne 1,42 ms. [Passage à l’échelle](results/human/grace-scaling/) · [Lecture et placement mémoire](results/human/grace-scaling/placement/)
+
 ## Distribuer une matrice humaine
 
 Préparer le chromosome 1 de CHM13 comme indiqué plus haut, puis en extraire 768 régions disjointes de 512 à 3 072 bases. Le script Slurm réserve deux nœuds EPYC de 192 cœurs chacun et mesure la même matrice sur un puis deux nœuds. Placer les archives de dépendances dans `deps/` et définir `ROMEO_PROJECT` avec le nom du compte Slurm. [Campagne et mesures](results/mpi/chromosome/)
@@ -191,6 +193,13 @@ Avec le noyau NvPD indexé et le vol de tâches, les travailleurs Kokkos traiten
 | `-DCHPS_QUICKED=ON` | Construit `editdist-quicked`, avec contrôle du score par Edlib. |
 
 `build/editdist --help` affiche les modes et les options. A*PA2 de Groot Koerkamp associe un parcours en blocs SIMD à une heuristique de coût restant. QuickEd de Doblas et coll. estime une borne pour reconstruire l’alignement en bande par parallélisme sur bits. Si tous les chemins optimaux sortent de la bande, le meilleur alignement accessible peut coûter davantage. Une erreur distincte de lecture au bord d’un mot de bits affecte deux témoins sur EPYC. L’adaptateur protège ce bord, rejoue le chemin et élargit la recherche si son coût diffère de celui d’Edlib. [Comparaison sur le chromosome 21](results/alternatives/human/README.md) · [Comparaison avec QuickEd d’origine](results/alternatives/README.md)
+
+Pour comparer les deux modes sur le même FASTA, utiliser une compilation avec CUDA. Le champ `backend` du mode hybride indique la routine choisie. Si le GPU refuse un lancement coopératif, cette routine peut reprendre le calcul avec le noyau en bande ordinaire.
+
+```sh
+build-gpu/editdist pair --algorithm nvpd-cuda-persistent --input build/paire.fa
+build-gpu/editdist pair --algorithm nvpd-hybrid-score --input build/paire.fa
+```
 
 ## Profiler NvPD sur processeur
 
