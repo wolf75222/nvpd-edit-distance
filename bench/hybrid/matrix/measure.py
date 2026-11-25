@@ -46,11 +46,15 @@ def main():
     for arg in ("binary", "inputs", "output", "temp"):
         parser.add_argument(arg, type=Path)
     parser.add_argument("--threads", type=int, default=4)
-    parser.add_argument("--panel", choices=("human", "surveillance"), default="human")
+    parser.add_argument("--panel", choices=("human", "surveillance", "composition"), default="human")
     args = parser.parse_args()
     cohorts = COHORTS if args.panel == "human" else ("surveillance",)
-    policies = POLICIES if args.panel == "human" else ("cpu-edlib", "cpu-wfa2", "hybrid")
-    blocks = 7 if args.panel == "human" else 6
+    panels = {
+        "human": (POLICIES, 7),
+        "surveillance": (("cpu-edlib", "cpu-wfa2", "hybrid"), 6),
+        "composition": (("cpu-edlib", "cpu-wfa2", "hybrid", "hybrid-counts"), 8),
+    }
+    policies, blocks = panels[args.panel]
     args.output.mkdir(parents=True, exist_ok=True)
     args.temp.mkdir(parents=True, exist_ok=True)
     oracle = {}
@@ -87,7 +91,7 @@ def main():
                     matrix = args.temp / "current.tsv"
                     command = [args.binary, "--input", args.inputs / (cohort + ".fa"), "--policy", policy,
                                "--threads", str(args.threads), "--warmups", "1", "--repeats", "1", "--matrix", matrix]
-                    if k == 0 and policy == "hybrid":
+                    if k == 0 and policy == ("hybrid-counts" if args.panel == "composition" else "hybrid"):
                         command += ["--decisions", args.output / (cohort + "-decisions.tsv")]
                     data = subprocess.check_output(command, text=True)
                     digest = hashlib.sha256(matrix.read_bytes()).hexdigest()

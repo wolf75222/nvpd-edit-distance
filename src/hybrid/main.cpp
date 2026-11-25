@@ -1,5 +1,6 @@
 #include "matrix.hpp"
 #include "sketch.hpp"
+#include "chps/split.hpp"
 
 #include <charconv>
 #include <filesystem>
@@ -17,7 +18,7 @@ using chps::Record;
 using chps::hybrid::Matrix;
 using chps::hybrid::Policy;
 constexpr auto usage =
-    "editdist-route --input FILE --policy cpu-edlib|cpu-wfa2|gpu|hybrid|hybrid-share|cpu-sketch|static "
+    "editdist-route --input FILE --policy cpu-edlib|cpu-wfa2|gpu|hybrid|hybrid-share|hybrid-counts|cpu-sketch|static "
     "[--threads N] [--warmups N] [--repeats N] [--matrix FILE] [--decisions FILE]";
 
 int number(std::string_view value, int minimum) {
@@ -56,12 +57,19 @@ void write_matrix(const std::string& path, const std::vector<Record>& records, c
     out.close();
 }
 
-void write_decisions(const std::string& path, const std::vector<Record>& records, const Matrix& data) {
+void write_decisions(const std::string& path, const std::vector<Record>& records, const Matrix& data, bool counts) {
     std::vector<chps::hybrid::Sketch> words;
     words.reserve(records.size());
     for (const auto& r : records) words.push_back(chps::hybrid::sketch(r.bases));
+    std::vector<chps::SplitComposition> composition;
+    if (counts) {
+        composition.reserve(records.size());
+        for (const auto& r : records) composition.emplace_back(r.bases);
+    }
     auto out = output(path);
-    out << "i\tj\tid_i\tid_j\tshared\tsampled\tjaccard\tclass\tdistance\n" << std::setprecision(12);
+    out << "i\tj\tid_i\tid_j\tshared\tsampled\tjaccard\tclass\tdistance";
+    if (counts) out << "\tlower_bound\tcpu_library_choice";
+    out << '\n' << std::setprecision(12);
     for (std::size_t i = 0; i < records.size(); ++i) {
         for (std::size_t j = i + 1; j < records.size(); ++j) {
             const auto match = chps::hybrid::overlap(words[i], words[j]);
@@ -69,7 +77,16 @@ void write_decisions(const std::string& path, const std::vector<Record>& records
                 << match.common << '\t' << match.sampled << '\t';
             if (match.sampled == 0) out << "NA\tfallback";
             else out << static_cast<double>(match.common) / match.sampled << '\t' << (match.close() ? "close" : "far");
-            out << '\t' << data.scores[i * records.size() + j] << '\n';
+            out << '\t' << data.scores[i * records.size() + j];
+            if (counts) {
+                const auto bound = composition[i].lower_bound(composition[j]);
+                const auto longest = std::max(records[i].bases.size(), records[j].bases.size());
+                const char* choice = "far_queue";
+                if (match.sampled == 0) choice = "edlib";
+                else if (match.close()) choice = chps::hybrid::prefer_edlib(bound, longest) ? "edlib" : "wfa2";
+                out << '\t' << bound << '\t' << choice;
+            }
+            out << '\n';
         }
     }
     out.close();
@@ -81,7 +98,8 @@ int main(int argc, char** argv) {
         const std::unordered_map<std::string, Policy> policies{
             {"gpu", Policy::gpu}, {"cpu-edlib", Policy::edlib}, {"cpu-wfa2", Policy::wfa2},
             {"hybrid", Policy::hybrid}, {"cpu-sketch", Policy::cpu_sketch},
-            {"static", Policy::static_split}, {"hybrid-share", Policy::hybrid_share}};
+            {"static", Policy::static_split}, {"hybrid-share", Policy::hybrid_share},
+            {"hybrid-counts", Policy::hybrid_counts}};
         int threads = 1, warmups = 0, repeats = 1;
         std::string input, name, matrix_path, decisions_path;
         for (int i = 1; i < argc; ++i) {
@@ -120,7 +138,7 @@ int main(int argc, char** argv) {
                           << result.seconds << '\n' << std::flush;
                 if (!warmup && it + 1 == count) {
                     if (!matrix_path.empty()) write_matrix(matrix_path, records, result);
-                    if (!decisions_path.empty()) write_decisions(decisions_path, records, result);
+                    if (!decisions_path.empty()) write_decisions(decisions_path, records, result, policy == Policy::hybrid_counts);
                 }
             }
         }

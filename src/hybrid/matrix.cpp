@@ -1,6 +1,7 @@
 #include "matrix.hpp"
 #include "sketch.hpp"
 #include "chps/baselines.hpp"
+#include "chps/split.hpp"
 #ifdef CHPS_CUDA
 #include "chps/cuda.hpp"
 #endif
@@ -34,6 +35,7 @@ Solver choose(Policy policy, const std::vector<Sketch>& words, std::size_t i,
     case Policy::static_split: return even ? Solver::cuda : Solver::edlib;
     case Policy::hybrid:
     case Policy::hybrid_share:
+    case Policy::hybrid_counts:
     case Policy::cpu_sketch:
         if (words[i].empty() || words[j].empty()) return Solver::edlib;
         if (overlap(words[i], words[j]).close()) return Solver::wfa2;
@@ -46,7 +48,8 @@ Solver choose(Policy policy, const std::vector<Sketch>& words, std::size_t i,
 Matrix align(const std::vector<Record>& records, Policy policy, int threads) {
     if (threads <= 0) throw std::invalid_argument("threads must be positive");
 #ifndef CHPS_CUDA
-    if (policy != Policy::edlib && policy != Policy::wfa2 && policy != Policy::cpu_sketch)
+    if (policy != Policy::edlib && policy != Policy::wfa2 && policy != Policy::cpu_sketch &&
+        policy != Policy::hybrid_counts)
         throw std::invalid_argument("this policy requires a build with CHPS_CUDA=ON");
 #endif
     auto start = Clock::now();
@@ -57,10 +60,16 @@ Matrix align(const std::vector<Record>& records, Policy policy, int threads) {
     std::vector<Pair> cpu, gpu;
     std::exception_ptr failure;
     std::vector<Sketch> words;
-    const bool share = policy == Policy::hybrid_share;
+    std::vector<SplitComposition> composition;
+    const bool counts = policy == Policy::hybrid_counts;
+    const bool share = counts || policy == Policy::hybrid_share;
     const bool estimate = share || policy == Policy::hybrid || policy == Policy::cpu_sketch;
     if (estimate) {
         const auto sketch_start = Clock::now();
+        if (counts) {
+            composition.reserve(n);
+            for (const auto& r : records) composition.emplace_back(r.bases);
+        }
         words.resize(n);
         #pragma omp parallel for num_threads(threads) schedule(static)
         for (std::size_t i = 0; i < n; ++i) {
@@ -77,11 +86,19 @@ Matrix align(const std::vector<Record>& records, Policy policy, int threads) {
     const auto route_start = Clock::now();
     for (std::size_t i = 0; i < n; ++i) {
         for (std::size_t j = i + 1; j < n; ++j) {
-            const auto solver = choose(policy, words, i, j, (gpu.size() + cpu.size()) % 2 == 0);
+            auto solver = choose(policy, words, i, j, (gpu.size() + cpu.size()) % 2 == 0);
+            if (counts && solver == Solver::wfa2) {
+                const auto bound = composition[i].lower_bound(composition[j]);
+                if (prefer_edlib(bound, std::max(records[i].bases.size(), records[j].bases.size())))
+                    solver = Solver::edlib;
+            }
             (solver == Solver::cuda ? gpu : cpu).push_back({i, j, solver});
         }
     }
     if (estimate) result.sketch_seconds += elapsed(route_start);
+#ifndef CHPS_CUDA
+    if (!gpu.empty()) throw std::invalid_argument("GPU pairs require a build with CHPS_CUDA=ON");
+#endif
     std::size_t front = 0, back = gpu.size();
     std::mutex queue_lock;
     auto take_far = [&](bool from_front) -> const Pair* {

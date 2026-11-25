@@ -1,5 +1,6 @@
 """Exercise the CPU routing policies through their public FASTA entry point."""
 
+from collections import Counter
 import csv
 import io
 import math
@@ -64,6 +65,27 @@ def run(binary, work, records, policy, threads):
     return scores, policy_decisions
 
 
+def check_composition_routing(binary, work):
+    # These pairs share all 15-mers; N, R and Y differ only in the ambiguous suffix.
+    stem = "A" * 80
+    inputs = dict(ref=stem + "N" * 20, below=stem + "N" * 16 + "R" * 4,
+                  at=stem + "N" * 15 + "R" * 5, above=stem + "N" * 14 + "Y" * 6,
+                  short="NR")
+    entries = list(inputs.items())
+    oracle, _ = run(binary, work, entries, "cpu-edlib", 1)
+    scores, _ = run(binary, work, entries, "hybrid-counts", 4)
+    assert scores == oracle
+    with (work / "decisions.tsv").open() as stream:
+        for row in csv.DictReader(stream, delimiter="\t"):
+            a, b = inputs[row["id_i"]], inputs[row["id_j"]]
+            x, y = Counter(a), Counter(b)
+            bound = max(sum((x - y).values()), sum((y - x).values()))
+            assert int(row["lower_bound"]) == bound <= int(row["distance"])
+            assert row["class"] == ("fallback" if "NR" in (a, b) else "close")
+            expected = "edlib" if row["class"] == "fallback" or 20 * bound >= max(len(a), len(b)) else "wfa2"
+            assert row["cpu_library_choice"] == expected
+
+
 def main(binary):
     rng = random.Random(8341)
     ref = "".join(rng.choices("ACGT", k=1024))
@@ -80,6 +102,7 @@ def main(binary):
                ("break", "A" * 8 + "N" + "A" * 8), ("R", "R"), ("N", "N")]
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
+        check_composition_routing(binary, work)
         oracle, _ = run(binary, work, records, "cpu-edlib", 1)
         assert oracle[("copy", "ref")] == 0 and oracle[("N", "R")] == 1
         reference_routes = None
