@@ -163,11 +163,17 @@ int main() {
             target.append(inserted, 'G');
             const int expected = edlib_distance(query, target).distance;
             if (workspace.distance(query, target).distance != expected ||
-                workspace.distance(target, query).distance != expected)
+                workspace.distance(target, query).distance != expected ||
+                nvpd_cuda_persistent(query, target).distance != expected ||
+                nvpd_cuda_persistent(target, query).distance != expected)
                 throw std::runtime_error("wrong CUDA score at an offset corridor edge");
         }
+        replay("ACT", "ACCT", nvpd_cuda_persistent("ACT", "ACCT", true));
+        if (nvpd_cuda_persistent("", "ACCT").distance != 4 || nvpd_cuda_persistent(query, query).distance != 0)
+            throw std::runtime_error("wrong persistent CUDA boundary score");
         query[1919] = 'N';
-        if (workspace.distance(query, target).distance != edlib_distance(query, target).distance)
+        if (workspace.distance(query, target).distance != edlib_distance(query, target).distance ||
+            nvpd_cuda_persistent(query, target).distance != edlib_distance(query, target).distance)
             throw std::runtime_error("wrong literal ambiguity score after a CUDA corridor call");
     }
     for (int spacing : {4, 64, 65}) {

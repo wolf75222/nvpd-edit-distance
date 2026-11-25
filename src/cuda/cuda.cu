@@ -5,7 +5,7 @@
 #include "local_tiles.cuh"
 #include "packed_match.cuh"
 #ifndef CHPS_CUDA_DISABLE_CORRIDOR
-#include "corridor.cuh"
+#include "corridor_persistent.cuh"
 #endif
 
 #ifndef CHPS_CUDA_PACKED_MATCHES
@@ -224,6 +224,23 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
 Result nvpd_cuda(std::string_view a, std::string_view b, bool trace) {
     CudaWorkspace workspace;
     return workspace.distance(a, b, trace);
+}
+
+Result nvpd_cuda_persistent(std::string_view a, std::string_view b, bool trace) {
+    if (trace || a.empty() || b.empty()) return nvpd_cuda(a,b,trace);
+    detail::validate(a,b,false);
+    if (a.size() > b.size()) std::swap(a,b);
+    std::size_t attempted_bytes;
+    {
+        CudaWorkspace workspace;
+        if (auto score = detail::corridor::persistent_score(a,b,workspace.indices_,workspace.table_,
+                                                             workspace.boundaries_))
+            return *score;
+        attempted_bytes = workspace.resident_bytes();
+    }
+    auto result = nvpd_cuda(a,b);
+    result.device_bytes = std::max(result.device_bytes, attempted_bytes);
+    return result;
 }
 
 Result nvpd_cuda_local(std::string_view a, std::string_view b, bool trace) {

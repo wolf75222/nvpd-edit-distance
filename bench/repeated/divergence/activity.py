@@ -13,11 +13,12 @@ def main():
     parser.add_argument("fasta", type=Path)
     parser.add_argument("score", type=int)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--algorithm", default="nvpd-cuda", choices=("nvpd-cuda", "nvpd-cuda-persistent"))
     args = parser.parse_args()
     with tempfile.TemporaryDirectory() as directory:
         stem = Path(directory) / "activity"
         subprocess.run(["nsys", "profile", "--sample=none", "--cpuctxsw=none", "--trace=cuda",
-                        "-o", stem, args.binary.resolve(), args.fasta, "nvpd-cuda", str(args.score)],
+                        "-o", stem, args.binary.resolve(), args.fasta, args.algorithm, str(args.score)],
                        input="run\n", text=True, check=True)
         db = stem.with_suffix(".sqlite")
         subprocess.run(["nsys", "export", "-t", "sqlite", "-o", db, stem.with_suffix(".nsys-rep")],

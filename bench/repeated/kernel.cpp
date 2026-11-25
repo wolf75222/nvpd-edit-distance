@@ -1,6 +1,9 @@
 // Commands on stdin trigger one complete calculation on a resident pair.
 #include "chps/banded.hpp"
 #include "chps/baselines.hpp"
+#ifdef CHPS_CUDA
+#include "chps/cuda.hpp"
+#endif
 #include "chps/fasta.hpp"
 #include <sys/resource.h>
 #include <algorithm>
@@ -14,7 +17,7 @@
 using chps::Result;
 using View = std::string_view;
 
-Result align(View alg, View a, View b) {
+Result align(View alg, View a, View b, [[maybe_unused]] View* backend) {
 #ifdef CHPS_REPEAT_INITIAL_ONLY
     if (alg == "nvpd-initial") return chps::nvpd_omp(a, b);
 #else
@@ -29,6 +32,13 @@ Result align(View alg, View a, View b) {
     if (alg == "hirschberg-trace") return chps::hirschberg(a, b, true);
 #ifdef CHPS_CUDA
     if (alg == "nvpd-cuda") return chps::nvpd_cuda(a, b);
+    if (alg == "nvpd-cuda-persistent") return chps::nvpd_cuda_persistent(a, b, false);
+    if (alg == "nvpd-hybrid-score") {
+        chps::HybridPairBackend selected;
+        auto result = chps::nvpd_hybrid_score(a, b, false, &selected);
+        if (backend) *backend = chps::hybrid_backend_name(selected);
+        return result;
+    }
 #endif
 #endif
     throw std::invalid_argument("unknown algorithm");
@@ -59,7 +69,8 @@ void replay(View a, View b, const Result& result) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 4) return 2;
+    const bool report_backend = argc == 5 && View(argv[4]) == "--backend";
+    if (argc != 4 && !report_backend) return 2;
     const auto records = chps::read_fasta(argv[1]);
     if (records.size() != 2) return 2;
     const View a = records[0].bases, b = records[1].bases, alg = argv[2];
@@ -68,8 +79,9 @@ int main(int argc, char** argv) {
     std::string command;
     while (std::getline(std::cin, command)) {
         if (command != "run") return 2;
+        View backend = alg;
         const auto begin = std::chrono::steady_clock::now();
-        const Result result = align(alg, a, b);
+        const Result result = align(alg, a, b, report_backend ? &backend : nullptr);
         const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
         if (result.distance != expected) throw std::runtime_error("score differs from oracle");
         if (alg.ends_with("-trace")) replay(a, b, result);
@@ -81,6 +93,8 @@ int main(int argc, char** argv) {
 #endif
         std::cout << a.size() << ',' << b.size() << ',' << result.distance << ','
                   << std::setprecision(12) << seconds << ',' << rss << ','
-                  << result.device_bytes << std::endl;
+                  << result.device_bytes;
+        if (report_backend) std::cout << ',' << backend;
+        std::cout << std::endl;
     }
 }

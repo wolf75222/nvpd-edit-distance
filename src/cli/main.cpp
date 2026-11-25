@@ -30,7 +30,7 @@ using namespace chps;
 using View = std::string_view;
 using Kernel = Result (*)(View, View, bool);
 constexpr View help =
-    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-adaptive|nvpd-split|nvpd-sparse|packed-wfa|nvpd-cuda|nvpd-cuda-local|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
+    "editdist {pair|matrix} --algorithm {seq|hirschberg|diagonal|nvpd-omp|nvpd-adaptive|nvpd-split|nvpd-sparse|packed-wfa|nvpd-cuda|nvpd-cuda-local|nvpd-cuda-persistent|nvpd-hybrid-score|nvpd-kokkos|banded|banded-trim|edlib|wfa2|biwfa}\n"
     "         --input FILE.fa [--fai FILE.fa.fai] [--threads N] [--trace] [--unique]\n"
     "pair: two FASTA records, JSON output. matrix: square labeled TSV. --unique groups identical matrix inputs.\n"
     "--trace: pair with edlib, wfa2, biwfa, packed-wfa, nvpd-sparse, nvpd-split, hirschberg (linear space), or seq/NvPD (lengths <= 20000).\n"
@@ -67,6 +67,7 @@ Options parse(int argc, char** argv) {
     if (o.path.empty() || o.algorithm.empty()) throw std::invalid_argument("input and algorithm required");
     const bool supports_trace = o.algorithm == "seq" || o.algorithm == "hirschberg" ||
                                 o.algorithm == "nvpd-omp" || o.algorithm == "nvpd-cuda" || o.algorithm == "nvpd-cuda-local" ||
+                                o.algorithm == "nvpd-cuda-persistent" ||
                                 o.algorithm == "nvpd-kokkos" || o.algorithm == "nvpd-split" || o.algorithm == "nvpd-sparse" ||
                                 o.algorithm == "packed-wfa" || o.algorithm == "edlib" ||
                                 o.algorithm == "wfa2" || o.algorithm == "biwfa";
@@ -96,9 +97,14 @@ Kernel resolve(View name) {
     if (name == "edlib") return [](View a, View b, bool trace) { return trace ? edlib_trace(a, b) : edlib_distance(a, b); };
     if (name == "wfa2") return [](View a, View b, bool trace) { return trace ? wfa_trace(a, b) : wfa_distance(a, b); };
     if (name == "biwfa") return biwfa;
-    if (name == "nvpd-cuda" || name == "nvpd-cuda-local") {
+    if (name == "nvpd-cuda" || name == "nvpd-cuda-local" ||
+        name == "nvpd-cuda-persistent" || name == "nvpd-hybrid-score") {
 #ifdef CHPS_CUDA
-        return name == "nvpd-cuda-local" ? nvpd_cuda_local : nvpd_cuda;
+        if (name == "nvpd-cuda-local") return nvpd_cuda_local;
+        if (name == "nvpd-cuda-persistent") return nvpd_cuda_persistent;
+        if (name == "nvpd-hybrid-score")
+            return [](View a, View b, bool trace) { return nvpd_hybrid_score(a, b, trace); };
+        return nvpd_cuda;
 #else
         throw std::invalid_argument("CUDA backend requires a build with -DCHPS_CUDA=ON");
 #endif
@@ -121,12 +127,21 @@ void run_pair(const Options& o, Kernel kernel, const std::vector<Record>& record
     const auto& a = records[0].bases;
     const auto& b = records[1].bases;
     const auto start = std::chrono::steady_clock::now();
+#ifdef CHPS_CUDA
+    HybridPairBackend backend{};
+    const bool hybrid = o.algorithm == "nvpd-hybrid-score";
+    const auto result = hybrid ? nvpd_hybrid_score(a, b, o.trace, &backend) : kernel(a, b, o.trace);
+#else
     const auto result = kernel(a, b, o.trace);
+#endif
     const std::chrono::duration<double> elapsed = std::chrono::steady_clock::now() - start;
     std::cout << std::setprecision(12) << "{\"algorithm\":\"" << o.algorithm
               << "\",\"distance\":" << result.distance << ",\"m\":" << a.size() << ",\"n\":" << b.size()
               << ",\"seconds\":" << elapsed.count() << ",\"peak_rss_kib\":" << peak_rss_kib()
               << ",\"device_bytes\":" << result.device_bytes;
+#ifdef CHPS_CUDA
+    if (hybrid) std::cout << ",\"backend\":\"" << hybrid_backend_name(backend) << '"';
+#endif
 #ifdef CHPS_KOKKOS
     if (o.algorithm == "nvpd-kokkos")
         std::cout << ",\"execution_space\":\"" << kokkos_execution_space() << '\"';

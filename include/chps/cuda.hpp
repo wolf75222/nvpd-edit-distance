@@ -8,6 +8,16 @@ namespace chps {
 // Automatic also packs short local halos for four-symbol score-only inputs.
 enum class CudaHalo { global, local, automatic };
 Result nvpd_cuda_local(std::string_view a, std::string_view b, bool trace = false);
+// Batch exact score frontiers on cooperatively resident CUDA blocks.
+Result nvpd_cuda_persistent(std::string_view a, std::string_view b, bool trace = false);
+
+enum class HybridPairBackend { wfa2, nvpd_cuda };
+constexpr std::string_view hybrid_backend_name(HybridPairBackend backend) {
+    return backend == HybridPairBackend::wfa2 ? "wfa2" : "nvpd-cuda";
+}
+HybridPairBackend hybrid_pair_backend(std::string_view a, std::string_view b);
+Result nvpd_hybrid_score(std::string_view a, std::string_view b, bool trace = false,
+                         HybridPairBackend* selected = nullptr);
 
 // Reuse exact-sized buffers over serial alignments on the same CUDA device.
 class CudaWorkspace {
@@ -18,6 +28,7 @@ public:
     Result distance(std::string_view a, std::string_view b, bool trace = false);
 
 private:
+    friend Result nvpd_cuda_persistent(std::string_view, std::string_view, bool);
     struct Buffer {
         Buffer() = default;
         Buffer(const Buffer&) = delete;
