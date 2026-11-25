@@ -189,7 +189,7 @@ build-gpu/editdist pair --algorithm nvpd-cuda-local --input build/paire.fa
 
 Les noyaux et la ligne de commande se trouvent dans `src/`, les interfaces dans `include/chps/` et les tests dans `tests/`. Les outils de `scripts/` préparent les données et les arbres. Les bancs de `bench/` produisent les tables de `results/`. Le carnet dans `notebooks/` utilise les fonctions de tracé de `python/`. Les deux documents LaTeX de `report/` utilisent les graphiques de `figures/`. [Sources](src/) · [Tests](tests/) · [Résultats](results/)
 
-Depuis la racine, les commandes suivantes régénèrent le carnet, les figures et les deux PDF avec Python 3.11 et Tectonic. La conversion du schéma TikZ en SVG utilise `pdftocairo` (Poppler).
+Depuis la racine, les commandes suivantes régénèrent le carnet, les figures et les deux PDF avec Python 3.11 et Tectonic. La conversion des schémas TikZ de NvPD, d’eWFA-GPU et du choix du solveur en SVG utilise `pdftocairo` (Poppler).
 
 ```sh
 python3.11 -m venv .venv-figures

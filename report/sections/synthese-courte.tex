@@ -1,13 +1,12 @@
+\input{sections/contexte}
 \section{Introduction}
-Une insertion décale les positions homologues entre deux séquences. La distance d’édition globale \(d(A,B)\) est le nombre minimal de substitutions, d’insertions et de suppressions qui transforment \(A\) en \(B\). Dans quelles conditions le calcul des colonnes en parallèle accélère-t-il NvPD sur CPU ou GPU ? L’étude compare les temps sur une paire, puis sur toutes les paires d’une collection. Les distances obtenues servent ensuite à reconstruire un arbre.
-
-Pour deux longueurs \(m,n\) et des coûts unitaires,
+L’étude mesure le temps nécessaire pour comparer deux séquences sur ROMEO. NvPD répartit les colonnes entre les cœurs. Le parcours par fronts réduit le nombre de positions visitées lorsque les séquences sont proches (figure~\ref{fig:contexte-ewfa}). Pour deux longueurs \(m,n\) et des coûts unitaires, la différence de longueur borne la distance par le bas. Des substitutions suivies de l’ajustement de longueur donnent la borne supérieure,
 \[
- |m-n|\le d(A,B)\le\max(m,n),\qquad W_{\mathrm{dense}}=mn.
+ |m-n|\le d(A,B)\le\max(m,n).
 \]
-La figure~\ref{fig:short-dep} illustre le principe de NvPD, proposé par Sadiq et ses coauteurs~\cite{sadiq}. Pour calculer la colonne \(j\), NvPD repère la dernière occurrence du symbole courant parmi les \(j\) premières bases de la cible. Si la dernière occurrence se trouve en \(k\), une correspondance en \(k\) suivie de \(j-k\) insertions se calcule à partir de la seule ligne précédente.
-\schema{dependances}{Pour les chaînes \texttt{A} et \texttt{AC}, la récurrence classique et NvPD donnent une distance d’une édition. Les flèches indiquent les scores lus pour la dernière case.}{fig:short-dep}{src/cpu/dp.cpp}
-\synthese{Deux séquences d'un million de bases imposent \(10^{12}\) mises à jour au calcul dense. Un parcours par fronts atteint le dernier préfixe au score \(d(A,B)\).}
+Sur un lot de génomes, le temps de calcul dépend aussi du partage des paires. La dernière partie relie les distances ainsi obtenues aux lignages retrouvés dans les arbres.
+
+\synthese{Deux séquences d’un million de bases imposent \(10^{12}\) mises à jour au calcul dense. Le banc compare les méthodes sur les mêmes entrées, puis mesure le passage d’une paire à une matrice de distances.}
 
 \section{Matériels et méthodes}
 Le générateur produit cinq paires pour chacune des douze combinaisons de longueur (5, 20, 100 et 1\,000~knt) et de taux d’édition (2, 5 et 10\,\%). Il tire les bases de référence uniformément sur A, C, G et T, puis les positions à modifier sans remise. À chaque position, il choisit indépendamment le type d’édition, chacun ayant une probabilité de \(1/3\). Ce plan fait varier séparément la longueur et le taux d’édition imposé. À 1~Mnt, le calcul séquentiel porte sur une paire par taux.

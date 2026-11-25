@@ -9,6 +9,8 @@ Les deux premiers termes correspondent à une délétion et à une insertion. Le
 Sadiq et coll.~\cite{sadiq} remplacent la lecture de gauche par la dernière position \(k\) de \(A_i\) dans \(B_{1:j}\). Si \(k>0\), une correspondance en \(k\) suivie de \(j-k\) insertions coûte \(P_{k-1}+j-k\), où \(P_j=D_{i-1,j}\). Si \(k=0\), le terme de remplacement \(P_0+j\) vaut \(i-1+j\), au moins \(\max(i,j)\) pour \(i,j\ge1\). Il laisse donc le minimum inchangé.
 Cette réduction découle de \(P_v\le P_u+v-u\) pour \(v\ge u\), car des insertions suffisent pour allonger le préfixe de \(B\). Considérons la dernière opération qui consomme \(A_i\), suivie d'insertions. Si elle supprime \(A_i\) en colonne \(t\), son coût total est au moins \(P_j+1\). Si elle substitue une lettre en \(t\), il est au moins \(P_{j-1}+1\). Pour une correspondance, \(P_{t-1}+j-t\) décroît au sens large avec \(t\). La dernière occurrence réalise donc le minimum de cette troisième famille de chemins.
 Dans l’exemple de la figure~\ref{fig:dep}, la dernière occurrence de \texttt{A} se trouve en colonne \(k=1\). En colonne \(j=2\), le terme \(P_{k-1}+j-k\) vaut donc une édition.
+\schema{dependances}{Les flèches indiquent les prédécesseurs de la case terminale \(D_{1,2}\). La dernière occurrence de \texttt{A} dans \texttt{AC} se trouve en colonne \(k=1\). NvPD lit donc le score \(P_0\) de la ligne précédente pour atteindre \(j=2\).}{fig:dep}{src/cpu/dp.cpp}
+
 L'algorithme~\ref{alg:nvpd} maintient deux lignes de scores. L'index \(K\) remplace la dépendance à gauche par une lecture dans la ligne précédente.
 \begin{algorithm}[!htbp]
 \caption{Mise à jour de NvPD par colonnes indépendantes}\label{alg:nvpd}

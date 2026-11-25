@@ -34,7 +34,7 @@ class ReportStructure(unittest.TestCase):
             with self.subTest(report=report):
                 body = expand_sections(REPORT / report).partition(r"\appendix")[0]
                 self.assertEqual(re.findall(r"^\\section\{([^}]+)\}", body, re.M), [
-                    "Introduction", "Matériels et méthodes", "Résultats et interprétations", "Conclusion",
+                    "Contexte", "Introduction", "Matériels et méthodes", "Résultats et interprétations", "Conclusion",
                 ])
 
     @unittest.skipUnless(shutil.which("pdftotext"), "Poppler is required to inspect the PDF cover")
