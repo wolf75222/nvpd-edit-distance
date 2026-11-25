@@ -1,0 +1,42 @@
+\subsubsection{Reconstruction et ajustement des arbres de phages}
+La collection réunit la référence du phage \(\phi\)X174 (\texttt{NC\_001422.1}) et 63 autres génomes complets obtenus avec NCBI Datasets~18.41.1~\cite{phixref,ncbidatasets}. Chaque génome est identifié par son accession versionnée, sa longueur et son empreinte SHA-256. L’ajustement se mesure par l’écart entre la distance d’édition de deux génomes et la longueur du chemin entre leurs feuilles. Une origine différente sur le génome circulaire peut modifier la distance entre les chaînes déposées. Une même édition observée peut aussi résulter de plusieurs événements évolutifs.
+
+UPGMA, la méthode de classification moyenne de Sokal et Michener~\cite{upgma}, joint les groupes \(U,V\) de distance moyenne minimale et place leur parent à la hauteur \(d(U,V)/2\). Pour un troisième groupe \(W\), la nouvelle distance moyenne est pondérée par les effectifs. Saitou et Nei ont proposé Neighbor-Joining (NJ) pour construire un arbre non enraciné~\cite{nj}. NJ joint la paire qui minimise \(Q_{ij}\), où \(r\) est le nombre de groupes actifs et \(s_i=\sum_k d_{ik}\).
+\[
+ d(U\cup V,W)=\frac{|U|d(U,W)+|V|d(V,W)}{|U|+|V|},\qquad
+ Q_{ij}=(r-2)d_{ij}-s_i-s_j.
+\]
+Pour \(r>2\), NJ attribue à la première branche la longueur \(d_{ij}/2+(s_i-s_j)/(2(r-2))\). La seconde complète \(d_{ij}\). La distance du groupe formé à un autre groupe \(k\) vaut \((d_{ik}+d_{jk}-d_{ij})/2\). À chaque fusion, les deux implémentations examinent toutes les paires actives. Pour \(N\) feuilles, elles utilisent \(O(N^3)\) opérations et \(O(N^2)\) distances stockées.
+
+La distance patristique \(t_{ij}=\sum_{e\in\operatorname{path}(i,j)}\ell_e\) est la somme des longueurs de branche entre deux feuilles. Les arbres conservent les 64 accessions, y compris la paire de séquences identiques. Ils comportent chacun trois arêtes de longueur nulle.
+
+UPGMA impose des feuilles équidistantes de la racine. Pour qu’un modèle ultramétrique reproduise les distances observées, les deux plus grandes distances de chaque triplet doivent coïncider. L'additivité d'un arbre impose sur quatre feuilles l'égalité des deux plus grandes sommes parmi \(d_{ij}+d_{kl},d_{ik}+d_{jl},d_{il}+d_{jk}\).
+
+La figure~\ref{fig:phage} porte sur les \(\binom{64}{3}=41\,664\) triplets et \(\binom{64}{4}=635\,376\) quartets. La matrice d’édition satisfait la condition d’ultramétrie pour 1\,661 triplets et celle d’additivité pour 245\,847 quartets. Entre distance d’édition et longueur du chemin, le plus grand écart absolu vaut 56,87 éditions pour UPGMA et 63,86 pour NJ.
+
+\Needspace{4\baselineskip}Sur l’ensemble des paires, l’écart entre les chemins et les distances d’édition se résume par la racine de l’erreur quadratique moyenne,
+\[
+ \operatorname{RMSE}=\sqrt{\frac{1}{P}\sum_{i<j}(d_{ij}-t_{ij})^2},
+\]
+où \(P\) désigne le nombre de paires et \(t_{ij}\) la longueur du chemin entre les feuilles \(i\) et \(j\).
+
+\chart[.70\linewidth]{biology/phylogenie.png}{Les écarts aux conditions d'ultramétrie et d'additivité sont comparés aux résidus entre distances d'édition et longueurs des chemins.}{fig:phage}{scripts/phylogeny/phylo_fit.py}
+Les longueurs de branche de la figure~\ref{fig:arbres} sont exprimées en éditions. Les distances entre feuilles de l’arbre NJ sont indépendantes du point choisi pour le dessiner.
+
+\begin{figure}[!htbp]\centering
+\resizebox{!}{.68\textheight}{\input{figures/arbres}}
+\sourcefig{report/figures/phylograms.py}
+\caption{Les deux phylogrammes partagent une échelle horizontale, marquée par une barre de dix éditions. Les pointillés relient les feuilles à leurs identifiants.}\label{fig:arbres}
+\end{figure}
+\FloatBarrier
+
+\synthese{Sur 2\,016 paires, la racine de l'erreur quadratique moyenne vaut 14,89 éditions pour UPGMA et 3,56 pour NJ. L’erreur de NJ dépasse néanmoins 60 éditions sur certaines paires.}
+
+\FloatBarrier
+\input{sections/matrice-surveillance}
+\subsubsection{Structure des groupes dans les arbres de surveillance}
+La cohorte comprend Wuhan-Hu-1~\cite{wuhanref} et neuf accessions par lignage pour sept lignages Pango~\cite{pango}. L’annexe~\ref{sec:accessions} donne les 64 identifiants versionnés et les décomptes de \texttt{N}. L’échantillonnage fixe l’effectif de chaque lignage indépendamment de sa fréquence dans la population. Le test cherche une arête qui isole exactement les neuf feuilles portant la même étiquette. Or la nomenclature Pango est hiérarchique~\cite{pango}. Le groupe étiqueté B.1 exclut notamment les feuilles étiquetées B.1.1.7, qui appartiennent à une de ses branches descendantes. Même dans un arbre fidèle à cette parenté, les neuf feuilles B.1 ne forment donc pas nécessairement un groupe exclusif. Dans un arbre enraciné, un groupe est retrouvé si les descendants d'une arête positive coïncident avec ses membres. Pour NJ, non enraciné, les deux côtés de l'arête sont examinés. Sur les 1\,905\,372 caractères lus, 65\,588 sont ambigus. La distance compte les différences entre caractères déposés, y compris aux positions ambiguës.
+\chart{biology/phylogenie_surveillance.png}{Les distances globales entre paires et les groupes isolés par une arête sont comparés aux partitions de l'arbre de surveillance sur les identifiants communs.}{fig:surveillance}{scripts/phylogeny/phylo_groups.py}
+À la figure~\ref{fig:surveillance}, la médiane est de 112 éditions pour les 252 paires de même lignage et de 402 pour les 1\,701 paires de lignages différents. Ces statistiques excluent les 63 paires contenant la référence. L'écart entre médianes est de 290 éditions. Lorsqu'on retire une accession et toutes ses paires, les 63 écarts vont de 282,5 à 295 éditions. Cette amplitude décrit la sensibilité au choix d'une feuille et conserve la dépendance entre paires qui partagent une accession. L’arbre public de l’UCSC du 23 novembre 2026~\cite{ushertree} contient 52 des 64 accessions, dont six du groupe A et aucune du groupe B.1.1.529. La méthode de placement par parcimonie de Turakhia et ses coauteurs~\cite{usher} attribue aux branches des longueurs en événements. Les chemins publics additionnent ces longueurs. Sur les 1\,326 paires de feuilles communes, la corrélation entre longueur de chemin et distance d’édition vaut \(r=0{,}124\). Plusieurs paires partagent une feuille. Le module Bio.Phylo de Biopython, présenté par Talevich et ses coauteurs~\cite{biophylo}, a relu le Newick et reproduit exactement les 1\,326 longueurs de chemin publiques.
+
+\synthese{Sur les sept groupes de lignage, UPGMA en isole deux et NJ trois. Parmi les 27 bipartitions internes de longueur positive de l’arbre UShER restreint aux 52 feuilles communes, UPGMA en retrouve six et NJ huit.}

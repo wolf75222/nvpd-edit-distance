@@ -25,7 +25,12 @@ Pour les longueurs 5\,000, 20\,000, 100\,000 et un million, le panneau a) compte
 
 Sur les cinq paires distinctes de chaque taux à un million de bases, la moyenne et l'écart-type pour WFA2 passent de \(0{,}610\pm0{,}009\) à \(11{,}638\pm0{,}063\)\,s entre 2 et 10\,\% d'éditions injectées. Sur les mêmes groupes, Edlib passe de \(1{,}706\pm0{,}006\) à \(6{,}024\pm0{,}005\)\,s.
 
-\synthese{À longueur fixée, le passage de 2 à 10\,\% d'éditions injectées multiplie le temps moyen de WFA2 par environ dix-neuf. La largeur des fronts rend la divergence déterminante pour cette bibliothèque.}
+Pour comparer les temps sur le même nœud GH200, la figure~\ref{fig:bilan} reprend une paire de chacune des douze configurations. NvPD utilise le GPU, Edlib et WFA2 un cœur Grace. Chaque bloc mesure les trois méthodes sur la même paire après échauffement, hors lecture du FASTA. Les configurations de 5 et 20~knt comptent neuf blocs, celles de 100~knt et 1~Mnt en comptent cinq.
+\chart{comparison/synthese.png}{Rapports des temps de NvPD sur GPU à ceux des bibliothèques sur un cœur Grace. Chaque case donne la moyenne des rapports appariés, leur écart-type et l’intervalle à 95\,\% à paire fixée. Un rapport inférieur à un favorise NvPD.}{fig:bilan}{python/studies/score_comparison.py}
+À 10\,\% d’éditions introduites, le rapport NvPD/WFA2 passe de 1,054 à 0,365 entre 100~knt et 1~Mnt. À 1~Mnt et 5\,\%, il vaut 1,305. Ces mesures répondent à une question de temps d’attente pour une paire soumise à chacune de ces configurations matérielles. La variabilité entre séquences d’une même catégorie demanderait plusieurs paires par case.
+
+\synthese{À un million de bases, passer de 2 à 10\,\% d’éditions introduites multiplie par dix-neuf le temps moyen de WFA2 sur les cinq paires de chaque taux. Dans la comparaison sur GH200, seule la paire de 1~Mnt à 10\,\% place NvPD devant les deux bibliothèques.}
+
 
 \input{sections/memoire-synthetique}
 \input{sections/million}

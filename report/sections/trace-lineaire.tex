@@ -1,5 +1,5 @@
-\subsection{Reconstruction en mémoire linéaire}
-Une trace optimale passe par une colonne de la ligne médiane \(h=\lfloor m/2\rfloor\). Le principe de coupe de Hirschberg~\cite{hirschberg}, initialement formulé pour une plus longue sous-séquence commune, s'applique aux coûts unitaires d'édition. Une passe avant calcule \(F_j=d(A_{1:h},B_{1:j})\). Une passe en sens inverse calcule \(G_{n-j}=d(A_{h+1:m},B_{j+1:n})\). En coupant un chemin optimal à la ligne \(h\), puis en concaténant deux solutions optimales pour cette coupe, on obtient
+\subsubsection{Reconstruction en mémoire linéaire}
+Conserver toute la matrice permet de remonter le chemin depuis sa dernière case. Hirschberg réduit cette mémoire en exploitant le fait que tout chemin optimal passe par une colonne de la ligne médiane \(h=\lfloor m/2\rfloor\). Le principe de coupe de Hirschberg~\cite{hirschberg}, initialement formulé pour une plus longue sous-séquence commune, s'applique aux coûts unitaires d'édition. Une passe avant calcule \(F_j=d(A_{1:h},B_{1:j})\). Une passe en sens inverse calcule \(G_{n-j}=d(A_{h+1:m},B_{j+1:n})\). En coupant un chemin optimal à la ligne \(h\), puis en concaténant deux solutions optimales pour cette coupe, on obtient
 \[
  d(A,B)=\min_{0\le j\le n}(F_j+G_{n-j}).
 \]

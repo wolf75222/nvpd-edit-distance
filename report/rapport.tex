@@ -13,22 +13,24 @@
 \begin{document}
 \doctitle{Calcul parallèle et phylogénies de distance}
 \begin{abstract}
-Le coût d'une comparaison génomique dépend de la longueur des séquences et de leur distance d'édition. Sur le chromosome~1 maternel de HG002, un calcul par fragments et fronts bornés retrouve les 54 éditions en 28,19\,ms sur un cœur EPYC, contre 87,18\,ms pour WFA2. Sur deux loci distincts du chromosome~21 séparés par 138\,141 éditions, NvPD prend 0,637\,s sur GH200, contre 3,762\,s pour Edlib sur un cœur Grace. Sur 384 cœurs EPYC, Edlib précédé d’un test de sous-séquence calcule la matrice de 768 fenêtres en 0,1645\,s. Sur les 64 génomes du SARS-CoV-2, Neighbor-Joining isole trois des sept lignages Pango. Une bande de demi-largeur 323 conserve les topologies de Neighbor-Joining et d’UPGMA malgré deux scores surestimés.
+La distance d’édition permet de comparer deux séquences en comptant les opérations nécessaires pour passer de l’une à l’autre. NvPD répartit le calcul d’une grille entre plusieurs cœurs, tandis qu’un algorithme par fronts limite l’exploration aux positions accessibles pour un coût donné. Sur ROMEO, parmi douze paires synthétiques, seule celle d’un million de bases à 10\,\% d’éditions introduites s’aligne plus vite avec NvPD sur GPU qu’avec Edlib ou WFA2 sur un cœur Grace. Sur le chromosome~1 maternel de HG002, où deux révisions ne diffèrent que de 54 éditions, un découpage avec fronts bornés prend 28,19\,ms, contre 87,18\,ms pour WFA2 sur le même cœur EPYC. À l’échelle d’une collection, le calcul peut aussi se partager entre paires. La matrice de 64 génomes du SARS-CoV-2 permet enfin de mesurer comment une approximation des distances se transmet à l’arbre. Deux distances surestimées laissent ici les topologies d’UPGMA et de Neighbor-Joining inchangées.
 \end{abstract}
 \fullcontents\clearpage
 \input{sections/introduction}
 \input{sections/contexte}
 \section{Matériels et méthodes}\label{sec:algorithms}
-Les paires synthétiques permettent de faire varier la divergence à longueur fixée. Les assemblages humains et les collections virales servent ensuite à évaluer le calcul sur des séquences déposées.
+La comparaison porte sur deux tâches. Le score donne le nombre minimal d’éditions entre deux séquences. La reconstruction d’un chemin indique en plus où effectuer ces éditions. Pour chacune, le protocole fixe les entrées et précise ce que couvre la mesure de temps.
 \input{sections/protocole}
 \input{sections/algorithmes}
+\input{sections/geometrie-bande}
 \section{Résultats et interprétations}\label{sec:results}
-À longueur égale, les parcours denses visitent le même nombre de cellules. Les mesures sur paires synthétiques isolent l’effet de la distance avant les comparaisons sur chromosomes et sur collections.
+Les premiers résultats portent sur une paire. Ils relient le travail nécessaire au score et à la reconstruction du chemin, puis examinent comment le processeur et le GPU exécutent ce travail. Les essais sur collections changent ensuite l’unité de calcul en répartissant des alignements entiers entre cœurs.
 \subsection{Dimension, distance et coût de calcul}\label{sec:experiments}
-Les temps et la mémoire sont mesurés sur les mêmes entrées pour les parcours denses et les fronts d’onde.
+À longueurs fixées, la grille de NvPD garde les mêmes dimensions. La comparaison avec les fronts de WFA2 permet de suivre le coût de l’alignement quand le nombre d’éditions augmente.
 \input{sections/divergence}
+\input{sections/comparaison-alignements}
 \subsection{Parallélisme sur processeur}\label{sec:cpu}
-Sur un nœud ROMEO, deux processeurs EPYC~9654 réunissent 192 cœurs. La largeur des lignes, la vectorisation et le placement des travailleurs changent la façon dont ces cœurs utilisent les caches.
+Une fois le domaine de calcul fixé, le temps dépend aussi de la manière dont les cœurs accèdent aux scores. Sur un nœud ROMEO, deux processeurs EPYC~9654 réunissent 192 cœurs. Les essais font varier la largeur des lignes et le placement des fils.
 \input{sections/profil}
 \input{sections/adaptatif}
 \subsection{Exécution sur accélérateur}\label{sec:gpu}
@@ -37,22 +39,24 @@ Le GH200 associe un processeur Grace et un accélérateur Hopper. Pour une seule
 \input{sections/roofline-gpu}
 \input{sections/energie-accelerateur}
 \input{sections/loci-accelerateur}
-\subsection{Calcul distribué}\label{sec:mpi}
-Le protocole distribué utilise 24 rangs par nœud, chacun avec huit threads OpenMP. La même réservation peut partager les colonnes d'une paire ou répartir un ensemble de paires entières.
+\subsection{Alignement des assemblages chromosomiques}
+Les essais sur fenêtres mettent en évidence le rôle de la divergence locale. Sur un chromosome entier, la position des différences détermine aussi quelles régions peuvent être alignées séparément. Les comparaisons portent successivement sur deux assemblages distincts et sur des révisions d’un même assemblage.
+\input{sections/chromosome}
+\subsection{Calcul des matrices sur un et deux nœuds}\label{sec:mpi}
+Une collection de \(q\) séquences fournit \(q(q-1)/2\) paires. On peut donc répartir entre les cœurs soit les colonnes d’une même paire, soit des paires entières. Sur ROMEO, le protocole compare ces deux répartitions avec 24 rangs MPI de huit fils OpenMP par nœud.
 \input{sections/distribue}
 \input{sections/ordonnancement}
 \input{sections/carte-paires}
 \input{sections/concentration-rangs}
 \input{sections/travailleurs-kokkos}
 \input{sections/matrice-chromosome}
-\subsection{Applications génomiques}\label{sec:bio}
-Les assemblages humains permettent de comparer de longs intervalles dont les extrémités sont connues. Les collections de phages et de séquences de surveillance posent une autre question, celle de la représentation d'une matrice de distances par un arbre.
-\input{sections/chromosome}
+\input{sections/cohorte-compacte}
+\subsection{Des distances entre génomes aux arbres phylogénétiques}\label{sec:bio}
+Une matrice associe une distance à chaque paire de génomes. Dans un arbre, des paires différentes peuvent emprunter les mêmes branches. Les collections de phages puis de SARS-CoV-2 permettent d’examiner quelles distances et quels groupes de séquences cette représentation conserve.
+\input{sections/arbres}
 \input{sections/ambiguite}
 \input{sections/sensibilite-arbres}
 \section{Conclusion}\label{sec:conclusion}
-Les versions OpenMP et CUDA de NvPD reproduisent les scores de référence sur les entrées comparées. Sur ROMEO, leur avantage dépend de la divergence et du parallélisme disponible entre paires. Les résultats de la figure~\ref{fig:bilan} délimitent les cas où le parcours dense réduit le temps par rapport aux bibliothèques.
-\input{sections/synthese}
 \input{sections/conclusion}
 \clearpage\appendix
 \input{sections/accessions}

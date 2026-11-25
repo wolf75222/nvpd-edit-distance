@@ -127,7 +127,7 @@ build/editdist matrix --algorithm packed-wfa --unique --threads 8 \
   --input data/human/phase3-window/cohort.fa > build/phase3.tsv
 ```
 
-Sur 64 cœurs EPYC, les fronts bidirectionnels à deux bits calculent la matrice complète en 56,31 ± 0,32 ms. Les mêmes fronts sur octets prennent 54,51 ± 0,03 ms, WFA2 prend 74,24 ± 0,26 ms et Edlib 5,712 ± 0,002 s. Après regroupement, WFA2 prend 17,61 ± 0,12 ms et le front à deux bits 17,94 ± 0,33 ms, restitution des doublons comprise. Ces fronts parcourent les diagonales par coût croissant. NvPD calcule les lignes par indices de dernière occurrence. [Mesures à charge fixe](results/human/packed-cohort/trials-64.csv) · [Compteurs matériels](results/human/packed-pmu/counters.csv)
+Sur 64 cœurs EPYC, les fronts bidirectionnels à deux bits calculent la matrice complète en 56,31 ± 0,32 ms. Les mêmes fronts sur octets prennent 54,51 ± 0,03 ms, WFA2 prend 74,24 ± 0,26 ms et Edlib 5,712 ± 0,002 s. Après regroupement, WFA2 prend 17,61 ± 0,12 ms et le front à deux bits 17,94 ± 0,33 ms, restitution des doublons comprise. Sur les cinq blocs appariés, l’écart entre le front à deux bits et WFA2 après regroupement vaut +0,33 ms en moyenne (IC à 95 % de −0,09 à +0,76 ms). [Mesures à charge fixe](results/human/packed-cohort/trials-64.csv) · [Compteurs matériels](results/human/packed-pmu/counters.csv)
 
 ## Distribuer une matrice humaine
 

@@ -1,0 +1,34 @@
+\subsubsection{Répartition des éditions le long des séquences}
+La distance totale laisse ouverte la question de la position des différences. Lorsque les extrémités des deux séquences coïncident, leur retrait réduit la longueur à traiter tout en conservant la distance. La figure~\ref{fig:methodes} compare cet effet sur un témoin humain et sur deux fenêtres homologues. Pour chaque méthode, huit processus mesurent chacun dix appels après échauffement. L’écart-type porte sur les huit moyennes de processus.
+\chart{comparison/methodes_exactes.png}{Temps par appel sur un cœur EPYC, en millisecondes. Chaque case donne la moyenne de huit processus, puis l’écart-type et la demi-largeur de l’intervalle à 95\,\%. Le filet horizontal sépare le score seul du calcul du chemin. Pour chaque paire et chaque sortie, le minimum apparaît en gras. La teinte suit le logarithme du rapport à ce minimum.}{fig:methodes}{bench/repeated/bands.py}
+
+Sur le témoin de 100\,000 bases, les substitutions touchent un seul bloc central de 128 bases. Après retrait des extrémités, ce bloc suffit pour retrouver les 72 éditions de l’alignement optimal. Le retrait des extrémités fait passer le temps du calcul en bande de \(54{,}661\pm0{,}055\) à \(0{,}1038\pm0{,}0010\)\,ms sur un cœur EPYC. Les deux fenêtres homologues de 50\,000 bases commencent par 207 bases identiques et se terminent par deux bases différentes. Il reste donc 49\,793 bases de chaque côté après retrait du préfixe. Le même traitement fait passer le temps de \(230{,}599\pm0{,}046\) à \(229{,}420\pm0{,}067\)\,ms.
+
+Dans A*PA2, la version simple exploite l’écart de longueur pour minorer le coût restant. La version complète ajoute une heuristique fondée sur des correspondances entre fragments. Les deux versions rendent le chemin. Sur la paire synthétique de 20\,000 bases à 10\,\% d'éditions injectées, les temps moyens valent \(0{,}875\pm0{,}008\)\,ms pour le mode simple, \(1{,}534\pm0{,}007\)\,ms pour le mode complet et \(3{,}736\pm0{,}022\)\,ms pour WFA2 en coût seul. Ces trois temps portent sur la même paire, avec des sorties différentes selon la bibliothèque.
+
+\synthese{Sur huit blocs appariés, le retrait des extrémités accélère le calcul en bande d’un facteur 526,6 sur le témoin (IC à 95\,\% de 522,2 à 530,9). Sur les fenêtres homologues, ce facteur atteint seulement 1,0051 (de 1,0048 à 1,0055).}
+
+\subsection{Validation et coût de la reconstruction}\label{sec:reconstruction}
+Un score indique combien d’éditions sont nécessaires. Pour restituer un alignement, il faut aussi trouver une suite d’opérations de ce coût qui transforme toute la première séquence en la seconde. Les témoins de WFA2 et de QuickEd permettent de contrôler ces deux propriétés. Les mesures de Hirschberg et de BiWFA montrent ensuite ce que la reconstruction ajoute en temps et en mémoire, jusqu’aux fenêtres du chromosome~21.
+
+\subsubsection{Contrôle des scores et des chemins}\label{sec:quicked}
+Les essais de portabilité comparent la version publiée de WFA2-lib à une variante qui accepte les lectures de huit octets à toute adresse et ajuste le curseur de l’allocateur. Sur EPYC, GCC~11.5 produit le même code machine pour l’extension du front, mais les fichiers objets de l’allocateur diffèrent. Les 800 appels restituent les scores attendus. Sur la paire de 20\,000 bases à 10\,\% d’éditions injectées, le rapport des temps de la variante portable et de la version publiée vaut 0,997 (IC à 95\,\% de 0,992 à 1,002). Pour chacune des cinq paires, l’intervalle contient 1.
+
+Lors de la reconstruction, le programme copie le CIGAR par blocs d’octets et borne la dernière écriture au nombre d’octets restants. Des tests instrumentés par ASan et UBSan couvrent 33 longueurs pour chacun des huit décalages de l’adresse de sortie. Sur EPYC, le rejeu a validé 48\,384 chemins de la cohorte virale. Sur le même nœud, le rapport apparié des temps de reconstruction de BiWFA avec et sans cette écriture bornée vaut 1,0002 sur huit blocs (IC à 95\,\% de 0,9908 à 1,0097).
+
+Le contrôle de QuickEd porte d’abord sur la largeur de la bande. QuickEd estime une borne de coût par fenêtres et la transmet à la reconstruction de Hirschberg. Si tous les chemins optimaux sortent de la bande, le meilleur chemin qu’elle contient coûte davantage. Deux témoins périodiques de 512 bases ont une distance globale de 128. En imposant \(\lvert i-j\rvert\le63\) à une DP scalaire indépendante, les deux scores deviennent 133 et 129. Une demi-largeur de 64 suffit pour retrouver 128 dans chaque cas.
+
+Le second contrôle porte sur la lecture des prédécesseurs pendant la reconstruction. Sur le M1 Pro, la version amont de QuickEd~1.2 renvoie 954 et 450 pour ces mêmes témoins. La borne transmise à Hirschberg vaut déjà 128 dans les deux cas. Le défaut observé vient de la remontée du chemin au bord d'un bloc, où un prédécesseur se trouve hors des bits stockés. Sur EPYC avec GCC~11 en compilation native, la première estimation vaut 130. Les deux scores amont valent alors 128. Lors de la remontée, le contrôle d'indice vérifie que chaque prédécesseur appartient au bloc avant de lire son bit.
+
+Dans QuickEd avec contrôle du chemin, l'adaptateur rejoue le CIGAR et compare son coût au score global d'Edlib. En cas d'écart, il relance Hirschberg avec une bande plus large. Si la dernière tentative échoue, il renvoie le score d'Edlib en indiquant son origine.
+
+Sur deux autres témoins EPYC, QuickEd amont renvoie 506 au lieu de 128 et 760 au lieu de 256, dans chacun des 80 appels par témoin. Pour les dix entrées chronométrées, le contrôle du chemin réussit dès la première tentative. Un test qui impose artificiellement une première bande de 1\,\% provoque une reprise réelle et ramène le candidat de 896 à la distance vérifiée 384.
+
+\chart{comparison/quicked.png}{Scores et durées sur témoins contrôlés et entrées génomiques. Les 80 appels par méthode et par entrée sont répartis entre huit processus.}{fig:quicked}{bench/quicked/measure.py}
+\FloatBarrier
+La figure~\ref{fig:quicked} donne le coût des chemins témoins et le temps de vérification sur les entrées génomiques. Sur les paires de 20\,000 bases à 2, 5 et 10\,\%, les temps moyens avec contrôle du chemin sont respectivement \(2{,}375\pm0{,}008\), \(2{,}996\pm0{,}010\) et \(4{,}521\pm0{,}011\)\,ms. Les vérifications du coût et du chemin font partie du chronométrage.
+
+\synthese{Sur EPYC, les 800 CIGAR vérifiés consomment les deux chaînes et retrouvent le coût de référence. L’adaptateur élargit la bande lorsque le coût du chemin rejoué diffère du score d’Edlib.}
+
+\input{sections/trace-lineaire}
+\input{sections/biwfa}
