@@ -31,7 +31,8 @@ sources=("$tmp/experiment.cu")
 extra=()
 measure=()
 if [[ $mode == local || $mode == classes ]]; then
-    cmake -S . -B "$tmp/build" -DCMAKE_BUILD_TYPE=Release -DCHPS_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=90
+    cmake -S . -B "$tmp/build" -DCMAKE_BUILD_TYPE=Release -DCHPS_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=90 \
+        -DCHPS_CUDA_TILE_ROWS=8 -DCHPS_CUDA_PACKED_MATCHES=OFF
     cmake --build "$tmp/build" --target editdist check_distances -j4
     OMP_NUM_THREADS=2 ctest --test-dir "$tmp/build" -R '^distances$' --output-on-failure |sed "s|$tmp|build|g" >"$out/ctest.txt"
     nvcc -std=c++20 -O3 -arch=sm_90 -Xcompiler=-fopenmp -Iinclude -Isrc/cpu -Isrc/cuda -I"$base" \
@@ -42,6 +43,7 @@ if [[ $mode == local || $mode == classes ]]; then
     if [[ $mode == classes ]]; then
         python3 "$base/instrument_classes.py" src/cuda "$tmp"
         nvcc -std=c++20 -O3 -arch=sm_90 -Xcompiler=-fopenmp -Iinclude -Isrc/cpu -I"$tmp" -I"$base" -Isrc/cuda \
+            -DCHPS_CUDA_TILE_ROWS=8 -DCHPS_CUDA_PACKED_MATCHES=0 -DCHPS_CUDA_DISABLE_CORRIDOR \
             -Dnvpd_cuda=class_global -Dnvpd_cuda_local=class_local -DCudaWorkspace=ClassWorkspace \
             -c "$tmp/class.cu" -o "$tmp/class.o"
         sources+=("$tmp/class.o")

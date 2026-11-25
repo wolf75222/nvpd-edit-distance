@@ -84,6 +84,14 @@ int main() {
     auto partial = check(a, b);
     if (partial.accepted_cuts != 6 || partial.proposed_cuts != 7 || partial.global_retry)
         throw std::runtime_error("independent certification lost usable cuts");
+    // Both adjacent pieces have a positive cost and unequal lengths at the rejected cut.
+    auto offset = a;
+    offset[16384-80] = 'N';
+    offset[16384+80] = 'N';
+    offset.insert(16384-260, 1, 'N');
+    offset.erase(16384+430, 1);
+    if (check(a, offset).accepted_cuts != 6 || check(offset, a).accepted_cuts != 6)
+        throw std::runtime_error("failed to merge unequal pieces around the rejected cut");
     // The only matching seed in B is a displaced duplicate; forcing it costs at least 512.
     auto duplicated = a.substr(0, 16384);
     duplicated.replace(8192+256-64, 128, duplicated.substr(8192-64, 128));

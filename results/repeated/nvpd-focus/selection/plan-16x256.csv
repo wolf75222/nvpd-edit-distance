@@ -1,0 +1,3 @@
+path,rows,columns,policy,upper,frontier_capacity,shared_pitch,launches,tile_cells,device_bytes
+"n1000000_r0.02_p11_d8a9696aa17668b3.fa",1000000,1000081,corridor,22131,22642,445,62500,27715268021,1431280
+"n100000_r0.1_p1_79f31facc7f5111c.fa",100000,100096,corridor,14519,15030,434,6250,1773432099,245456

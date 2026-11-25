@@ -1,0 +1,106 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -72,8 +72,8 @@
+ endif()
+ if(CHPS_CUDA)
+   enable_language(CUDA)
+-  set(CHPS_CUDA_TILE_ROWS 8 CACHE STRING "Temporal depth of NvPD CUDA tiles (1 to 32)")
+-  option(CHPS_CUDA_PACKED_MATCHES "Cache four 8-bit match offsets per column in shared memory" OFF)
++  set(CHPS_CUDA_TILE_ROWS 16 CACHE STRING "Temporal depth of NvPD CUDA tiles (1 to 32)")
++  option(CHPS_CUDA_PACKED_MATCHES "Cache four 8-bit match offsets per column in shared memory" ON)
+   target_compile_definitions(distances PRIVATE
+     "$<$<COMPILE_LANGUAGE:CUDA>:CHPS_CUDA_TILE_ROWS=${CHPS_CUDA_TILE_ROWS}>"
+     "$<$<COMPILE_LANGUAGE:CUDA>:CHPS_CUDA_PACKED_MATCHES=$<BOOL:${CHPS_CUDA_PACKED_MATCHES}>>")
+--- a/include/chps/cuda.hpp
++++ b/include/chps/cuda.hpp
+@@ -4,13 +4,13 @@
+ 
+ namespace chps {
+ 
+-enum class CudaHalo { global, local };
++enum class CudaHalo { global, local, automatic };
+ Result nvpd_cuda_local(std::string_view a, std::string_view b, bool trace = false);
+ 
+ // Reuse exact-sized buffers over serial alignments on the same CUDA device.
+ class CudaWorkspace {
+ public:
+-    explicit CudaWorkspace(CudaHalo halo = CudaHalo::global) : halo_(halo) {}
++    explicit CudaWorkspace(CudaHalo halo = CudaHalo::automatic) : halo_(halo) {}
+     CudaWorkspace(const CudaWorkspace&) = delete;
+     CudaWorkspace& operator=(const CudaWorkspace&) = delete;
+     Result distance(std::string_view a, std::string_view b, bool trace = false);
+--- a/src/cli/main.cpp
++++ b/src/cli/main.cpp
+@@ -253,7 +253,7 @@
+             run_pair(o, kernel, records);
+ #ifdef CHPS_CUDA
+         } else if (o.algorithm == "nvpd-cuda" || o.algorithm == "nvpd-cuda-local") {
+-            chps::CudaWorkspace workspace(o.algorithm == "nvpd-cuda" ? chps::CudaHalo::global : chps::CudaHalo::local);
++            chps::CudaWorkspace workspace(o.algorithm == "nvpd-cuda" ? chps::CudaHalo::automatic : chps::CudaHalo::local);
+             run_matrix(o, [&](View a, View b, bool trace) { return workspace.distance(a, b, trace); }, records);
+ #endif
+         } else {
+--- a/src/cuda/cuda.cu
++++ b/src/cuda/cuda.cu
+@@ -6,7 +6,7 @@
+ #include "packed_match.cuh"
+ 
+ #ifndef CHPS_CUDA_PACKED_MATCHES
+-#define CHPS_CUDA_PACKED_MATCHES 0
++#define CHPS_CUDA_PACKED_MATCHES 1
+ #endif
+ 
+ #include <algorithm>
+@@ -126,7 +126,11 @@
+     check(cudaGetLastError(), "launch first row");
+     int* prev = table.data;
+     const int reach = !trace && m >= tile_rows ? left_reach(matches, stride) : max_halo_step + 1;
+-    const bool consider_local = halo_ == CudaHalo::local && !trace && m >= tile_rows && reach > max_halo_step;
++    // A block only needs the predecessors of its own left edge. With four
++    // symbols, one packed load supplies their offsets for the entire time tile.
++    const bool compact = CHPS_CUDA_PACKED_MATCHES && matches.entries.size() == 4 * stride;
++    const bool consider_local = !trace && m >= tile_rows && halo_ != CudaHalo::global
++        && (reach > max_halo_step || (halo_ == CudaHalo::automatic && compact));
+     int columns = threads;
+     detail::LocalTilePlan plan;
+     bool pack = false;
+@@ -143,7 +147,7 @@
+             check(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlock, device),
+                   "get CUDA shared memory limit");
+             plan = detail::make_local_plan(matches, n, columns, shared_limit / (2 * sizeof(int)));
+-            pack = CHPS_CUDA_PACKED_MATCHES && !plan.left.empty() && matches.entries.size() == 4 * stride
++            pack = compact && !plan.left.empty()
+                 && plan.pitch <= shared_limit / (3 * static_cast<int>(sizeof(int)));
+         }
+     }
+--- a/src/cuda/local_tiles.cuh
++++ b/src/cuda/local_tiles.cuh
+@@ -6,7 +6,7 @@
+ 
+ namespace chps::detail {
+ #ifndef CHPS_CUDA_TILE_ROWS
+-#define CHPS_CUDA_TILE_ROWS 8
++#define CHPS_CUDA_TILE_ROWS 16
+ #endif
+ inline constexpr int local_tile_rows = CHPS_CUDA_TILE_ROWS;
+ static_assert(local_tile_rows >= 1 && local_tile_rows <= 32);
+--- a/tests/distances.cpp
++++ b/tests/distances.cpp
+@@ -118,6 +118,17 @@
+             cost.device_bytes != expected_peak || idle.device_bytes != 6 * (second.size() + 1) * sizeof(int))
+             throw std::runtime_error("wrong score or allocation accounting after CUDA workspace resize");
+     }
++    // Every block has a short but distinct halo. Exercise both full time
++    // tiles and an incomplete final tile after the last match in a block.
++    for (int rows : {16, 17, 31, 32, 33, 65}) {
++        std::string query(rows, 'A'), target(1039, 'A');
++        std::mt19937 engine(47);
++        for (char& c : query) c = "ACGT"[engine() % 4];
++        for (char& c : target) c = "ACGT"[engine() % 4];
++        const int reference = edlib_distance(query, target).distance;
++        if (nvpd_cuda(query, target).distance != reference || nvpd_cuda(target, query).distance != reference)
++            throw std::runtime_error("wrong compact CUDA score at a time-tile boundary");
++    }
+     for (int spacing : {4, 64, 65}) {
+         std::string target(400003, 'A');
+         for (std::size_t j = 0; j < target.size(); j += spacing) target[j] = 'C';

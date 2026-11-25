@@ -253,7 +253,7 @@ int main(int argc, char** argv) {
             run_pair(o, kernel, records);
 #ifdef CHPS_CUDA
         } else if (o.algorithm == "nvpd-cuda" || o.algorithm == "nvpd-cuda-local") {
-            chps::CudaWorkspace workspace(o.algorithm == "nvpd-cuda" ? chps::CudaHalo::global : chps::CudaHalo::local);
+            chps::CudaWorkspace workspace(o.algorithm == "nvpd-cuda" ? chps::CudaHalo::automatic : chps::CudaHalo::local);
             run_matrix(o, [&](View a, View b, bool trace) { return workspace.distance(a, b, trace); }, records);
 #endif
         } else {

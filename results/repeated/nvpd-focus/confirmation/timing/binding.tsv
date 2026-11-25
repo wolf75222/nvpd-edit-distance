@@ -1,0 +1,2 @@
+slurm_allowed_cpus	timing_cpu	selection	gpu_logical_ordinal	gpu_pci	gpu_numa_node	cuda_visible_devices
+8,72,144,145,216,217	72	gpu-numa	0	0019:01:00.0	1	0

@@ -1,9 +1,14 @@
-# Inject just the two benchmark targets into the normal top-level configuration.
+# Add timing and memory probes to the normal top-level configuration.
 if(PROJECT_NAME STREQUAL "chps_edit_distance" AND NOT TARGET repeat_kernel)
   set(repeat_dir "${CMAKE_CURRENT_LIST_DIR}")
   add_executable(repeat_kernel "${repeat_dir}/kernel.cpp" "${CMAKE_SOURCE_DIR}/src/io/fasta.cpp")
   set_target_properties(repeat_kernel PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
   target_link_libraries(repeat_kernel PRIVATE distances)
+  if(CHPS_CUDA)
+    add_executable(focus_cohort "${repeat_dir}/divergence/cohort_worker.cpp" "${CMAKE_SOURCE_DIR}/src/io/fasta.cpp")
+    set_target_properties(focus_cohort PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+    target_link_libraries(focus_cohort PRIVATE distances)
+  endif()
   if(CHPS_REPEAT_INITIAL)
     add_executable(repeat_initial "${repeat_dir}/kernel.cpp" "${CHPS_REPEAT_INITIAL}"
                    "${CMAKE_SOURCE_DIR}/src/io/fasta.cpp")

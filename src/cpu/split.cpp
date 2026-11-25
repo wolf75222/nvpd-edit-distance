@@ -20,7 +20,11 @@ using View = std::string_view;
 using Size = std::size_t;
 constexpr Size word = 16, radius = 2048, max_bound = 1024;
 struct Cut { Size i, j; };
-struct Piece { Result result{}; bool dense = false, wavefront = false; };
+struct Piece {
+    Result result{};
+    Size prefix = 0, suffix = 0;
+    bool dense = false, wavefront = false;
+};
 
 // CIGAR operations at either side of a cut can belong to the same run.
 struct Runs {
@@ -67,6 +71,8 @@ Piece align_piece(View a, View b, bool trace, bool sparse) {
     const Size suffix = common_end(a, b, true);
     a.remove_suffix(suffix); b.remove_suffix(suffix);
     Piece p;
+    p.prefix = prefix;
+    p.suffix = suffix;
     if (a.empty() || b.empty()) {
         p.result = detail::empty_result(a, b, trace);
     } else if (std::max(a.size(), b.size()) <= 20000 && a.size() <= 262144 / b.size()) {
@@ -174,6 +180,25 @@ bool certified_cut(View a, View b, const std::vector<Cut>& cuts, Size k, Size bo
 Piece align_range(View a, View b, Cut first, Cut last, bool trace, bool sparse) {
     return align_piece(a.substr(first.i, last.i-first.i), b.substr(first.j, last.j-first.j), trace, sparse);
 }
+
+// Equal ends can be removed even when the proposed cut through the middle fails.
+Piece merged_score(View a, View b, const std::vector<Cut>& cuts, const std::vector<Piece>& pieces,
+                   Size first, Size last, bool sparse) {
+    while (first < last && pieces[first].result.distance == 0) ++first;
+    while (first < last && pieces[last-1].result.distance == 0) --last;
+    if (first == last) return {};
+    if (first + 1 == last) {
+        Piece p;
+        p.result.distance = pieces[first].result.distance;
+        return p;
+    }
+    Cut from = cuts[first], to = cuts[last];
+    from.i += pieces[first].prefix;
+    from.j += pieces[first].prefix;
+    to.i -= pieces[last-1].suffix;
+    to.j -= pieces[last-1].suffix;
+    return align_range(a, b, from, to, false, sparse);
+}
 } // namespace
 
 SplitComposition::SplitComposition(std::string_view sequence) {
@@ -257,7 +282,8 @@ static Result split_impl(View a, View b, bool trace, SplitStats& stats,
             ++stats.accepted_cuts;
         }
         if (last != first + 1) {
-            pieces[first] = align_range(a, b, cuts[first], cuts[last], trace, sparse);
+            pieces[first] = trace ? align_range(a, b, cuts[first], cuts[last], true, sparse)
+                                  : merged_score(a, b, cuts, pieces, first, last, sparse);
             stats.dense_pieces += pieces[first].dense;
             stats.wavefront_pieces += pieces[first].wavefront;
         }

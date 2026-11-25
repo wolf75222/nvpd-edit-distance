@@ -19,7 +19,7 @@ base=bench/gpu/energy
 mkdir -p "$out"
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/nvpd-sensor.XXXXXXXX")
 trap 'rm -rf -- "$tmp"' EXIT
-flags=(-O3 -std=c++20 -arch=sm_90 -Iinclude -Isrc/cuda -Isrc/cpu -DCHPS_CUDA_TILE_ROWS=16 -Xcompiler=-fopenmp,-pthread)
+flags=(-O3 -std=c++20 -arch=sm_90 -DCHPS_CUDA_PACKED_MATCHES=0 -Iinclude -Isrc/cuda -Isrc/cpu -DCHPS_CUDA_TILE_ROWS=16 -Xcompiler=-fopenmp,-pthread)
 nvcc "${flags[@]}" "$base/geometry.cu" src/cpu/dp.cpp src/io/fasta.cpp -o "$tmp/geometry"
 nvcc "${flags[@]}" "$base/trial.cu" src/cuda/cuda.cu src/cpu/dp.cpp src/io/fasta.cpp -l:libnvidia-ml.so.1 -o "$tmp/trial"
 {

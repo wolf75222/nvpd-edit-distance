@@ -1,4 +1,6 @@
 #include "cigar_replay.hpp"
+#include "corridor_plan_check.hpp"
+#include "packed_index.hpp"
 #include "chps/baselines.hpp"
 #include "chps/banded.hpp"
 #ifdef CHPS_CUDA
@@ -38,6 +40,23 @@ static void check(const std::string& a, const std::string& b) {
 }
 
 int main() {
+    check_corridor_plan();
+    // Vary the position of the last match across the checkpoint and the
+    // byte escape, including symbols that have not yet appeared.
+    for (int first : {1, 254, 255, 256, 257, 510, 511, 512}) {
+        std::string target(1029, 'A');
+        target[first - 1] = 'C';
+        target[first + 255] = 'G';
+        const detail::MatchIndex index("ACGT", target);
+        const auto words = detail::pack_match_offsets(index, static_cast<int>(target.size()));
+        const auto checkpoints = detail::match_checkpoints(index, static_cast<int>(target.size()));
+        for (int j = 0; j <= static_cast<int>(target.size()); ++j)
+            for (int symbol = 0; symbol < 4; ++symbol)
+                if (detail::unpack_match(words[j], checkpoints.data(), j, symbol) !=
+                    index.entries[symbol * words.size() + j])
+                    throw std::runtime_error("packed checkpoint differs from the full match index");
+    }
+
     omp_set_num_threads(3);
 #ifdef CHPS_KOKKOS
     KokkosSession session(3);
@@ -117,6 +136,39 @@ int main() {
         if (cost.distance != edlib_distance("ACGT", second).distance ||
             cost.device_bytes != expected_peak || idle.device_bytes != 6 * (second.size() + 1) * sizeof(int))
             throw std::runtime_error("wrong score or allocation accounting after CUDA workspace resize");
+    }
+    // Every block has a short but distinct halo. Exercise both full time
+    // tiles and an incomplete final tile after the last match in a block.
+    for (int rows : {16, 17, 31, 32, 33, 65}) {
+        std::string query(rows, 'A'), target(1039, 'A');
+        std::mt19937 engine(47);
+        for (char& c : query) c = "ACGT"[engine() % 4];
+        for (char& c : target) c = "ACGT"[engine() % 4];
+        const int reference = edlib_distance(query, target).distance;
+        if (nvpd_cuda(query, target).distance != reference || nvpd_cuda(target, query).distance != reference)
+            throw std::runtime_error("wrong compact CUDA score at a time-tile boundary");
+    }
+    {
+        std::mt19937 engine(3701);
+        std::string query(32801, 'A');
+        for (char& c : query) c = "ACGT"[engine() % 4];
+        // An insertion followed much later by a deletion moves the optimal
+        // path to the edge of a narrow band through many complete time tiles.
+        std::string target = query;
+        target.insert(31, 1, 'T');
+        target.erase(31999, 1);
+        target[16512] = target[16512] == 'A' ? 'C' : 'A';
+        CudaWorkspace workspace;
+        for (int inserted : {0, 1, 127}) {
+            target.append(inserted, 'G');
+            const int expected = edlib_distance(query, target).distance;
+            if (workspace.distance(query, target).distance != expected ||
+                workspace.distance(target, query).distance != expected)
+                throw std::runtime_error("wrong CUDA score at an offset corridor edge");
+        }
+        query[1919] = 'N';
+        if (workspace.distance(query, target).distance != edlib_distance(query, target).distance)
+            throw std::runtime_error("wrong literal ambiguity score after a CUDA corridor call");
     }
     for (int spacing : {4, 64, 65}) {
         std::string target(400003, 'A');

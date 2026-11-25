@@ -6,7 +6,7 @@
 
 namespace chps::detail {
 #ifndef CHPS_CUDA_TILE_ROWS
-#define CHPS_CUDA_TILE_ROWS 8
+#define CHPS_CUDA_TILE_ROWS 16
 #endif
 inline constexpr int local_tile_rows = CHPS_CUDA_TILE_ROWS;
 static_assert(local_tile_rows >= 1 && local_tile_rows <= 32);

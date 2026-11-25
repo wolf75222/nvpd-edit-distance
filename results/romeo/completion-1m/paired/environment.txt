@@ -1,0 +1,8 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+Model name:                              AMD EPYC 9654 96-Core Processor
+Thread(s) per core:                      1
+Core(s) per socket:                      96
+a635c5e49b918efe249ec704b624895df45da0561f1a7e66ecc701388e604287  /tmp/chps-eight.19shttIW/trial
+40e878e0c03457d3f03572ea31075fcef397cc0979fdc76b1add4c7fb3a42353  src/cpu/dp.cpp
+007caa314c131a8b47e0daaaf195a6d589fc0b9e86a1ec87d190e1a8529c723b  src/cpu/nvpd_avx512.hpp

@@ -4,13 +4,15 @@
 
 namespace chps {
 
-enum class CudaHalo { global, local };
+// Global uses a uniform left halo. Local handles long reaches per block.
+// Automatic also packs short local halos for four-symbol score-only inputs.
+enum class CudaHalo { global, local, automatic };
 Result nvpd_cuda_local(std::string_view a, std::string_view b, bool trace = false);
 
 // Reuse exact-sized buffers over serial alignments on the same CUDA device.
 class CudaWorkspace {
 public:
-    explicit CudaWorkspace(CudaHalo halo = CudaHalo::global) : halo_(halo) {}
+    explicit CudaWorkspace(CudaHalo halo = CudaHalo::automatic) : halo_(halo) {}
     CudaWorkspace(const CudaWorkspace&) = delete;
     CudaWorkspace& operator=(const CudaWorkspace&) = delete;
     Result distance(std::string_view a, std::string_view b, bool trace = false);

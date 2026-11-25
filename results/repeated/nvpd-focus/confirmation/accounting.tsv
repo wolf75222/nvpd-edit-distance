@@ -1,0 +1,2 @@
+JobID	State	NodeList	Partition	AllocCPUS	ReqMem	AllocTRES	Elapsed	ExitCode
+840653	COMPLETED	romeo-a003	instant	6	12G	billing=6,cpu=6,gres/gpu=1,mem=12G,node=1	00:16:45	0:0

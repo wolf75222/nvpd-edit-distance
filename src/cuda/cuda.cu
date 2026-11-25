@@ -4,9 +4,12 @@
 #include "dp_internal.hpp"
 #include "local_tiles.cuh"
 #include "packed_match.cuh"
+#ifndef CHPS_CUDA_DISABLE_CORRIDOR
+#include "corridor.cuh"
+#endif
 
 #ifndef CHPS_CUDA_PACKED_MATCHES
-#define CHPS_CUDA_PACKED_MATCHES 0
+#define CHPS_CUDA_PACKED_MATCHES 1
 #endif
 
 #include <algorithm>
@@ -90,6 +93,7 @@ void CudaWorkspace::Buffer::resize(std::size_t count) {
         data = nullptr;
         bytes = 0;
     }
+    if (!requested_bytes) return;
     int* replacement = nullptr;
     check(cudaMalloc(&replacement, requested_bytes), "allocate CUDA buffer");
     data = replacement;
@@ -109,24 +113,22 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
         return result;
     }
     if (!trace && a.size() > b.size()) std::swap(a, b);
+#ifndef CHPS_CUDA_DISABLE_CORRIDOR
+    if (!trace && halo_ == CudaHalo::automatic) {
+        const auto corridor = detail::nvpd_corridor(a, b, indices_, table_, boundaries_, peak_bytes);
+        if (corridor) return *corridor;
+    }
+#endif
     const int m = static_cast<int>(a.size()), n = static_cast<int>(b.size());
     const std::size_t stride = b.size() + 1;
     const detail::MatchIndex matches(a, b);
-    auto& indices = indices_;
-    indices.resize(matches.entries.size());
-    peak_bytes = std::max(peak_bytes, resident_bytes());
-    check(cudaMemcpy(indices.data, matches.entries.data(), indices.bytes,
-                     cudaMemcpyHostToDevice), "copy match index");
-    const std::size_t table_size = (trace ? a.size() + 1 : 2) * stride;
-    auto& table = table_;
-    table.resize(table_size);
     constexpr int threads = 256;
-    const int blocks = static_cast<int>((stride + threads - 1) / threads);
-    first_row<<<blocks, threads>>>(table.data, n);
-    check(cudaGetLastError(), "launch first row");
-    int* prev = table.data;
     const int reach = !trace && m >= tile_rows ? left_reach(matches, stride) : max_halo_step + 1;
-    const bool consider_local = halo_ == CudaHalo::local && !trace && m >= tile_rows && reach > max_halo_step;
+    // A block only needs the predecessors of its own left edge. With four
+    // symbols, one packed load supplies their offsets for the entire time tile.
+    const bool compact = CHPS_CUDA_PACKED_MATCHES && matches.entries.size() == 4 * stride;
+    const bool consider_local = !trace && m >= tile_rows && halo_ != CudaHalo::global
+        && (reach > max_halo_step || (halo_ == CudaHalo::automatic && compact));
     int columns = threads;
     detail::LocalTilePlan plan;
     bool pack = false;
@@ -143,21 +145,35 @@ Result CudaWorkspace::distance(std::string_view a, std::string_view b, bool trac
             check(cudaDeviceGetAttribute(&shared_limit, cudaDevAttrMaxSharedMemoryPerBlock, device),
                   "get CUDA shared memory limit");
             plan = detail::make_local_plan(matches, n, columns, shared_limit / (2 * sizeof(int)));
-            pack = CHPS_CUDA_PACKED_MATCHES && !plan.left.empty() && matches.entries.size() == 4 * stride
+            pack = compact && !plan.left.empty()
                 && plan.pitch <= shared_limit / (3 * static_cast<int>(sizeof(int)));
         }
     }
-    if (!plan.left.empty()) {
-        peak_bytes = std::max(peak_bytes, resident_bytes());
-        boundaries_.resize(plan.left.size() + (pack ? stride : 0));
-        if (pack) {
-            auto words = detail::pack_match_offsets(matches, n);
-            check(cudaMemcpy(boundaries_.data + plan.left.size(), words.data(), stride * sizeof(unsigned),
-                             cudaMemcpyHostToDevice), "copy compact match offsets");
-        }
-        check(cudaMemcpy(boundaries_.data, plan.left.data(), plan.left.size() * sizeof(int), cudaMemcpyHostToDevice),
-              "copy local tile boundaries");
+    auto& indices = indices_;
+    std::vector<int> checkpoints;
+    if (pack) checkpoints = detail::match_checkpoints(matches, n);
+    const auto& device_index = pack ? checkpoints : matches.entries;
+    indices.resize(device_index.size());
+    peak_bytes = std::max(peak_bytes, resident_bytes());
+    check(cudaMemcpy(indices.data, device_index.data(), indices.bytes, cudaMemcpyHostToDevice), "copy match index");
+
+    const std::size_t table_size = (trace ? a.size() + 1 : 2) * stride;
+    auto& table = table_;
+    table.resize(table_size);
+    peak_bytes = std::max(peak_bytes, resident_bytes());
+    boundaries_.resize(plan.left.size() + (pack ? stride : 0));
+    if (pack) {
+        const auto words = detail::pack_match_offsets(matches, n);
+        check(cudaMemcpy(boundaries_.data + plan.left.size(), words.data(), stride * sizeof(unsigned),
+                         cudaMemcpyHostToDevice), "copy compact match offsets");
     }
+    if (!plan.left.empty())
+        check(cudaMemcpy(boundaries_.data, plan.left.data(), plan.left.size() * sizeof(int),
+                         cudaMemcpyHostToDevice), "copy local tile boundaries");
+    const int blocks = static_cast<int>((stride + threads - 1) / threads);
+    first_row<<<blocks, threads>>>(table.data, n);
+    check(cudaGetLastError(), "launch first row");
+    int* prev = table.data;
     if (reach <= max_halo_step || !plan.left.empty()) {
         const int tile_blocks = static_cast<int>((stride + columns - 1) / columns);
         int* curr = table.data + stride;

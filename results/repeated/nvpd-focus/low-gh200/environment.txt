@@ -1,0 +1,13 @@
+romeo-a003
+allocation=840637
+name, driver_version, memory.total [MiB]
+NVIDIA GH200 120GB, 590.48.01, 97871 MiB
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+NVIDIA Nsight Systems version 2025.3.2.474-253236389321v0
+abe9328022060b77bf921e23a671143b3737b597e92d8222a699fb5eb94548ef  src/cuda/cuda.cu
+edfa9c0bbed984e86a1192dd158f417939ab2b91162dc7f7e63a6edde182a2aa  src/cuda/corridor.cuh
+29059db737754c1737777f00715ee1d40f42ec9802fd3eae7b1786d789a5d7bc  src/cuda/local_tiles.cuh
+a0a205d9154554b81aced6472ce9644e9a5d86fe4c64fe3531b44d63c88215ee  src/cuda/packed_index.hpp
+beb7e62c655079fa6f07a2c8a1adcb50e6e4471813e3145815547a4789b14d45  src/cuda/packed_match.cuh

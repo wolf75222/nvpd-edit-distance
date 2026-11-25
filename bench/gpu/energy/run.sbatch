@@ -20,7 +20,7 @@ mkdir -p "$out"
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/nvpd-energy.XXXXXXXX")
 trap 'rm -rf -- "$tmp"' EXIT
 export OMP_NUM_THREADS=1
-flags=(-O3 -std=c++20 -arch=sm_90 -Iinclude -Isrc/cuda -Isrc/cpu)
+flags=(-O3 -std=c++20 -arch=sm_90 -DCHPS_CUDA_PACKED_MATCHES=0 -Iinclude -Isrc/cuda -Isrc/cpu)
 nvcc "${flags[@]}" -c "$base/trial.cu" -o "$tmp/trial.o"
 g++ -O3 -std=c++20 -fopenmp -Iinclude -c src/cpu/dp.cpp -o "$tmp/dp.o"
 g++ -O3 -std=c++20 -Iinclude -c src/io/fasta.cpp -o "$tmp/fasta.o"
