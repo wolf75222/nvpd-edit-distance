@@ -29,9 +29,12 @@ git worktree add --detach build/maqao/base ba97a3d
 python3 bench/cpu/maqao/prepare_variants.py build/maqao/base build/maqao/candidates
 ```
 
-Sur ROMEO, `MAQAO` désigne l’exécutable de la distribution x86. Les scripts utilisent par défaut `~/.local/bin/maqao`. Le premier job produit un classement des cinq variantes, puis un rapport HTML pour la référence et le candidat retenu. Le second compile le noyau de production en modes natif et générique. Il teste les scores et la reconstruction de l’alignement, puis profile et chronomètre le noyau.
+Les profils de cette campagne utilisent MAQAO 2025.1.4 sur EPYC. Pour les reproduire sur ROMEO, charger cette version avant la soumission. Les scripts utilisent le programme `maqao` du `PATH`. La variable `MAQAO` permet de fournir un chemin absolu. Le premier job produit un classement des cinq variantes, puis un rapport HTML pour la référence et le candidat retenu. Le second compile le noyau de production en modes natif et générique. Il teste les scores et la reconstruction de l’alignement, puis profile et chronomètre le noyau.
 
 ```sh
+romeo_load_x64cpu_env
+spack load maqao@2025.1.4
+export MAQAO="$(command -v maqao)"
 ab=$(sbatch --parsable -A "$ROMEO_PROJECT" -p instant bench/cpu/maqao/compare.sbatch \
   build/maqao/base build/maqao/candidates build/maqao/inputs build/maqao/screen)
 sbatch -A "$ROMEO_PROJECT" -p instant --dependency=afterok:"$ab" bench/cpu/maqao/confirm.sbatch \

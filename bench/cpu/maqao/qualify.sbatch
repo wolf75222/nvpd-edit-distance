@@ -18,7 +18,7 @@ out=$(realpath "$6")
 work=$(mktemp -d "${TMPDIR:-/tmp}/chps-cqa-layout.XXXXXXXX")
 trap 'rm -rf -- "$work"' EXIT
 export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DYNAMIC=FALSE OMP_WAIT_POLICY=ACTIVE OMP_NUM_THREADS=4
-maqao=${MAQAO:-"$HOME/.local/bin/maqao"}
+maqao=${MAQAO:-maqao}
 flags=(-O3 -g -std=c++20 -fopenmp -Wall -Wextra -Wpedantic -Werror -I"$first/include")
 for v in original baseline layout; do
     src="$first/src/cpu"

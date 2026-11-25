@@ -1,0 +1,27 @@
+version,function_id,function,cycle_coverage_pct,cqa_text_file_sha256
+2025.1.4,111,"myersCalcEditDistanceNW(unsigned long const*, int, int, int, unsigned char const*, int, int, int*, int*, bool, AlignmentData**, int)",84.902221679688,fa28bf2b7f900d2e484c6b0dd1d63f6b1ccfd4fb6a110b72d8f22bfa81dc34af
+2025.1.4,118,edlibAlign,0.94134604930878,e1a5d39ea1a9a49b196b8063d2f111bfbcc5c8b7b57e09e9405d61aaca63d4d9
+2025.1.4,295,wavefront_compute_edit_exact_prune,0.92403036355972,0a67658f1a889967bd1554e904b74949a4371daecc1f919bd02ed20fde3a5a0d
+2025.1.4,296,wavefront_compute_edit_dispatcher,1.5048943758011,df2f6c232c483800e3b90bb5233addff03bb70fed6ac2ba7a38767ff72543bd1
+2025.1.4,298,wavefront_compute_edit,0.070837073028088,906b188eacd34bbb1c9b7a66bf2d00b4c0c43cca572203ee9eaad1d0bbe61c14
+2025.1.4,305,wavefront_extend_end2end,0.037779774516821,86c7fcf16b055bfdef4a48bc02616ac4d269e8b27e1692e1ce472bdd8751c1a6
+2025.1.4,374,wavefront_slab_free,0.01888988725841,d7c82486d1582fda0132ef060e99d40da206516ac1da7da9b9eca8f889960ef9
+2025.1.4,376,wavefront_termination_end2end,0.023612359538674,c2086ceb9e56ca2c8a765952a780e17acb1395bd54aa2101faead864703e16c2
+2025.1.4,385,wavefront_extend_matches_packed_end2end_avx512,10.968728065491,5f7f56604b95bbd4befe534abcec1032b1037156404de8d68f896883f150f840
+2025.1.4,426,wavefront_unialign,0.023612359538674,b2a65576d7a5b528651785925f8f942c28d541ff08580f10f49cba78358d36e7
+2025.1.4,58,"chps::hybrid::sketch(std::basic_string_view<char, std::char_traits<char> >)",0.14324831962585,6657be10ec1a90fecd552aadde4f6738e36eda6377dd7620b4c58a94fa289017
+2025.1.4,83,"chps::SplitComposition::SplitComposition(std::basic_string_view<char, std::char_traits<char> >)",0.01888988725841,d36abb54599f1abffe46343f78f202fd3dfce303974a9d084c775a00dca5b49f
+2026.1.1,111,"myersCalcEditDistanceNW(unsigned long const*, int, int, int, unsigned char const*, int, int, int*, int*, bool, AlignmentData**, int)",84.962089538574,fa28bf2b7f900d2e484c6b0dd1d63f6b1ccfd4fb6a110b72d8f22bfa81dc34af
+2026.1.1,118,edlibAlign,0.94026035070419,e1a5d39ea1a9a49b196b8063d2f111bfbcc5c8b7b57e09e9405d61aaca63d4d9
+2026.1.1,278,wavefront_compute_trim_ends,0.017324730753899,b0286efe91f7fe98fc7ad81e50c37b766c33499104ba6a11b7d11fa8fc173795
+2026.1.1,295,wavefront_compute_edit_exact_prune,0.88356125354767,0a67658f1a889967bd1554e904b74949a4371daecc1f919bd02ed20fde3a5a0d
+2026.1.1,296,wavefront_compute_edit_dispatcher,1.420627951622,df2f6c232c483800e3b90bb5233addff03bb70fed6ac2ba7a38767ff72543bd1
+2026.1.1,298,wavefront_compute_edit,0.045674290508032,906b188eacd34bbb1c9b7a66bf2d00b4c0c43cca572203ee9eaad1d0bbe61c14
+2026.1.1,305,wavefront_extend_end2end,0.042524337768555,86c7fcf16b055bfdef4a48bc02616ac4d269e8b27e1692e1ce472bdd8751c1a6
+2026.1.1,373,wavefront_slab_allocate,0.018899707123637,501c704d4bf5e7d595f80c85780db7e941d047accc2bd6306fd6954e2b526166
+2026.1.1,374,wavefront_slab_free,0.025199608877301,d7c82486d1582fda0132ef060e99d40da206516ac1da7da9b9eca8f889960ef9
+2026.1.1,376,wavefront_termination_end2end,0.014174779877067,c2086ceb9e56ca2c8a765952a780e17acb1395bd54aa2101faead864703e16c2
+2026.1.1,385,wavefront_extend_matches_packed_end2end_avx512,11.087825775146,5f7f56604b95bbd4befe534abcec1032b1037156404de8d68f896883f150f840
+2026.1.1,426,wavefront_unialign,0.011024829000235,b2a65576d7a5b528651785925f8f942c28d541ff08580f10f49cba78358d36e7
+2026.1.1,58,"chps::hybrid::sketch(std::basic_string_view<char, std::char_traits<char> >)",0.14489774405956,6657be10ec1a90fecd552aadde4f6738e36eda6377dd7620b4c58a94fa289017
+2026.1.1,83,"chps::SplitComposition::SplitComposition(std::basic_string_view<char, std::char_traits<char> >)",0.012599804438651,d36abb54599f1abffe46343f78f202fd3dfce303974a9d084c775a00dca5b49f

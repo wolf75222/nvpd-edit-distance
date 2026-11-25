@@ -1,0 +1,2 @@
+JobID	State	NodeList	AllocCPUS	ReqMem	Start	End	Elapsed	ExitCode
+840307	COMPLETED	romeo-c022	4	8G	2026-11-25T14:59:43	2026-11-25T15:00:39	00:00:56	0:0

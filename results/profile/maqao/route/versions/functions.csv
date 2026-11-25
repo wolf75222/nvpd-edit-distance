@@ -1,0 +1,15 @@
+version,function,module,inclusive_cycle_coverage_pct,threads
+2025.1.4,"myersCalcEditDistanceNW(unsigned long const*, int, int, int, unsigned char const*, int, int, int*, int*, bool, AlignmentData**, int)",editdist-route,84.902221679688,4
+2025.1.4,wavefront_extend_matches_packed_end2end_avx512,editdist-route,10.968728065491,4
+2025.1.4,wavefront_compute_edit_dispatcher,editdist-route,1.5048943758011,4
+2025.1.4,edlibAlign,editdist-route,0.94134604930878,4
+2025.1.4,wavefront_compute_edit_exact_prune,editdist-route,0.92403036355972,4
+2025.1.4,omp_get_num_procs,libgomp.so.1.0.0,0.29279324412346,4
+2025.1.4,"chps::hybrid::sketch(std::basic_string_view<char, std::char_traits<char> >)",editdist-route,0.14324831962585,4
+2026.1.1,"myersCalcEditDistanceNW(unsigned long const*, int, int, int, unsigned char const*, int, int, int*, int*, bool, AlignmentData**, int)",editdist-route,84.962089538574,4
+2026.1.1,wavefront_extend_matches_packed_end2end_avx512,editdist-route,11.087825775146,4
+2026.1.1,wavefront_compute_edit_dispatcher,editdist-route,1.420627951622,4
+2026.1.1,edlibAlign,editdist-route,0.94026035070419,4
+2026.1.1,wavefront_compute_edit_exact_prune,editdist-route,0.88356125354767,4
+2026.1.1,omp_get_num_procs,libgomp.so.1.0.0,0.23782131075859,4
+2026.1.1,"chps::hybrid::sketch(std::basic_string_view<char, std::char_traits<char> >)",editdist-route,0.14489774405956,4

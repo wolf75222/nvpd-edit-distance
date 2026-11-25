@@ -192,7 +192,9 @@ Avec le noyau NvPD indexé et le vol de tâches, les travailleurs Kokkos traiten
 
 ## Profiler NvPD sur processeur
 
-Sur ROMEO, MAQAO ONEVIEW repère d’abord les boucles qui concentrent les cycles, puis analyse leurs instructions. Dans NvPD, huit colonnes voisines pouvaient lire huit scores dispersés. Le noyau AVX-512 regroupe seize colonnes et choisit leurs prédécesseurs par permutation en registres. Pour mesurer ce chemin sur les fenêtres du chromosome 21, préparer les deux régions puis calculer leur score.
+Sur ROMEO, Spack fournit MAQAO 2026.1.1 sur EPYC et sur Grace. La campagne initiale a utilisé 2025.1.4. Les deux versions ont ensuite profilé les mêmes binaires sur EPYC. [Résultats de la comparaison](results/profile/maqao/versions/)
+
+MAQAO ONEVIEW repère d’abord les boucles qui concentrent les cycles, puis analyse leurs instructions. Dans NvPD, huit colonnes voisines pouvaient lire huit scores dispersés. Le noyau AVX-512 regroupe seize colonnes et choisit leurs prédécesseurs par permutation en registres. Pour mesurer ce chemin sur les fenêtres du chromosome 21, préparer les deux régions puis calculer leur score.
 
 ```sh
 python3 bench/hybrid/matrix/prepare.py

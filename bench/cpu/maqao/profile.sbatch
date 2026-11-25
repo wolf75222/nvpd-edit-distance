@@ -17,7 +17,7 @@ inputs=$(realpath "$inputs")
 source_root=$(realpath "$phase")
 work=$(mktemp -d "${TMPDIR:-/tmp}/chps-oneview.XXXXXXXX")
 trap 'rm -rf -- "$work"' EXIT
-maqao=${MAQAO:-"$HOME/.local/bin/maqao"}
+maqao=${MAQAO:-maqao}
 export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DYNAMIC=FALSE OMP_WAIT_POLICY=ACTIVE
 flags=(-O3 -g -march=native -fopenmp -std=c++20 -Wall -Wextra -Werror)
 g++ "${flags[@]}" -I"$source_root/include" "$source_root/src/cpu/dp.cpp" "$source_root/src/io/fasta.cpp" \

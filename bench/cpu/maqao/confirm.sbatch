@@ -18,7 +18,7 @@ out=$(realpath "$6")
 work=$(mktemp -d "${TMPDIR:-/tmp}/chps-cqa-final.XXXXXXXX")
 trap 'rm -rf -- "$work"' EXIT
 export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DYNAMIC=FALSE OMP_WAIT_POLICY=ACTIVE OMP_NUM_THREADS=4
-maqao=${MAQAO:-"$HOME/.local/bin/maqao"}
+maqao=${MAQAO:-maqao}
 common=(-O3 -g -fopenmp -std=c++20 -Wall -Wextra -Werror -Wpedantic)
 for mode in native generic; do
     flags=("${common[@]}")

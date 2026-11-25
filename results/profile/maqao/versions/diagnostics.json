@@ -1,0 +1,139 @@
+[
+  {
+    "kernel": "original",
+    "threads": 1,
+    "compared_versions": [
+      "2025.1.4",
+      "2026.1.1"
+    ],
+    "same_hot_loop_id": true,
+    "same_full_cqa_report": true,
+    "initial_advice_titles_by_path": [
+      {
+        "brief": [],
+        "gain": [
+          "Vectorization",
+          "Execution units bottlenecks"
+        ],
+        "potential": [
+          "512-bits vectorization"
+        ],
+        "hint": [
+          "Complex instructions",
+          "Slow data structures access",
+          "Gather/scatter instructions",
+          "Type of elements and instruction set",
+          "Matching between your loop (in the source code) and the binary loop"
+        ]
+      }
+    ],
+    "full_report_diff": []
+  },
+  {
+    "kernel": "retained",
+    "threads": 1,
+    "compared_versions": [
+      "2025.1.4",
+      "2026.1.1"
+    ],
+    "same_hot_loop_id": true,
+    "same_full_cqa_report": true,
+    "initial_advice_titles_by_path": [
+      {
+        "brief": [],
+        "gain": [
+          "Vectorization",
+          "Execution units bottlenecks"
+        ],
+        "potential": [],
+        "hint": [
+          "Complex instructions",
+          "Conversion instructions",
+          "Type of elements and instruction set",
+          "Matching between your loop (in the source code) and the binary loop",
+          "Unroll opportunity"
+        ]
+      }
+    ],
+    "full_report_diff": []
+  },
+  {
+    "kernel": "original",
+    "threads": 4,
+    "compared_versions": [
+      "2025.1.4",
+      "2026.1.1"
+    ],
+    "same_hot_loop_id": true,
+    "same_full_cqa_report": true,
+    "initial_advice_titles_by_path": [
+      {
+        "brief": [],
+        "gain": [
+          "Vectorization",
+          "Execution units bottlenecks"
+        ],
+        "potential": [
+          "512-bits vectorization"
+        ],
+        "hint": [
+          "Complex instructions",
+          "Slow data structures access",
+          "Gather/scatter instructions",
+          "Type of elements and instruction set",
+          "Matching between your loop (in the source code) and the binary loop"
+        ]
+      }
+    ],
+    "full_report_diff": []
+  },
+  {
+    "kernel": "retained",
+    "threads": 4,
+    "compared_versions": [
+      "2025.1.4",
+      "2026.1.1"
+    ],
+    "same_hot_loop_id": true,
+    "same_full_cqa_report": true,
+    "initial_advice_titles_by_path": [
+      {
+        "brief": [],
+        "gain": [
+          "Vectorization",
+          "Execution units bottlenecks"
+        ],
+        "potential": [],
+        "hint": [
+          "Complex instructions",
+          "Conversion instructions",
+          "Type of elements and instruction set",
+          "Matching between your loop (in the source code) and the binary loop",
+          "Unroll opportunity"
+        ]
+      }
+    ],
+    "full_report_diff": [],
+    "unpaired_reports": {
+      "retained_33": {
+        "version": "2025.1.4",
+        "advice_titles_by_path": [
+          {
+            "brief": [],
+            "gain": [
+              "Code clean check",
+              "Vectorization",
+              "Execution units bottlenecks"
+            ],
+            "potential": [],
+            "hint": [
+              "Type of elements and instruction set",
+              "Matching between your loop (in the source code) and the binary loop",
+              "Unroll opportunity"
+            ]
+          }
+        ]
+      }
+    }
+  }
+]
