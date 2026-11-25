@@ -1,15 +1,15 @@
 \section{Contexte}\label{sec:contexte}
 Pour comparer deux séquences d’ADN, il faut déterminer quelles bases correspondent d’une séquence à l’autre. Un alignement représente ces correspondances et les différences qui les séparent. Dans \texttt{AC} et \texttt{AGC}, les deux \texttt{C} occupent des positions différentes. Pour les mettre en regard, il suffit de laisser dans la première séquence un espace à la hauteur du \texttt{G} de la seconde. Cet espace représente la seule insertion nécessaire pour passer de \texttt{AC} à \texttt{AGC}. Les deux articles étudiés donnent le même coût à une insertion, à une suppression ou à une substitution. Ils diffèrent par la manière de rechercher la suite d’opérations la moins coûteuse.
 
-Sadiq et ses coauteurs (2020) s’appuient sur la programmation dynamique. Leur méthode compare les débuts des deux séquences, appelés \emph{préfixes}, en augmentant progressivement leur longueur~\cite[alg.~1 et fig.~4]{sadiq}. Dans la figure~\ref{fig:contexte-nvpd}, chaque case donne la distance entre le préfixe indiqué à gauche et celui qui figure en haut. Dans le calcul classique, la valeur inscrite à gauche doit être connue avant de passer à la colonne suivante. NvPD évite cette attente en repérant à l’avance la dernière occurrence de chaque lettre dans les préfixes de la seconde séquence. Si la lettre recherchée est présente, on connaît ainsi le nombre de lettres qu’il resterait à insérer après la correspondance. Le score de départ se trouve sur la ligne précédente, comme pour une substitution ou une suppression. Les colonnes de la nouvelle ligne peuvent donc être calculées en parallèle.
+Les deux articles proposent des façons différentes de répartir cette recherche sur un processeur graphique. Sadiq et ses coauteurs (2020) partent d’une grille de programmation dynamique~\cite{sadiq}. Chaque case de la figure~\ref{fig:contexte-nvpd} donne la distance entre le début de la séquence de gauche et celui de la séquence du haut. Ces débuts sont appelés des \emph{préfixes}. On construit la grille ligne par ligne jusqu’à obtenir la distance des deux séquences entières.
+
+Dans le calcul classique, une case dépend notamment de sa voisine de gauche. NvPD remplace cette dépendance par une recherche dans la ligne précédente. Pour cela, il mémorise d’abord la dernière occurrence de chaque lettre dans les préfixes de la seconde séquence. Il peut ensuite calculer toutes les cases d’une même ligne en parallèle, puis passer à la ligne suivante.
 
 \schema{contexte-nvpd}{La flèche indique le calcul de la distance entre \texttt{A} et \texttt{AGC}. Les deux \texttt{A} se correspondent. Depuis le préfixe vide \(\varepsilon\), le coût est donc celui des deux insertions, soit \(D_{1,3}=D_{0,0}+2=2\).}{fig:contexte-nvpd}{report/figures/contexte-nvpd.tex}
 
-Dans l’algorithme~\ref{alg:article-nvpd}, \(A\) et \(B\) désignent les séquences, et \(\Sigma\) l’alphabet de leurs lettres. Les longueurs \(m\) et \(n\) fixent la taille de la table des distances. La première boucle construit une table de correspondances \(MI\). Pour chaque lettre et chaque position de \(B\), elle mémorise la dernière occurrence rencontrée. Les lignes de cette table sont indépendantes et peuvent être calculées en parallèle.
-
-La seconde boucle remplit la table \(ED\). Chaque case correspond à une paire de préfixes de \(A\) et \(B\). Sur une même ligne, les colonnes utilisent la ligne précédente et les positions mémorisées dans \(MI\). Elles peuvent donc être traitées simultanément. Une fois la ligne terminée, le calcul passe à la suivante. La case finale donne la distance entre les deux séquences entières. Les auteurs écrivent \(MI\) et \(ED\) dans la déclaration des tables, puis \(MIT\) et \(EDT\) dans le texte de l’article.
+L’algorithme~\ref{alg:article-nvpd} reprend cette construction. Il reçoit les séquences \(A\) et \(B\) et leur alphabet \(\Sigma\). La première boucle construit la table \(MI\), qui donne la dernière position d’une lettre dans chaque préfixe de \(B\). Chaque ligne de cette table correspond à une lettre et peut être calculée indépendamment. La seconde boucle remplit la table des distances \(ED\), dont la dernière case contient le résultat. Dans le pseudocode publié, les auteurs nomment aussi cette table \(EDT\).
 \begin{algorithm}[!htbp]
-\caption{NvPD de Sadiq et coll.~\cite[alg.~1, p.~885]{sadiq}}\label{alg:article-nvpd}
+\caption{NvPD de Sadiq et coll., numéros des équations rectifiés~\cite[alg.~1, p.~885]{sadiq}}\label{alg:article-nvpd}
 \small
 \begin{algorithmic}[1]
 \Require Sequences \(A,B\) and alphabet \(\Sigma\)
@@ -17,23 +17,23 @@ La seconde boucle remplit la table \(ED\). Chaque case correspond à une paire d
 \State \(u\gets|\Sigma|,\; m\gets|A|,\; n\gets|B|\)
 \State Allocate \(MI[0\mathinner{\ldotp\ldotp}u-1,0\mathinner{\ldotp\ldotp}n-1]\) and \(ED[0\mathinner{\ldotp\ldotp}m,0\mathinner{\ldotp\ldotp}n]\)
 \ForAll{\(i=0,\ldots,u-1\) in parallel}
-  \For{\(j=0,\ldots,n-1\)} \State Compute \(MI_{i,j}\) according to Equation (2) \EndFor
+  \For{\(j=0,\ldots,n-1\)} \State Compute \(MI_{i,j}\) according to Equation (3) \EndFor
 \EndFor
 \For{\(i=0,\ldots,m\)}
-  \ForAll{\(j=0,\ldots,n\) in parallel} \State Compute \(EDT_{i,j}\) according to Equation (3) \EndFor
+  \ForAll{\(j=0,\ldots,n\) in parallel} \State Compute \(EDT_{i,j}\) according to Equation (2) \EndFor
 \EndFor
 \end{algorithmic}
 \end{algorithm}
 
-Aguado-Puig et ses coauteurs (2022) prennent pour point de départ le nombre d’éditions que l’on autorise~\cite[alg.~1 à~4 et fig.~1 à~3]{wfagpu}. Tant que les lettres se correspondent, on peut avancer dans les deux séquences sans augmenter le coût de l’alignement. Chaque diagonale de la grille correspond à un décalage entre les deux séquences. Pour un coût donné, l’algorithme retient la position la plus avancée sur chaque diagonale accessible. Ces positions forment un \emph{front} (figure~\ref{fig:contexte-ewfa}). Le premier front qui atteint la fin des deux séquences donne leur distance. Sur GPU, chaque bloc peut traiter une paire et répartir ses diagonales entre ses fils de calcul.
+Aguado-Puig et ses coauteurs (2022) étudient une autre manière de parcourir la grille~\cite{wfagpu}. Leur méthode commence sans édition et avance tant que les lettres correspondent. Elle autorise ensuite une édition, puis deux, jusqu’à atteindre la fin des séquences. Pour chaque coût, elle conserve la position la plus avancée sur chaque diagonale accessible. Ces positions forment un \emph{front}. Dans la figure~\ref{fig:contexte-ewfa}, une insertion suffit pour rejoindre la dernière case.
 
 \schema{contexte-ewfa}{Les deux \texttt{A} se correspondent au coût zéro. L’insertion de \texttt{G} ouvre la diagonale \(k=-1\), où la correspondance des deux \texttt{C} conduit au point \((2,3)\), à la fin des deux séquences.}{fig:contexte-ewfa}{report/figures/contexte-ewfa.tex}
 
-Dans les pseudocodes d’Aguado-Puig et coll., \(P\) et \(T\) désignent les deux séquences, \(e\) le coût courant et \(k\) une diagonale. Le front \(\widetilde W_e\) conserve, pour chaque diagonale, la position la plus avancée atteinte avec ce coût. L’opérateur \textit{extend} de l’algorithme~\ref{alg:article-wfa-operators} compare les lettres à cette position. Tant qu’elles coïncident, il avance dans les deux séquences sans augmenter \(e\).
+Dans les algorithmes d’Aguado-Puig et coll., \(P\) et \(T\) désignent les séquences de longueurs respectives \(m\) et \(n\), \(e\) le coût courant et \(k\) une diagonale. Le front \(\widetilde W_e\) conserve, pour chaque diagonale, la position la plus avancée atteinte avec ce coût. L’opérateur \textit{extend} de l’algorithme~\ref{alg:article-wfa-operators} compare les lettres à cette position. Tant qu’elles coïncident, il avance dans les deux séquences sans augmenter \(e\).
 
-Lorsque les lettres ne coïncident plus, \textit{computeNext} examine les positions obtenues par une insertion, une suppression ou une substitution. Il garde la plus avancée sur chaque diagonale du front de coût \(e+1\). Dans l’algorithme~\ref{alg:article-wfa-align}, la boucle initialise le premier front, puis alterne ces deux opérations. Elle s’arrête quand le front atteint la fin des deux séquences. Le coût courant est alors leur distance.
+Pour construire le front suivant, \textit{computeNext} examine les positions obtenues par une insertion, une suppression ou une substitution. Il garde la plus avancée sur chaque diagonale du front de coût \(e+1\). Dans l’algorithme~\ref{alg:article-wfa-align}, la boucle initialise le premier front, puis alterne ces deux opérations. Elle s’arrête quand le front atteint la fin des deux séquences. Le coût courant est alors leur distance.
 
-Le score ne donne pas à lui seul la suite des opérations. L’algorithme~\ref{alg:article-wfa-trace} utilise le vecteur de retour conservé pendant le calcul pour reconstruire cette suite. Il ajoute les lettres correspondantes, puis lit l’opération enregistrée et met à jour la position et la diagonale avant de poursuivre.
+Sur GPU, un bloc peut traiter une paire, tandis que ses fils se partagent les diagonales d’un front. Le score ne donne pas à lui seul la suite des opérations. L’algorithme~\ref{alg:article-wfa-trace} utilise le vecteur de retour conservé pendant le calcul pour reconstruire cette suite. Il ajoute les lettres correspondantes, puis lit l’opération enregistrée et met à jour la position et la diagonale avant de poursuivre.
 \begin{algorithm}[!htbp]
 \caption{Opérateurs de WFA~\cite[alg.~1 et 2, p.~63784]{wfagpu}}\label{alg:article-wfa-operators}
 \small
@@ -55,7 +55,7 @@ Le score ne donne pas à lui seul la suite des opérations. L’algorithme~\ref{
 \caption{Boucle principale de WFA~\cite[alg.~3, p.~63785]{wfagpu}}\label{alg:article-wfa-align}
 \small
 \begin{algorithmic}[1]
-\Require Sequences \(P,T\) and wavefronts \(\widetilde W_e,\widetilde W_{e+1}\)
+\Require Sequences \(P,T\) of lengths \(m,n\) and wavefronts \(\widetilde W_e,\widetilde W_{e+1}\)
 \Ensure Global edit distance
 \State \(\widetilde W_{0,0}\gets0\); \(\Call{extend}{\widetilde W_{0,0}}\); \(e\gets0\)
 \While{\(\widetilde W_{e,m-n}\ne m\)}
