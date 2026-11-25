@@ -1,4 +1,4 @@
-\subsection{Exécution des paires avec Kokkos}\label{sec:kokkos-mpi}
+\subsubsection{Exécution des paires avec Kokkos}\label{sec:kokkos-mpi}
 Open MPI~5.0.5 lance les rangs sur un ou deux nœuds~\cite{openmpicode}. Dans chaque rang, huit travailleurs exécutent les paires avec OpenMP ou avec une boucle \texttt{RangePolicy} de Kokkos~4.5.01 sur le même espace OpenMP~\cite{kokkos,kokkoscode}. Un travailleur prend plusieurs paires dans la file du rang et exécute le même noyau NvPD à colonnes SIMD. Le vol utilise le même protocole MPI dans les deux cas.
 
 La matrice contient les 8\,128 paires de la section précédente, en ordre de longueur. Pour le bloc \(b\), la politique \(s\) et \(p\) cœurs, le rapport

@@ -1,4 +1,4 @@
-\subsection{Décodage des fichiers chromosomiques}\label{sec:lecture}
+\subsubsection{Décodage des fichiers chromosomiques}\label{sec:lecture}
 Lorsque deux versions d'un chromosome diffèrent peu, la durée de lecture peut dépasser celle du calcul des fronts. Le banc isole la conversion du FASTA en deux chaînes de bases. Pour \(B\) octets de fichier et un temps de lecture \(T\), le débit vaut \(B/T\). Le processus relit le même fichier après échauffement. Cette mesure comprend le décodage et les allocations, ainsi que les copies depuis le cache de fichiers de Linux.
 
 Le premier lecteur valide et convertit chaque lettre. Le deuxième ajoute d'un bloc les lignes composées uniquement de lettres A, C, G et T majuscules. Les autres lignes passent par une table de conversion qui conserve les symboles ambigus et ignore les espaces. Le troisième lecteur teste seize caractères à la fois avant de copier la ligne. La figure~\ref{fig:fasta} compare des variantes qui rendent les mêmes caractères sur les six chromosomes.

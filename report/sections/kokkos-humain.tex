@@ -1,4 +1,4 @@
-\subsection{Équipe persistante et fusion de lignes sur chromosomes}\label{sec:kokkoshumain}
+\subsubsection{Équipe persistante et fusion de lignes sur chromosomes}\label{sec:kokkoshumain}
 Le parcours Kokkos de la figure~\ref{fig:kokkos} soumet une mise à jour par ligne. Sur l'EPYC, une équipe peut rester active pendant tout l'alignement. Chaque fil garde un intervalle contigu de colonnes. Une barrière rend les scores visibles avant de passer à la ligne suivante. Le parcours par ligne reste disponible lorsque le nombre de fils dépasse la taille d'équipe autorisée.
 
 Sur GPU, le mode score peut fusionner deux lignes en un seul lancement. Soit \(U_x(P)\) la ligne obtenue en appliquant la récurrence NvPD à la lettre \(x\) et à la ligne précédente \(P\). Pour deux lettres successives de \(A\),

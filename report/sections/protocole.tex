@@ -1,0 +1,25 @@
+\subsection{Séquences et protocole de mesure}\label{sec:protocol}
+Le générateur tire chaque base de référence indépendamment avec \(P(A)=P(C)=P(G)=P(T)=1/4\). Pour une longueur \(m\) et un taux \(r\), il choisit \(e=rm\) positions distinctes au hasard. Il tire à chaque position une substitution, une insertion ou une délétion avec probabilité \(1/3\) chacune. Une substitution choisit uniformément l'une des trois autres bases. La base insérée suit la même loi uniforme que la référence.
+
+Le plan croise quatre longueurs (5, 20, 100 et 1\,000~knt) et trois taux (2, 5 et 10\,\%), avec cinq paires par configuration et une graine maîtresse de 2026. Sur les 60 paires, les 956\,250 éditions comprennent 319\,236 substitutions, 318\,673 insertions et 318\,341 délétions. Les fichiers FASTA portent des identifiants distincts pour la référence et la séquence mutée. Les empreintes et les scores sont vérifiables avec \reposource{bench/campaign/check_course_corpus.py}. À un million de bases, la référence séquentielle utilise la première paire de chaque taux.
+
+Les révisions de dix-huit chromosomes de CHM13 et des deux haplotypes de HG002 fournissent de longues séquences très proches~\cite{chmreleases,hg002data}. Les fenêtres de GRCh38 et de CHM13 comparent deux références humaines~\cite{grch38,t2t}. Dans une région phasée chez 512 participants du projet 1000 Genomes, plusieurs haplotypes peuvent partager la même séquence~\cite{thousandgenomes}.
+
+NCBI Datasets fournit deux collections de 64 génomes, l’une de phages et l’autre du SARS-CoV-2~\cite{ncbidatasets}. Pour ce dernier, le jeu comprend Wuhan-Hu-1 et neuf génomes complets de chacun des sept lignages Pango retenus. Les caractères du FASTA sont comparés littéralement~: \texttt{N} s’apparie avec \texttt{N} à coût nul et avec une base déterminée au coût d’une substitution. L’annexe~\ref{sec:accessions} donne les accessions versionnées.
+
+Sur les nœuds AMD EPYC~9654 de ROMEO, OpenMP répartit les colonnes ou les paires entre cœurs d’un même processus C++20. CUDA exécute les noyaux sur le GPU NVIDIA GH200. Sur deux nœuds, MPI assure les échanges de données entre processus. Slurm, l'ordonnanceur développé à l'origine au Lawrence Livermore National Laboratory, réserve les ressources et lance les étapes sur les nœuds de calcul. Les séries de temps présentées proviennent de ROMEO. Le diagnostic d'exactitude de QuickEd inclut aussi les deux témoins observés sur Apple M1 Pro. Le temps noyau, le temps de l'appel complet et le temps du processus sont indiqués séparément quand ils sont disponibles. Le pic de mémoire résidente (RSS) inclut le programme, ses entrées et les allocations hôtes. Les octets explicitement réservés sur le GPU mesurent une autre quantité.
+
+Le tableau~\ref{tab:scope} précise le chronomètre et l'unité expérimentale des principales campagnes. Il distingue la variabilité entre chaînes de celle des mesures répétées sur une même entrée.
+\begin{table}[!htbp]\centering\small
+\caption{Périmètre des mesures de durée.}\label{tab:scope}
+\begin{tabular}{@{}lll@{}}\toprule
+Expérience & Observation chronométrée & Unité de dispersion \\\midrule
+Paires synthétiques initiales & Appel sur chaque FASTA & Paire distincte à taux fixé \\
+Répétitions sur entrée fixée & Appel après échauffement & Processus ou bloc apparié \\
+Profil du GPU & Domaine temporel de la capture & Processus profilé \\
+MPI entre nœuds & Maximum des durées de rang & Bloc de lancements \\\bottomrule
+\end{tabular}\end{table}
+
+Pour \(r\) répétitions indépendantes, l'intervalle de Student à 95\,\% s'écrit \(\bar T\pm t_{0.975,r-1}s/\sqrt r\). Le carnet calcule le quantile avec SciPy~1.12.0~\cite{scipy}. La moyenne \(\bar T\) porte sur les \(r\) durées et la variance empirique \(s^2\) a pour diviseur \(r-1\). Pour des essais appariés, le rapport se calcule dans chaque bloc avant l'agrégation. La demi-largeur de l'intervalle divisée par \(\bar T\) indique si la précision relative de 5\,\% est atteinte. Lorsque les cinq observations sont cinq paires différentes, leur dispersion inclut la variabilité des entrées. Les appels chauds d'un même processus sont d'abord regroupés dans ce processus. Les figures de temps indiquent l’intervalle à 95\,\% et les valeurs écrites sous la forme \(\bar T\pm s\) donnent l’écart-type. Pour un effectif unique, seule la durée observée est disponible. Un décompte de cellules ou de lancements est déterministe. Un calcul interrompu à son échéance fournit une durée censurée.
+
+\synthese{Dans les séries à cinq paires, l'écart-type décrit la dispersion entre entrées. À séquences fixées, les répétitions d’un même processus comptent comme une seule observation pour l’intervalle entre processus.}

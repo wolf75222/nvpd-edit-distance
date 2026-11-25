@@ -1,30 +1,42 @@
 \documentclass[10pt,a4paper]{article}
 \input{tex/preambule}
 \input{tex/bibliography}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\titleformat{\subsubsection}{\normalfont\rmfamily\bfseries\normalsize}{\thesubsubsection}{.65em}{}[{\vspace{.5pt}\titlerule[.2pt]}]
+\titlespacing*{\subsubsection}{0pt}{9pt plus 2pt}{4pt}
+\pretocmd{\subsubsection}{\Needspace{5\baselineskip}}{}{}
+\makeatletter
+\renewcommand*{\l@subsection}{\@dottedtocline{2}{.65em}{2.2em}}
+\renewcommand*{\l@subsubsection}{\@dottedtocline{3}{1.4em}{3em}}
+\makeatother
 \begin{document}
 \doctitle{Calcul parallèle et phylogénies de distance}
 \begin{abstract}
-Le coût d'une comparaison génomique dépend de la longueur des séquences et de leur distance d'édition. Sur le chromosome~1 maternel de HG002, un calcul par fragments et fronts bornés retrouve les 54 éditions en 28,19\,ms sur un cœur EPYC, contre 87,18\,ms pour WFA2. Sur deux loci distincts du chromosome~21 séparés par 138\,141 éditions, NvPD prend 0,637\,s sur GH200, contre 3,762\,s pour Edlib sur un cœur Grace. À matériel égal, Edlib termine en 0,168\,s la matrice de 768 fenêtres distribuée sur 384 cœurs EPYC. Sur une collection de 64 génomes viraux, deux scores surestimés par une bande étroite conservent les bipartitions des arbres de distance. Ces expériences distinguent le coût par paire, le débit d'une collection et la sensibilité de l'arbre aux erreurs de distance.
+Le coût d'une comparaison génomique dépend de la longueur des séquences et de leur distance d'édition. Sur le chromosome~1 maternel de HG002, un calcul par fragments et fronts bornés retrouve les 54 éditions en 28,19\,ms sur un cœur EPYC, contre 87,18\,ms pour WFA2. Sur deux loci distincts du chromosome~21 séparés par 138\,141 éditions, NvPD prend 0,637\,s sur GH200, contre 3,762\,s pour Edlib sur un cœur Grace. Sur 384 cœurs EPYC, Edlib calcule la matrice de 768 fenêtres en 0,168\,s, le meilleur temps mesuré. Sur les 64 génomes du SARS-CoV-2, Neighbor-Joining isole trois des sept lignages Pango. Une bande de demi-largeur 323 conserve les topologies de Neighbor-Joining et d’UPGMA malgré deux scores surestimés.
 \end{abstract}
 \fullcontents\clearpage
 \input{sections/introduction}
-\section{Algorithmes d'alignement global}\label{sec:algorithms}
-Le score donne le coût minimal entre deux chaînes. Un chemin optimal indique aussi les opérations qui réalisent ce coût. La matrice d'une collection demande seulement un score par paire.
+\section{Matériels et méthodes}\label{sec:algorithms}
+Les paires synthétiques permettent de faire varier la divergence à longueur fixée. Les assemblages humains et les collections virales servent ensuite à évaluer le calcul sur des séquences déposées.
+\input{sections/protocole}
 \input{sections/algorithmes}
-\section{Dimension, distance et coût de calcul}\label{sec:experiments}
-Les paires synthétiques fournissent une référence commune à tous les noyaux. À longueur fixée, le taux d'édition modifie la distance observée et donc le travail des algorithmes qui avancent par fronts.
+\section{Résultats et interprétations}\label{sec:results}
+À longueur égale, les parcours denses visitent le même nombre de cellules. Les mesures sur paires synthétiques isolent l’effet de la distance avant les comparaisons sur chromosomes et sur collections.
+\subsection{Dimension, distance et coût de calcul}\label{sec:experiments}
+Les temps et la mémoire sont mesurés sur les mêmes entrées pour les parcours denses et les fronts d’onde.
 \input{sections/divergence}
-\section{Parallélisme sur processeur}\label{sec:cpu}
+\subsection{Parallélisme sur processeur}\label{sec:cpu}
 Sur un nœud ROMEO, deux processeurs EPYC~9654 réunissent 192 cœurs. La largeur des lignes, la vectorisation et le placement des travailleurs changent la façon dont ces cœurs utilisent les caches.
 \input{sections/profil}
 \input{sections/adaptatif}
-\section{Exécution sur accélérateur}\label{sec:gpu}
+\subsection{Exécution sur accélérateur}\label{sec:gpu}
 Le GH200 associe un processeur Grace et un accélérateur Hopper. Pour une seule paire, le GPU doit lire les prédécesseurs et rendre les scores d'une ligne disponibles avant la suivante. Un lot ajoute les coûts de gestion des tampons entre appels.
 \input{sections/fronts}
 \input{sections/roofline-gpu}
 \input{sections/energie-accelerateur}
 \input{sections/loci-accelerateur}
-\section{Calcul distribué}\label{sec:mpi}
+\subsection{Calcul distribué}\label{sec:mpi}
 Le protocole distribué utilise 24 rangs par nœud, chacun avec huit threads OpenMP. La même réservation peut partager les colonnes d'une paire ou répartir un ensemble de paires entières.
 \input{sections/distribue}
 \input{sections/ordonnancement}
@@ -32,13 +44,13 @@ Le protocole distribué utilise 24 rangs par nœud, chacun avec huit threads Ope
 \input{sections/concentration-rangs}
 \input{sections/travailleurs-kokkos}
 \input{sections/matrice-chromosome}
-\section{Applications génomiques}\label{sec:bio}
+\subsection{Applications génomiques}\label{sec:bio}
 Les assemblages humains permettent de comparer de longs intervalles dont les extrémités sont connues. Les collections de phages et de séquences de surveillance posent une autre question, celle de la représentation d'une matrice de distances par un arbre.
 \input{sections/chromosome}
 \input{sections/ambiguite}
 \input{sections/sensibilite-arbres}
-\section{Discussion et conclusion}\label{sec:conclusion}
-Le temps d'un alignement dépend du rectangle de calcul, de la distance et du résultat demandé. Sur une collection, le nombre de paires ajoute une dimension à la décision de parallélisation.
+\section{Conclusion}\label{sec:conclusion}
+Les versions OpenMP et CUDA de NvPD reproduisent les scores de référence sur les entrées comparées. Sur ROMEO, leur avantage dépend de la divergence et du parallélisme disponible entre paires. Les résultats de la figure~\ref{fig:bilan} délimitent les cas où le parcours dense réduit le temps par rapport aux bibliothèques.
 \input{sections/synthese}
 \input{sections/conclusion}
 \clearpage\appendix

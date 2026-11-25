@@ -34,17 +34,7 @@
 \setcounter{topnumber}{3}\setcounter{bottomnumber}{2}\setcounter{totalnumber}{5}
 \renewcommand{\topfraction}{.9}\renewcommand{\bottomfraction}{.85}
 \renewcommand{\floatpagefraction}{.82}\renewcommand{\textfraction}{.09}
-\newcommand{\doctitle}[1]{\thispagestyle{firstpage}\begin{center}
- % Trim the margins of the official images so their visible lower edges align.
- \includegraphics[trim=28.8bp 27.8bp 28.8bp 28.4bp,clip,height=14.5mm]{assets/logos/urca.png}%
- \hspace{10.5mm}%
- \includegraphics[trim=26bp 1.45bp 26bp 1bp,clip,height=13.6mm]{assets/logos/chps.jpg}\par
- \vspace{4pt}%
- {\LARGE\bfseries Parallel Edit Distance for Genomic Sequences\par}
- \vspace{4pt}{\large #1\par}\vspace{4pt}
- Master CHPS \enspace$\cdot$\enspace Université de Reims Champagne-Ardenne \enspace$\cdot$\enspace 25 novembre 2026
- \end{center}}
-\hypersetup{pdftitle={Parallel Edit Distance for Genomic Sequences},pdfsubject={Alignement global sur ROMEO}}
+\input{tex/couverture}
 
 \makeatletter
 \newcommand{\fullcontents}{\section*{\contentsname}\begingroup\setlength{\multicolsep}{5pt}\begin{multicols}{2}

@@ -1,4 +1,4 @@
-\subsection{Comparaison des décompositions OpenMP à grande largeur}
+\subsubsection{Comparaison des décompositions OpenMP à grande largeur}
 Le nombre de synchronisations et la largeur des étapes distinguent les deux décompositions. Pour une matrice de \(m\times n\) cases, les anti-diagonales ont \(m+n-1\) niveaux intérieurs de largeur variable. NvPD traite \(m\) lignes de largeur \(n\) et lit un prédécesseur indirect dans l'index des occurrences.
 
 La comparaison OpenMP reprend les quinze entrées d'un million de bases avec l'exécutable de la campagne initiale, antérieure à la vectorisation. Chaque version emploie huit cœurs. À chaque vague, trois processus par nœud traitent les trois taux sur des cœurs distincts. Les nœuds échangent les algorithmes entre deux vagues. Les cinq valeurs d'un taux correspondent à cinq paires différentes.

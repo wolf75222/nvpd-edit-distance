@@ -1,4 +1,4 @@
-\subsection{Fenêtres homologues du chromosome humain}
+\subsubsection{Fenêtres homologues du chromosome humain}
 Les fenêtres homologues proviennent du chromosome~21 de GRCh38.p14 (\texttt{NC\_000021.9}) et de T2T-CHM13v2.0 (\texttt{NC\_060945.1})~\cite{grch38,t2t,chmreleases}. Sur le chromosome 21, les intervalles commencent en 34\,000\,000 et 32\,381\,795, en coordonnées de base zéro. Les ancres de 41 bases qui encadrent chaque intervalle sont uniques sur leur chromosome. La chaîne de correspondance UCSC de \texttt{hg38} vers \texttt{hs1}~\cite{ucscchain} place leurs extrémités dans le même ordre sur le brin positif. Les insertions et les délétions internes restent dans les fenêtres.
 \chart{biology/chromosome21.png}{Chaque ligne associe le temps et la mémoire d’un alignement. Les hachures indiquent le maximum résident échantillonné et les barres pleines, le pic système.}{fig:humain}{bench/human/human.sbatch}
 Dans la figure~\ref{fig:humain}, cinq processus par méthode alignent les mêmes fenêtres après un premier appel complet. Pour deux puis quatre millions de bases de référence, les distances valent \(5\,599\) et \(12\,482\). La portée \(R\) de l'index atteint 290 puis 622 colonnes, ce qui impose un lancement CUDA par ligne. NvPD prend \(17{,}558\pm0{,}115\) puis \(90{,}420\pm0{,}276\)\,s, allocations, transferts et synchronisation compris. L'initialisation du contexte a lieu pendant l'échauffement. Pour les mêmes fenêtres, WFA2 sur un cœur Grace prend \(0{,}0539\pm0{,}0006\) puis \(0{,}3455\pm0{,}0019\)\,s, et edlib \(0{,}7864\pm0{,}0079\) puis \(2{,}9980\pm0{,}0013\)\,s.
@@ -16,7 +16,7 @@ Le contrôle entier ajoute 64 bases à une copie des 45\,090\,682 bases de CHM13
 \input{sections/trace-chromosomes}
 
 \input{sections/cohorte-compacte}
-\subsection{Construction des arbres de phage}
+\subsubsection{Construction des arbres de phage}
 Le panel réunit la référence du phage \(\phi\)X174 (\texttt{NC\_001422.1}) et 63 autres génomes complets obtenus avec NCBI Datasets~18.41.1~\cite{phixref,ncbidatasets}.\footnote{Le manifeste \reposource{results/ncbi/phix174.tsv} donne l’accession versionnée, la longueur et l’empreinte de chaque séquence.} La reconstruction mesure dans quelle proportion les chemins d'un arbre reproduisent leurs distances globales. Une origine différente sur le génome circulaire peut modifier la distance entre les chaînes déposées. Une même édition observée peut aussi résulter de plusieurs événements évolutifs.
 
 UPGMA, la méthode de classification moyenne de Sokal et Michener~\cite{upgma}, joint les groupes \(U,V\) de distance moyenne minimale et place leur parent à la hauteur \(d(U,V)/2\). Pour un troisième groupe \(W\), la nouvelle distance moyenne est pondérée par les effectifs. Saitou et Nei ont proposé Neighbor-Joining (NJ) pour construire un arbre non enraciné~\cite{nj}. NJ joint la paire qui minimise \(Q_{ij}\), où \(r\) est le nombre de groupes actifs et \(s_i=\sum_k d_{ik}\).
@@ -36,7 +36,7 @@ Les phylogrammes de la figure~\ref{fig:arbres} utilisent la longueur cumulée de
 
 \synthese{Les 64 feuilles comprennent une paire d'accessions différentes de distance nulle. Les deux arbres conservent toutes les feuilles et comportent chacun trois arêtes de longueur nulle.}
 
-\subsection{Ajustement des arbres aux distances entre phages}
+\subsubsection{Ajustement des arbres aux distances entre phages}
 UPGMA impose des feuilles équidistantes de la racine. Sur trois feuilles de la figure~\ref{fig:arbres}, les deux plus grandes distances patristiques UPGMA doivent alors coïncider. L'additivité d'un arbre impose sur quatre feuilles l'égalité des deux plus grandes sommes parmi \(d_{ij}+d_{kl},d_{ik}+d_{jl},d_{il}+d_{jk}\).
 
 La figure~\ref{fig:phage} porte sur les \(\binom{64}{3}=41\,664\) triplets et \(\binom{64}{4}=635\,376\) quartets. Les conditions sont satisfaites pour 1\,661 triplets et 245\,847 quartets. Le plus grand écart absolu vaut 56,87 éditions pour UPGMA et 63,86 pour NJ.
@@ -52,7 +52,7 @@ où \(P\) désigne le nombre de paires et \(t_{ij}\) la longueur du chemin entre
 
 \FloatBarrier
 \input{sections/matrice-surveillance}
-\subsection{Structure des groupes dans les arbres de surveillance}
+\subsubsection{Structure des groupes dans les arbres de surveillance}
 La cohorte comprend Wuhan-Hu-1~\cite{wuhanref} et neuf accessions par lignage pour sept lignages Pango~\cite{pango}. L’annexe~\ref{sec:accessions} donne les 64 identifiants versionnés et les décomptes de \texttt{N}. Cet effectif imposé permet de comparer les groupes, mais leur fréquence dans la population reste inconnue. Les distances des 64 entrées servent à tester si une arête sépare toutes les feuilles d'un groupe. Dans un arbre enraciné, un groupe est retrouvé si les descendants d'une arête positive coïncident avec ses membres. Pour NJ, non enraciné, les deux côtés de l'arête sont examinés. Sur les 1\,905\,372 caractères lus, 65\,588 sont ambigus. La distance compte les différences entre caractères déposés, y compris aux positions ambiguës.
 \chart{biology/phylogenie_surveillance.png}{Les distances globales entre paires et les groupes isolés par une arête sont comparés aux partitions de l'arbre de surveillance sur les identifiants communs.}{fig:surveillance}{scripts/phylogeny/phylo_groups.py}
 À la figure~\ref{fig:surveillance}, la médiane est de 112 éditions pour les 252 paires de même lignage et de 402 pour les 1\,701 paires de lignages différents. Ces statistiques excluent les 63 paires contenant la référence. L'écart entre médianes est de 290 éditions. Lorsqu'on retire une accession et toutes ses paires, les 63 écarts vont de 282,5 à 295 éditions. Cette amplitude décrit la sensibilité au choix d'une feuille et conserve la dépendance entre paires qui partagent une accession. L'arbre public UCSC du 23 novembre 2026~\cite{ushertree} contient 52 des 64 accessions, dont six du groupe A et aucune du groupe B.1.1.529. La méthode de placement par parcimonie de Turakhia et ses coauteurs~\cite{usher} attribue aux branches des longueurs en événements. Les chemins publics additionnent ces longueurs. La corrélation descriptive de ces chemins avec les distances d'édition vaut \(r=0,124\) sur 1\,326 paires qui partagent des feuilles. Le module Bio.Phylo de Biopython, présenté par Talevich et ses coauteurs~\cite{biophylo}, a relu le Newick et reproduit exactement les 1\,326 longueurs de chemin publiques.

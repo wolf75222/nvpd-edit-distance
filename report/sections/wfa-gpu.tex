@@ -1,4 +1,4 @@
-\subsection{Répartition des fronts d’onde entre accélérateur et processeur}\label{sec:wfa-gpu-batch}
+\subsubsection{Répartition des fronts d’onde entre accélérateur et processeur}\label{sec:wfa-gpu-batch}
 WFA-GPU, développé par Aguado-Puig et coll.~\cite{wfagpuaffine,wfagpucode}, distribue les alignements affines entre blocs CUDA et les diagonales d’un front entre fils. Soient \(x\) le coût d’une substitution, \(o\) celui de l’ouverture d’une lacune et \(e\) celui de son extension. Pour un chemin \(P\), le coût dépend de l’ensemble des lacunes \(G(P)\) et de leurs longueurs \(\ell_g\),
 \[
  C(P)=xN_{\mathrm{sub}}(P)+\sum_{g\in G(P)}(o+e\ell_g),\qquad

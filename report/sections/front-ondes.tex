@@ -1,4 +1,4 @@
-\subsection{Alignement par fronts d’onde sur accélérateur}
+\subsubsection{Alignement par fronts d’onde sur accélérateur}
 Pour la distance à coût unitaire, eWFA-GPU d’Aguado-Puig et coll.~\cite{wfagpu,ewfacode} distribue les paires entre blocs et avance les diagonales d'un même front en parallèle. Son format de trace réserve deux bits à chacune des 64 opérations d'édition possibles. La boucle de cette version s'arrête avant le score 64. L'expérience retient les cas \(d<64\) parmi vingt paires définies avant le calcul. Pour chaque chemin brut, le programme rejoue les opérations jusqu'aux deux extrémités et vérifie
 \[
  N_{\mathrm{sub}}+N_{\mathrm{ins}}+N_{\mathrm{del}}=d_{\rm edlib}.

@@ -1,4 +1,4 @@
-\subsection{Traduction des adresses sur chromosomes entiers}\label{sec:pages-genomiques}
+\subsubsection{Traduction des adresses sur chromosomes entiers}\label{sec:pages-genomiques}
 Le solveur relit les entrées à chaque alignement. Une entrée du cache de traduction couvre 512 fois plus de bases avec une page de 2\,Mio qu'avec une page de 4\,Kio, à raison d'un octet par base. Le banc place les deux séquences dans une zone anonyme alignée et mesure séparément le temps de copie \(A_p\) et le temps du score \(t_p\) pour chaque taille de page \(p\). Sous l'hypothèse d'un coût constant par score, le temps de \(k\) requêtes sur cette zone vaut
 \[
                 T_p(k)=A_p+k t_p .

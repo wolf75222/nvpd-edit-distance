@@ -1,4 +1,4 @@
-\subsection{Décomposition du travail sur deux nœuds}
+\subsubsection{Décomposition du travail sur deux nœuds}
 Le calcul distribué compare le coût d'un échange par ligne à celui d'une réduction en fin de lot. Dans le premier parcours d’une paire, chaque rang possède une bande verticale. Au début de la ligne \(i\), il connaît le rang et la colonne de la dernière occurrence antérieure de \(A_i\). Le bord droit de la ligne \(i-1\) permet aussi de traiter le cas où cette occurrence se trouve en première colonne d'une bande.
 L'algorithme~\ref{alg:mpi} décrit les deux scalaires dont chaque rang a besoin pour poursuivre sa bande locale.
 \begin{algorithm}[!htbp]
@@ -21,7 +21,7 @@ La figure~\ref{fig:mpifort} donne la moyenne de sept blocs indépendants après 
 
 \synthese{Sur deux nœuds, l'efficacité forte atteint 72,70\,\% sur le lot synthétique et 71,35\,\% sur le phage. Elle tombe à 4,59\,\% sur la paire carrée et à 13,70\,\% sur la paire large.}
 
-\subsection{Temps passé dans les échanges collectifs}\label{sec:collectives}
+\subsubsection{Temps passé dans les échanges collectifs}\label{sec:collectives}
 L'interface de profilage PMPI, définie par le MPI Forum, permet d'entourer un appel MPI d'un chronomètre. Après deux échauffements, sept blocs comparent le même calcul avec et sans sonde. Le rang critique est celui qui détermine la durée du calcul. Pour chaque essai instrumenté, la part du collectif est le rapport de son temps cumulé dans \texttt{MPI\_Allgather} à sa durée totale. Le temps ainsi attribué au collectif comprend l'attente des autres rangs.
 
 \chart{distributed/collectives_mpi.png}{Temps du collectif sur le rang critique, coût de l'instrumentation et gain du pipeline de voisinage sur les mêmes deux nœuds.}{fig:collectives}{bench/mpi/collectives/probe.c}
@@ -37,7 +37,7 @@ La comparaison repose sur sept blocs appariés, deux échauffements et le même 
 
 \synthese{À deux nœuds, le gain apparié sur le témoin atteint 76,30 sur le carré (IC à 95\,\% de 74,52 à 78,07) et 8,93 sur la paire large (8,77 à 9,09). La hauteur la plus rapide dépend de la forme du rectangle.}
 
-\subsection{Efficacité à charge par cœur constante}
+\subsubsection{Efficacité à charge par cœur constante}
 L'expérience faible compare deux nœuds complets à un nœud complet, avec huit fils par rang. Soit \(W\) le nombre de cases traitées sur le premier nœud. En doublant le travail, l'efficacité faible et le gain de débit valent
 \[
  E_{\mathrm{weak}}=\frac{T_{192}(W)}{T_{384}(2W)},\qquad

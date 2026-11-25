@@ -2,6 +2,8 @@
 import json
 from pathlib import Path
 import re
+import shutil
+import subprocess
 import unittest
 from urllib.parse import unquote
 
@@ -27,6 +29,35 @@ def expand_sections(path):
 
 
 class ReportStructure(unittest.TestCase):
+    def test_course_sections_in_order(self):
+        for report in REPORTS:
+            with self.subTest(report=report):
+                body = expand_sections(REPORT / report).partition(r"\appendix")[0]
+                self.assertEqual(re.findall(r"^\\section\{([^}]+)\}", body, re.M), [
+                    "Introduction", "Matériels et méthodes", "Résultats et interprétations", "Conclusion",
+                ])
+
+    @unittest.skipUnless(shutil.which("pdftotext"), "Poppler is required to inspect the PDF cover")
+    def test_course_cover_in_published_pdfs(self):
+        required = (
+            "Projet 3 - Parallélisation d’un algorithme de distance d’édition",
+            "Romain Despoullains", "Nicolas Marano", "Sylvain Rowe", "Cloe Vautard",
+            "Master 2 Calcul Haute Performance et Simulation (CHPS)",
+            "UE CHPS1001", "Éléments de bioinformatique : utilisation du HPC dans la biologie",
+            "25 novembre 2026",
+        )
+        for report in REPORTS:
+            pdf = (REPORT / report).with_suffix(".pdf")
+            with self.subTest(pdf=pdf.name):
+                text = subprocess.check_output(
+                    ["pdftotext", "-layout", "-f", "1", "-l", "1", pdf, "-"],
+                    encoding="utf-8",
+                )
+                page = " ".join(text.split())
+                for field in required:
+                    self.assertIn(field, page)
+                self.assertNotRegex(page, r"\b(?:Sommaire|Introduction|Résumé)\b")
+
     def test_figures_and_algorithms_have_text_references(self):
         for report in REPORTS:
             text = expand_sections(REPORT / report)
@@ -40,16 +71,15 @@ class ReportStructure(unittest.TestCase):
     def test_one_summary_per_closing_passage(self):
         for report in REPORTS:
             source = expand_sections(REPORT / report)
-            headings = list(re.finditer(r"^\\(section|subsection)\{([^}]+)\}", source, re.M))
+            headings = list(re.finditer(r"^\\((?:sub){0,2}section)\{([^}]+)\}", source, re.M))
             self.assertTrue(headings, report)
             for index, heading in enumerate(headings):
                 following = headings[index + 1] if index + 1 < len(headings) else None
                 passage = source[heading.end():following.start() if following else len(source)]
-                introduces_subsections = (heading[1] == "section" and following is not None
-                                          and following[1] == "subsection")
+                introduces_children = following is not None and following[1] == "sub" + heading[1]
                 with self.subTest(report=report, section=heading[2]):
                     summaries = re.findall(r"^\s*\\synthese(?:section)?\{", passage, re.M)
-                    self.assertEqual(len(summaries), 0 if introduces_subsections else 1)
+                    self.assertEqual(len(summaries), 0 if introduces_children else 1)
 
     def test_bibliography_identifiers_and_citations(self):
         source = (REPORT / "tex" / "references.bib").read_text(encoding="utf-8")

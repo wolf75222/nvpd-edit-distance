@@ -1,4 +1,4 @@
-\subsection{Répartition de fenêtres homologues entre nœuds}\label{sec:mpihumain}
+\subsubsection{Répartition de fenêtres homologues entre nœuds}\label{sec:mpihumain}
 Sur le chromosome 21, un locus de GRCh38 est comparé à son homologue dans CHM13. La chaîne de correspondance UCSC de \texttt{hg38} vers \texttt{hs1}~\cite{ucscchain} fournit les deux bornes. Les 41 bases autour de chaque borne sont identiques dans les deux assemblages. Les 768 fenêtres occupent des intervalles disjoints de 16\,384 bases dans GRCh38. Les insertions et les délétions donnent des longueurs de 5\,297 à 19\,840 bases dans CHM13. Les distances vont de 0 à 11\,107 éditions. Edlib et WFA2 ont retrouvé chaque score.
 
 La commande \texttt{pairs} distribue les comparaisons entre loci homologues. Pour le test d'échelle faible, le lot de 384 reprend une fenêtre sur deux de la même grille chromosomique. Si \(m_i,n_i\) sont les longueurs au locus \(i\), le travail effectif du lot \(L\) et l'efficacité en débit par cœur s'écrivent

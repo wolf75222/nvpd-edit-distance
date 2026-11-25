@@ -1,4 +1,4 @@
-\subsection{Énergie des tuiles et réemploi des indices}\label{sec:energie-accelerateur}
+\subsubsection{Énergie des tuiles et réemploi des indices}\label{sec:energie-accelerateur}
 Sur le chromosome~21, une tuile de profondeur \(h\) remplace \(h\) lancements par un seul, au prix du recalcul de son bord gauche. La figure~\ref{fig:energieaccelerateur} mesure cet échange sur deux régions homologues de GRCh38 et CHM13. Pour \(K\) appels de durée totale \(T\), le banc mesure l'énergie \(E\) du GPU par différence entre deux lectures du compteur de la bibliothèque NVML de NVIDIA~\cite{nvmldocs}.\footnote{La fonction \texttt{nvmlDeviceGetTotalEnergyConsumption} renvoie l'énergie cumulée du GPU en millijoules depuis le chargement du pilote. Les cœurs Grace et le reste de l’installation sont hors du périmètre de ce compteur.} La puissance moyenne \(P\) et le rendement \(\eta\) s'écrivent
 \[
  P=E/T,\qquad \eta=\frac{Kmn}{10^9 TP}=\frac{Kmn}{10^9 E}\quad[\mathrm{GCUPS/W}].

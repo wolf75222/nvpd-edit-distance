@@ -1,4 +1,4 @@
-\subsection{Vectorisation des colonnes sur processeur}
+\subsubsection{Vectorisation des colonnes sur processeur}
 La boucle interne de NvPD calcule une ligne à partir de la table des dernières occurrences. L'instruction SIMD applique une même opération à plusieurs valeurs (\emph{single instruction, multiple data}). Le branchement sur \(k=0\), \(k=j\) ou \(0<k<j\) peut être remplacé par le minimum de l'algorithme~\ref{alg:nvpd}. Quand \(k=j\), le second terme vaut \(P_{j-1}\), le coût d'une correspondance. Le cas sans correspondance suit la borne établie pour l'algorithme~\ref{alg:nvpd}. Une instruction SIMD peut alors traiter plusieurs colonnes qui choisissent des prédécesseurs différents.
 \chart{cpu/variantes_cpu.png}{Chaque case donne le gain moyen de trois blocs appariés. En dessous figurent l'écart-type et la demi-largeur de l'IC à 95\,\%. Le vert indique un gain supérieur à l'unité, le rose un ralentissement.}{fig:simd}{bench/cpu/openmp/profile_cpu_driver.cpp}
 Les essais de la figure~\ref{fig:simd} utilisent GCC~11.5 avec \texttt{-O3 -march=native} sur EPYC~9654. La moyenne des rapports \(T_\mathrm{initial}/T_\mathrm{SIMD}\) porte sur trois répétitions appariées. Le compilateur vectorise la boucle sur 32 octets, soit huit entiers par instruction vectorielle. À un cœur, le gain vaut \(5{,}852\pm0{,}009\) sur la forme \(256\times10^6\). Le panneau b) de la figure~\ref{fig:million} compare ensuite la boucle initiale et la boucle SIMD dans cinq blocs appariés, sur les mêmes huit cœurs et la même entrée par taux. À 2\,\%, le temps passe de \(321{,}572\pm0{,}385\) à \(51{,}655\pm0{,}368\)\,s. Sur \(10^6\times1\,000\,033\) cases, le débit moyen du noyau SIMD atteint \(19{,}36\pm0{,}14\)\,GCUPS. Pour 2, 5 et 10\,\% d'éditions injectées, les gains appariés valent \(6{,}226\pm0{,}043\), \(6{,}192\pm0{,}038\) et \(6{,}206\pm0{,}049\).
@@ -7,7 +7,7 @@ La commande \texttt{perf stat} de Linux (version~6.9.10) relève les compteurs m
 
 \synthese{Sur le carré de 20\,000 bases, le gain de la boucle vectorisée atteint \(2{,}62\pm0{,}53\) sur un cœur. La baisse des instructions retirées accompagne ce gain, même si les lectures indirectes restent présentes.}
 
-\subsection{Empreinte de l’index et localité sur processeur}
+\subsubsection{Empreinte de l’index et localité sur processeur}
 La taille de l'index détermine la part du jeu de données qui tient en cache. Pour \(q\) lettres distinctes et \(n\) colonnes, l'index et les deux lignes du noyau de coût seul occupent
 \[
  M_{\mathrm{NvPD}}=4(q+2)(n+1)\quad [\mathrm{bytes}].
@@ -21,7 +21,7 @@ Sur la forme \(64\times4\,194\,304\), la figure~\ref{fig:mem} distingue le maxim
 \input{sections/lecture-fasta-humaine}
 \input{sections/pages-genomiques}
 
-\subsection{Passage à l’échelle en mémoire partagée}
+\subsubsection{Passage à l’échelle en mémoire partagée}
 Le passage à l'échelle forte répartit un travail constant entre \(p\) cœurs. Le passage à l'échelle faible garde le nombre de cases par cœur constant~\cite{amdahl,gustafson}. Pour une matrice de travail \(W\), les indicateurs valent
 \[
  S_p=\frac{T_1(W)}{T_p(W)},\qquad E_p=\frac{S_p}{p},\qquad

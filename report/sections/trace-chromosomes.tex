@@ -1,4 +1,4 @@
-\subsection{Reconstruction parallèle du chemin chromosomique}\label{sec:split}
+\subsubsection{Reconstruction parallèle du chemin chromosomique}\label{sec:split}
 Deux versions d'un assemblage peuvent partager des millions de bases consécutives. Une coupe dans une région identique permet de traiter les deux fragments en parallèle, à condition qu'un chemin optimal passe par cette coupe. La commande \texttt{nvpd-split} propose jusqu'à sept coupes, espacées sur la première chaîne. Elle recherche chaque mot de 16 bases dans une fenêtre de la seconde chaîne, puis vérifie 128 bases autour de la correspondance. Chaque fragment perd son préfixe et son suffixe communs. NvPD traite le rectangle restant jusqu'à 262\,144 cellules, et BiWFA traite les rectangles plus grands~\cite{sadiq,biwfa}.
 
 Si \(C=((i_0,j_0),\ldots,(i_q,j_q))\) contient les extrémités et les coupes proposées, la concaténation des chemins locaux fournit une borne supérieure,
