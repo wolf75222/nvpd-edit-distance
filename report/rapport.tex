@@ -13,7 +13,7 @@
 \begin{document}
 \doctitle{Calcul parallèle et phylogénies de distance}
 \begin{abstract}
-La distance d’édition permet de comparer deux séquences en comptant les opérations nécessaires pour passer de l’une à l’autre. NvPD répartit le calcul d’une grille entre plusieurs cœurs, tandis qu’un algorithme par fronts limite l’exploration aux positions accessibles pour un coût donné. Sur ROMEO, parmi douze paires synthétiques, seule celle d’un million de bases à 10\,\% d’éditions introduites s’aligne plus vite avec NvPD sur GPU qu’avec Edlib ou WFA2 sur un cœur Grace. Sur le chromosome~1 maternel de HG002, où deux révisions ne diffèrent que de 54 éditions, un découpage avec fronts bornés prend 28,19\,ms, contre 87,18\,ms pour WFA2 sur le même cœur EPYC. À l’échelle d’une collection, le calcul peut aussi se partager entre paires. La matrice de 64 génomes du SARS-CoV-2 permet enfin de mesurer comment une approximation des distances se transmet à l’arbre. Deux distances surestimées laissent ici les topologies d’UPGMA et de Neighbor-Joining inchangées.
+La distance d’édition permet de comparer deux séquences en comptant les opérations nécessaires pour passer de l’une à l’autre. NvPD répartit le calcul d’une grille entre plusieurs cœurs, tandis qu’un algorithme par fronts limite l’exploration aux positions accessibles pour un coût donné. À un million de bases et 10\,\% d’éditions introduites, NvPD calcule la distance plus vite sur le GPU du GH200 qu’Edlib et WFA2 sur un cœur Grace pour chacune des cinq paires synthétiques. Au même taux, à 100\,000 bases, NvPD devance WFA2 sur deux paires sur cinq. Sur le chromosome~1 maternel de HG002, où deux révisions ne diffèrent que de 54 éditions, un découpage avec fronts bornés prend 28,19\,ms, contre 87,18\,ms pour WFA2 sur le même cœur EPYC. À l’échelle d’une collection, le calcul peut aussi se partager entre paires. La matrice de 64 génomes du SARS-CoV-2 permet enfin de mesurer comment une approximation des distances se transmet à l’arbre. Deux distances surestimées laissent ici les topologies d’UPGMA et de Neighbor-Joining inchangées.
 \end{abstract}
 \fullcontents\clearpage
 \input{sections/introduction}
@@ -42,8 +42,6 @@ Le GH200 associe un processeur Grace et un accélérateur Hopper. Pour une seule
 \subsection{Alignement des assemblages chromosomiques}
 Les essais sur fenêtres mettent en évidence le rôle de la divergence locale. Sur un chromosome entier, la position des différences détermine aussi quelles régions peuvent être alignées séparément. Les comparaisons portent successivement sur deux assemblages distincts et sur des révisions d’un même assemblage.
 \input{sections/chromosome}
-La figure~\ref{fig:decision} rassemble les choix étudiés selon la sortie attendue. Un score, un chemin et une matrice donnent accès à des possibilités de calcul différentes.
-\schema{decision}{La sortie attendue et les propriétés des séquences orientent le choix du solveur et du partage du travail.}{fig:decision}{report/figures/decision.tex}
 \subsection{Calcul des matrices sur un et deux nœuds}\label{sec:mpi}
 Une collection de \(q\) séquences fournit \(q(q-1)/2\) paires. On peut donc répartir entre les cœurs soit les colonnes d’une même paire, soit des paires entières. Sur ROMEO, le protocole compare ces deux répartitions avec 24 rangs MPI de huit fils OpenMP par nœud.
 \input{sections/distribue}
@@ -58,8 +56,10 @@ Une matrice associe une distance à chaque paire de génomes. Dans un arbre, des
 \input{sections/arbres}
 \input{sections/ambiguite}
 \input{sections/sensibilite-arbres}
+\clearpage
 \section{Conclusion}\label{sec:conclusion}
 \input{sections/conclusion}
+\schema{decision}{La sortie attendue et les propriétés des séquences orientent le choix du solveur et du partage du travail.}{fig:decision}{report/figures/decision.tex}
 \clearpage\appendix
 \input{sections/accessions}
 \clearpage\printbibliography[heading=bibintoc,title={Références}]

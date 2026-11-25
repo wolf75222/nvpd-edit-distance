@@ -1,7 +1,9 @@
 # Comparaison sur cinq paires par configuration
 
-Le job Slurm 839826 utilise un nœud GH200 de ROMEO. Les 60 paires du corpus synthétique couvrent quatre longueurs et trois taux d’éditions introduites. Pour chaque paire, trois blocs comparent NvPD-CUDA, Edlib et WFA2. Chaque méthode est exécutée dans un processus distinct, avec un échauffement suivi d’un appel chronométré. NvPD utilise le GPU et les bibliothèques un cœur Grace. La lecture du FASTA précède le chronométrage.
+Sur un nœud GH200 de ROMEO, le job Slurm 839826 compare le calcul du score sur 60 paires synthétiques. Le corpus couvre quatre longueurs et trois taux d’éditions introduites, avec cinq paires par configuration. NvPD utilise le GPU, Edlib et WFA2 utilisent chacun un cœur Grace.
 
-Le fichier `divergence.csv` contient les 1 080 appels, échauffements compris. Les scores ont été confrontés aux références de la campagne synthétique et les empreintes SHA-256 aux fichiers d’entrée. Dans `summary.csv`, chaque rapport par paire est la moyenne des trois rapports appariés. La moyenne, l’écart-type et l’intervalle de Student à 95 % portent sur les cinq paires de chaque configuration.
+Les trois méthodes traitent chaque paire dans trois blocs successifs. Leur ordre tourne d’un bloc au suivant. Dans chaque bloc, un processus par méthode lit le FASTA, effectue un alignement d’échauffement, puis chronomètre le deuxième alignement. Le fichier [divergence.csv](divergence.csv) contient 540 échauffements et 540 mesures. Les empreintes SHA-256 identifient les entrées et les scores concordent avec ceux de la campagne synthétique.
 
-La collecte et la figure sont définies dans `bench/repeated/divergence/`. Le fichier `accounting.tsv` décrit la réservation et `environment.txt` les versions utilisées.
+Pour chaque bibliothèque, le rapport par paire est la moyenne des trois quotients du temps de NvPD par celui de la bibliothèque dans le même bloc. Le fichier [summary.csv](summary.csv) donne, pour cinq paires, la moyenne de ces rapports, leur écart-type et la demi-largeur de l’intervalle de Student à 95 % (colonne `half95`).
+
+Les [scripts du banc](../../../bench/repeated/divergence/) reproduisent la collecte et la figure. La [réservation Slurm](accounting.tsv) et les [versions des logiciels](environment.txt) décrivent les conditions de mesure.

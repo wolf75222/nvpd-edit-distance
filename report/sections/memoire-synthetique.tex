@@ -1,5 +1,5 @@
 \subsubsection{Empreinte mémoire selon la longueur et la divergence}
-Pour le score seul, NvPD place la plus longue chaîne en colonne. Sur l'alphabet à quatre bases, le GPU réserve quatre lignes d'indices et deux lignes de scores, chacune en entiers de quatre octets. Pour des séquences de longueurs \(m,n\), cette allocation vaut
+À longueur fixée, WFA2 explore davantage de diagonales lorsque la distance augmente. Pour NvPD, la taille des tampons dépend de la longueur des séquences. Pour le score seul, NvPD place la plus longue chaîne en colonne. Sur l'alphabet à quatre bases, le GPU réserve quatre lignes d'indices et deux lignes de scores, chacune en entiers de quatre octets. Pour des séquences de longueurs \(m,n\), cette allocation vaut
 \[
   M_{\mathrm{device}}=4(4+2)\bigl(\max(m,n)+1\bigr)\quad [\mathrm{bytes}].
 \]

@@ -4,7 +4,7 @@
 
 [Rapport complet](report/rapport.pdf) · [Synthèse courte](report/tldr.pdf) · [Carnet exécuté](notebooks/profil_nvpd.ipynb) · [Bibliographie](report/tex/references.bib) · [Planche des figures](figures/montage.png) · [Résultats par exigence du sujet](results/README.md)
 
-Sur ROMEO, cinq paires synthétiques sont mesurées pour chacune des douze combinaisons de longueur et de taux d’éditions. À un million de bases et 10 %, NvPD sur GPU devance Edlib et WFA2 sur un cœur Grace pour les cinq paires. Le rapport moyen NvPD/WFA2 vaut 0,3706 ± 0,0038 entre paires. À 100 000 bases et 10 %, NvPD devance WFA2 sur deux paires sur cinq. [Mesures et protocole](results/repeated/divergence-gh200/)
+Sur le GH200 de ROMEO, la comparaison porte sur 60 paires synthétiques, cinq pour chaque combinaison de longueur et de taux d’édition. À un million de bases et 10 % d’éditions introduites, NvPD sur GPU réduit le temps de calcul du score de 62,9 % en moyenne face à WFA2 et de 37,9 % face à Edlib, chacun sur un cœur Grace. À 100 000 bases au même taux, NvPD devance WFA2 sur deux paires sur cinq. [Mesures et protocole](results/repeated/divergence-gh200/)
 
 ## Compiler et tester sur CPU
 
