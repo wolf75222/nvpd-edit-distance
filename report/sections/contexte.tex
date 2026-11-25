@@ -25,11 +25,11 @@ L’algorithme~\ref{alg:article-nvpd} reprend cette construction. Il reçoit les
 \end{algorithmic}
 \end{algorithm}
 
-Aguado-Puig et ses coauteurs (2022) étudient une autre manière de parcourir la grille~\cite{wfagpu}. Leur méthode commence sans édition et avance tant que les lettres correspondent. Elle autorise ensuite une édition, puis deux, jusqu’à atteindre la fin des séquences. Pour chaque coût, elle conserve la position la plus avancée sur chaque diagonale accessible. Ces positions forment un \emph{front}. Dans la figure~\ref{fig:contexte-ewfa}, une insertion suffit pour rejoindre la dernière case.
+Aguado-Puig et ses coauteurs (2022) étudient une autre manière de parcourir la grille~\cite{wfagpu}. Leur méthode commence sans édition et avance tant que les lettres correspondent. Elle autorise ensuite une édition, puis deux, jusqu’à atteindre la fin des séquences. Pour chaque coût, elle conserve la position la plus avancée sur chaque diagonale accessible. Ces positions forment un \emph{front}. Dans la figure~\ref{fig:contexte-ewfa}, une insertion permet d’atteindre la dernière case.
 
 \schema{contexte-ewfa}{Les deux \texttt{A} se correspondent au coût zéro. L’insertion de \texttt{G} ouvre la diagonale \(k=-1\), où la correspondance des deux \texttt{C} conduit au point \((2,3)\), à la fin des deux séquences.}{fig:contexte-ewfa}{report/figures/contexte-ewfa.tex}
 
-Dans les algorithmes d’Aguado-Puig et coll., \(P\) et \(T\) désignent les séquences de longueurs respectives \(m\) et \(n\), \(e\) le coût courant et \(k\) une diagonale. Le front \(\widetilde W_e\) conserve, pour chaque diagonale, la position la plus avancée atteinte avec ce coût. L’opérateur \textit{extend} de l’algorithme~\ref{alg:article-wfa-operators} compare les lettres à cette position. Tant qu’elles coïncident, il avance dans les deux séquences sans augmenter \(e\).
+Dans les algorithmes d’Aguado-Puig et coll., \(P\) et \(T\) désignent les séquences de longueurs respectives \(m\) et \(n\), \(e\) le coût courant et \(k\) une diagonale. Le front \(\widetilde W_e\) conserve, pour chaque diagonale, la position la plus avancée atteinte avec ce coût. L’opérateur \textit{extend} de l’algorithme~\ref{alg:article-wfa-operators} avance dans les deux séquences tant que les lettres coïncident, sans augmenter \(e\).
 
 Pour construire le front suivant, \textit{computeNext} examine les positions obtenues par une insertion, une suppression ou une substitution. Il garde la plus avancée sur chaque diagonale du front de coût \(e+1\). Dans l’algorithme~\ref{alg:article-wfa-align}, la boucle initialise le premier front, puis alterne ces deux opérations. Elle s’arrête quand le front atteint la fin des deux séquences. Le coût courant est alors leur distance.
 
