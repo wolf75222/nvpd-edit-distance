@@ -190,6 +190,18 @@ Avec le noyau NvPD indexé et le vol de tâches, les travailleurs Kokkos traiten
 
 `build/editdist --help` affiche les modes et les options. A*PA2 de Groot Koerkamp associe un parcours en blocs SIMD à une heuristique de coût restant. QuickEd de Doblas et coll. estime une borne pour reconstruire l’alignement en bande par parallélisme sur bits. Si tous les chemins optimaux sortent de la bande, le meilleur alignement accessible peut coûter davantage. Une erreur distincte de lecture au bord d’un mot de bits affecte deux témoins sur EPYC. L’adaptateur protège ce bord, rejoue le chemin et élargit la recherche si son coût diffère de celui d’Edlib. [Comparaison sur le chromosome 21](results/alternatives/human/README.md) · [Comparaison avec QuickEd d’origine](results/alternatives/README.md)
 
+## Profiler NvPD sur processeur
+
+Sur ROMEO, MAQAO ONEVIEW repère d’abord les boucles qui concentrent les cycles, puis analyse leurs instructions. Dans NvPD, huit colonnes voisines pouvaient lire huit scores dispersés. Le noyau AVX-512 regroupe seize colonnes et choisit leurs prédécesseurs par permutation en registres. Pour mesurer ce chemin sur les fenêtres du chromosome 21, préparer les deux régions puis calculer leur score.
+
+```sh
+python3 bench/hybrid/matrix/prepare.py
+python3 bench/cpu/maqao/inputs.py build/hybrid-matrix/inputs build/editdist build/maqao/inputs
+build/editdist pair --algorithm nvpd-omp --threads 4 --input build/maqao/inputs/near_32768.fa
+```
+
+Sur quatre cœurs EPYC 9654, deux fenêtres homologues de 100 000 bases passent de 1,033 à 0,275 s. Les deux temps incluent la construction de l’index. Le suralignement des lignes reste expérimental. Sur le second nœud, il accélère le noyau à 65 553 bases et le ralentit à 65 536. Les scripts Slurm reproduisent la comparaison et génèrent les rapports HTML de MAQAO. [Chronométrages et protocole](results/profile/maqao/dense/) · [Captures du profileur](results/profile/maqao/) · [Documentation MAQAO](https://www.maqao.org/documentation.html)
+
 ## Profiler les tuiles CUDA
 
 Sur GH200, `CHPS_CUDA_TILE_ROWS` fixe le nombre de lignes traitées par tuile (de 1 à 32, avec 8 par défaut). L’option `CHPS_CUDA_PACKED_MATCHES` active la mise en mémoire partagée de quatre décalages sur huit bits par colonne. Les décalages trop grands utilisent l’index entier.

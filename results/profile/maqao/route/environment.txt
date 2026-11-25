@@ -1,0 +1,17 @@
+job=840155
+romeo-c022
+Architecture:                            x86_64
+CPU(s):                                  384
+Model name:                              AMD EPYC 9654 96-Core Processor
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+maqao 2025.1.4 - 8231fdbe0817fc38e8404098f3255378289b2587::20251212-165227
+cmake version 3.30.9
+flags=-O3 -g -DNDEBUG -march=native
+perf_event_paranoid=unavailable
+Cpus_allowed_list:	10-13
+9970a612d90e3906f57b43dd9a416791b65d7e68852d9c61f08151db05ebf175  /tmp/chps-route-maqao.TiEqrKVy/build/editdist-route
+cc6077be76209c6501e57240536a5c60638167977b4b06acd73e0a84b24f04a5  /gpfs/home/rmdraux/chps-route.3jfaox8D/composition/build/hybrid-matrix/viral/surveillance.fa
+fbd30e08c38b4ac27fd2d3222ab374b230fb6a3f49f6bd1bbba0a3626c252076  /gpfs/home/rmdraux/chps-route.3jfaox8D/composition/results/phylogeny/sars-edit/matrix.tsv
+54bd8fba6f813fb7b185fc63256366c7faa85e13666cabfa10c8ab22b823561c  src/hybrid/matrix.cpp
+b4cb84c814a8e9acbd7301631bef95a7d71a2796f14537d287fc409d0ebb2ef5  src/hybrid/main.cpp
+83ad3f5b8e7493e48b86e2fa1acc0d7ed6a3361a93c3304941771a87d3718772  src/hybrid/sketch.hpp

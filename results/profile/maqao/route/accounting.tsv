@@ -1,0 +1,2 @@
+JobID	JobName	Account	Partition	State	Elapsed	AllocCPUS	ReqMem	NodeList	ExitCode
+840155	chps-route-maqao	r260105	instant	COMPLETED	00:00:31	4	8G	romeo-c022	0:0

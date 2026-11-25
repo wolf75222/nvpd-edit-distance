@@ -1,0 +1,10 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+maqao 2025.1.4 - 8231fdbe0817fc38e8404098f3255378289b2587::20251212-165227
+COMMON_FLAGS=-O3 -g -fopenmp -std=c++20 -Wall -Wextra -Werror -Wpedantic; NATIVE_FLAGS=-march=native
+OMP_PROC_BIND=close OMP_PLACES=cores OMP_WAIT_POLICY=ACTIVE
+Cpus_allowed_list:	10-13
+8eb5500a8977a3ed5da809189a8c77e2caf410ec9fc7840e18ec2952519947c7  build/maqao/original/src/cpu/dp.cpp
+40e878e0c03457d3f03572ea31075fcef397cc0979fdc76b1add4c7fb3a42353  src/cpu/dp.cpp
+007caa314c131a8b47e0daaaf195a6d589fc0b9e86a1ec87d190e1a8529c723b  src/cpu/nvpd_avx512.hpp
+e2b80ac5c0299f01410507b8fd56e418ceb434268265db8e40a50381d6299b1e  src/cpu/dp_internal.hpp

@@ -1,0 +1,47 @@
+--- nvpd_avx512.hpp
++++ nvpd_avx512.hpp
+@@ -25,12 +25,12 @@
+                            const MatchBlock& block) {
+     const auto one = _mm512_set1_epi32(1);
+     const auto diag = _mm512_loadu_si512(diagonal);
+-    const auto top = _mm512_loadu_si512(diagonal + 1);
++    const auto top = _mm512_load_si512(diagonal + 1);
+     const auto labels = _mm512_maskz_cvtepu8_epi32(0xffff, _mm_loadu_si128(
+         reinterpret_cast<const __m128i*>(block.source_lane.data())));
+     const auto last = _mm512_maskz_permutex2var_epi32(0xffff, diag, labels, _mm512_set1_epi32(carry));
+     const auto ordinary = _mm512_maskz_min_epi32(0xffff, diag, _mm512_add_epi32(top, one));
+-    _mm512_storeu_si512(current, _mm512_maskz_min_epi32(0xffff, ordinary, _mm512_sub_epi32(last, one)));
++    _mm512_store_si512(current, _mm512_maskz_min_epi32(0xffff, ordinary, _mm512_sub_epi32(last, one)));
+ }
+ 
+ __attribute__((target("avx512f"))) inline void evaluate_span(int* curr, const int* prev,
+@@ -80,10 +80,14 @@
+             }
+         }
+     }
+-    const std::size_t pitch = blocks * block_lanes + 2;
+-    std::vector<int> rows;
+-    if (pitch > rows.max_size() / 2) throw std::length_error("score rows exceed addressable memory");
+-    rows.resize(2 * pitch);
++    const std::size_t pitch = (blocks + 1) * block_lanes;
++    std::vector<int> storage;
++    constexpr std::size_t alignment = sizeof(int) * block_lanes;
++    if (pitch > (storage.max_size() - (block_lanes - 1)) / 2)
++        throw std::length_error("score rows exceed addressable memory");
++    storage.resize(2 * pitch + block_lanes - 1);
++    const auto misalignment = reinterpret_cast<std::uintptr_t>(storage.data() + 2) % alignment;
++    int* rows = storage.data() + (alignment - misalignment) % alignment / sizeof(int);
+     rows[0] = 1;
+     #pragma omp parallel
+     {
+@@ -93,8 +97,8 @@
+         const auto begin = worker * quotient + std::min(worker, extra);
+         const auto end = begin + quotient + (worker < extra);
+         for (int i = 1; i <= static_cast<int>(a.size()); ++i) {
+-            const int* prev = rows.data() + ((i - 1) % 2) * pitch;
+-            int* curr = rows.data() + (i % 2) * pitch;
++            const int* prev = rows + ((i - 1) % 2) * pitch;
++            int* curr = rows + (i % 2) * pitch;
+             if (worker == 0) {
+                 curr[0] = i + 1;
+                 curr[1] = i;

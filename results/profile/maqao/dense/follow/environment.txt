@@ -1,0 +1,10 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+maqao 2025.1.4 - 8231fdbe0817fc38e8404098f3255378289b2587::20251212-165227
+flags=-O3 -g -fopenmp -std=c++20 -Wall -Wextra -Werror -Wpedantic -Ibuild/maqao/prior/include; native adds -march=native
+Cpus_allowed_list:	10-13
+007caa314c131a8b47e0daaaf195a6d589fc0b9e86a1ec87d190e1a8529c723b  build/maqao/prior/src/cpu/nvpd_avx512.hpp
+d33389db38967096103919771119abe5617a7e8ad8ef6addf8f18567c8b8df08  build/maqao/followups/aligned/nvpd_avx512.hpp
+25d32ade874fc603ad118e41a5275268b7e96a1eea2153e0941ae1f7c7a5bf9d  build/maqao/followups/index32/nvpd_avx512.hpp
+cf4f90b87d4c6358301a34158c3a28783de5db33b56aef549798a565c67922ad  build/maqao/followups/unroll2/nvpd_avx512.hpp
+83d24957b607021be7dbb14b90618c844d9d1e6249db7d48e3010e8562154795  build/maqao/followups/unroll4/nvpd_avx512.hpp

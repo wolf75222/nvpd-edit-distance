@@ -1,0 +1,11 @@
+romeo-c022
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+maqao 2025.1.4 - 8231fdbe0817fc38e8404098f3255378289b2587::20251212-165227
+flags=-O3 -g -march=native -fopenmp -std=c++20 -Wall -Wextra -Werror -Ibuild/maqao/original/include -Ibuild/maqao/original/src/cpu
+OMP_PROC_BIND=close OMP_PLACES=cores OMP_WAIT_POLICY=ACTIVE
+Cpus_allowed_list:	10-13
+8eb5500a8977a3ed5da809189a8c77e2caf410ec9fc7840e18ec2952519947c7  build/maqao/original/src/cpu/dp.cpp
+e2b80ac5c0299f01410507b8fd56e418ceb434268265db8e40a50381d6299b1e  build/maqao/original/src/cpu/dp_internal.hpp
+f13c4e199f18e6d43244f2e645d0ef7d4d91f92511fdadc83545465b57dd2e13  build/maqao/variants/centered.cpp
+aeaba2ce349a4ddf2fa47a9372ccfb335f12ec83ca826ca6b56a19c1571bce9c  build/maqao/variants/blocked.cpp
+921bb65b4c95696f42df2d9c39b93022386b73e0d4308d52e4349f2f10a9bbde  build/maqao/variants/blocked_rows.hpp

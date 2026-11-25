@@ -1,0 +1,9 @@
+romeo-c023
+ AMD EPYC 9654 96-Core Processor
+g++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)
+maqao 2025.1.4 - 8231fdbe0817fc38e8404098f3255378289b2587::20251212-165227
+flags=-O3 -g -std=c++20 -fopenmp -Wall -Wextra -Wpedantic -Werror -Ibuild/maqao/prior/include; -march=native
+Cpus_allowed_list:	106-109
+8eb5500a8977a3ed5da809189a8c77e2caf410ec9fc7840e18ec2952519947c7  build/maqao/original/src/cpu/dp.cpp
+007caa314c131a8b47e0daaaf195a6d589fc0b9e86a1ec87d190e1a8529c723b  build/maqao/prior/src/cpu/nvpd_avx512.hpp
+9fc13d756bd25185b8f518e05ceffbae00e3a2e6df6d5285f5fd923f4515d8e4  build/maqao/layout-final/nvpd_avx512.hpp

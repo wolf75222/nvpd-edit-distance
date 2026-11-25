@@ -1,0 +1,10 @@
+--- nvpd_avx512.hpp
++++ nvpd_avx512.hpp
+@@ -35,6 +35,7 @@
+ 
+ __attribute__((target("avx512f"))) inline void evaluate_span(int* curr, const int* prev,
+         const MatchBlock* matches, std::size_t begin, std::size_t end) {
++    #pragma GCC unroll 2
+     for (auto chunk = begin; chunk < end; ++chunk) {
+         const auto first = chunk * block_lanes + 1;
+         const auto& block = matches[chunk];

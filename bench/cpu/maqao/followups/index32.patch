@@ -1,0 +1,30 @@
+--- nvpd_avx512.hpp
++++ nvpd_avx512.hpp
+@@ -17,7 +17,7 @@
+ inline constexpr int block_lanes = 16;
+ 
+ struct MatchBlock {
+-    std::array<std::uint8_t, block_lanes> source_lane;
++    std::array<std::int32_t, block_lanes> source_lane;
+     int preceding_match;
+ };
+ 
+@@ -26,8 +26,7 @@
+     const auto one = _mm512_set1_epi32(1);
+     const auto diag = _mm512_loadu_si512(diagonal);
+     const auto top = _mm512_loadu_si512(diagonal + 1);
+-    const auto labels = _mm512_maskz_cvtepu8_epi32(0xffff, _mm_loadu_si128(
+-        reinterpret_cast<const __m128i*>(block.source_lane.data())));
++    const auto labels = _mm512_loadu_si512(block.source_lane.data());
+     const auto last = _mm512_maskz_permutex2var_epi32(0xffff, diag, labels, _mm512_set1_epi32(carry));
+     const auto ordinary = _mm512_maskz_min_epi32(0xffff, diag, _mm512_add_epi32(top, one));
+     _mm512_storeu_si512(current, _mm512_maskz_min_epi32(0xffff, ordinary, _mm512_sub_epi32(last, one)));
+@@ -76,7 +75,7 @@
+                     last = static_cast<int>(position + 1);
+                     source = lane;
+                 }
+-                block.source_lane[lane] = static_cast<std::uint8_t>(source);
++                block.source_lane[lane] = source;
+             }
+         }
+     }

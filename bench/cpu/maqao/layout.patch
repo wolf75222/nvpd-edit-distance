@@ -1,0 +1,38 @@
+--- nvpd_avx512.hpp
++++ nvpd_avx512.hpp
+@@ -80,10 +80,20 @@
+             }
+         }
+     }
+-    const std::size_t pitch = blocks * block_lanes + 2;
+-    std::vector<int> rows;
+-    if (pitch > rows.max_size() / 2) throw std::length_error("score rows exceed addressable memory");
+-    rows.resize(2 * pitch);
++    constexpr std::size_t aligned_min_length = 40'000;
++    const bool align_rows = a.size() >= aligned_min_length;
++    const std::size_t padding = align_rows ? block_lanes - 1 : 0;
++    const std::size_t pitch = blocks * block_lanes + (align_rows ? block_lanes : 2);
++    std::vector<int> storage;
++    if (pitch > (storage.max_size() - padding) / 2)
++        throw std::length_error("score rows exceed addressable memory");
++    storage.resize(2 * pitch + padding);
++    int* rows = storage.data();
++    if (align_rows) {
++        constexpr auto alignment = sizeof(int) * block_lanes;
++        const auto misalignment = reinterpret_cast<std::uintptr_t>(rows + 2) % alignment;
++        rows += (alignment - misalignment) % alignment / sizeof(int);
++    }
+     rows[0] = 1;
+     #pragma omp parallel
+     {
+@@ -93,8 +103,8 @@
+         const auto begin = worker * quotient + std::min(worker, extra);
+         const auto end = begin + quotient + (worker < extra);
+         for (int i = 1; i <= static_cast<int>(a.size()); ++i) {
+-            const int* prev = rows.data() + ((i - 1) % 2) * pitch;
+-            int* curr = rows.data() + (i % 2) * pitch;
++            const int* prev = rows + ((i - 1) % 2) * pitch;
++            int* curr = rows + (i % 2) * pitch;
+             if (worker == 0) {
+                 curr[0] = i + 1;
+                 curr[1] = i;

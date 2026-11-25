@@ -13,4 +13,10 @@ Sur les 64 génomes du SARS-CoV-2, les 2\,016 indices de Jaccard estimés vont d
 La figure~\ref{fig:routage-composition} compare les deux règles dans une seconde série de huit blocs. L’affectation par composition confie 610 paires à Edlib et 1\,406 à WFA2. Toutes restent sur CPU. Le calcul des esquisses et des affectations prend \(5{,}063\pm0{,}063\)\,ms. Les quatre politiques restituent les mêmes distances, qui servent ensuite à comparer les groupes de lignage.
 \chart{comparison/routage_composition.png}{Temps moyen des 2\,016 alignements sur quatre cœurs Grace, après lecture du FASTA. Les traits indiquent l’écart-type et l’intervalle de Student à 95\,\% sur huit blocs. Les deux répartitions incluent le temps de choix du solveur.}{fig:routage-composition}{python/studies/hybrid_matrix.py}
 
+Pour situer le travail sur CPU, LProf échantillonne le programme de routage sur quatre cœurs EPYC~9654 pendant une chauffe et six calculs de la matrice. La figure~\ref{fig:maqao-route} attribue 85,07\,\% des échantillons à la fonction de Myers d’Edlib et 10,97\,\% à l’extension des correspondances de WFA2. La construction des esquisses en reçoit 0,12\,\%.
+\begin{figure}[!htbp]\centering
+\includegraphics[width=.93\linewidth]{figures/maqao/fonctions-routage.png}
+\sourcefig{bench/cpu/maqao/route.sbatch}\caption{Le profil des fonctions de MAQAO classe les routines pendant le calcul répété de la matrice de 2\,016 paires. La colonne \textit{Coverage} donne la part des échantillons de cycles.}\label{fig:maqao-route}
+\end{figure}
+
 \synthese{La règle de composition ramène le temps de \(2{,}433\pm0{,}016\)\,s avec Edlib seul à \(2{,}241\pm0{,}004\)\,s. Sur cette matrice, la réduction moyenne par bloc vaut 7,9\,\% (IC à 95\,\% de 7,4 à 8,4\,\%).}
