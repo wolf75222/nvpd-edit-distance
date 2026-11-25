@@ -5,6 +5,6 @@ La figure~\ref{fig:dep} illustre le calcul sur \texttt{A} et \texttt{AC}. Dans l
 \schema{dependances}{Les flèches indiquent les prédécesseurs de la case terminale \(D_{1,2}\). La dernière occurrence de \texttt{A} dans \texttt{AC} se trouve en colonne \(k=1\). NvPD lit donc le score \(P_0\) de la ligne précédente pour atteindre \(j=2\).}{fig:dep}{src/cpu/dp.cpp}
 \FloatBarrier
 
-Le projet vise à déterminer dans quelles conditions cette indépendance des colonnes accélère l’alignement global sur ROMEO, à distance d’édition identique. Le parcours séquentiel et le parcours par anti-diagonales servent de références pour la parallélisation. La comparaison avec Edlib et WFA2-lib examine ensuite l’effet de la divergence sur le coût de chaque méthode. Pour les 64 génomes du SARS-CoV-2, l’étude détermine aussi quels lignages les arbres construits à partir des distances permettent de retrouver.
+L’étude mesure le gain de cette indépendance des colonnes sur ROMEO. Les parcours séquentiel et par anti-diagonales fournissent deux références à travail dense égal. Edlib et WFA2-lib permettent ensuite de comparer des méthodes dont le travail dépend de la distance d’édition. Pour les 64 génomes du SARS-CoV-2, l’étude détermine aussi quels lignages les arbres construits à partir des distances permettent de retrouver.
 
-\synthese{À un million de bases par chaîne, la grille dense compte \(10^{12}\) cellules. Le protocole distingue le gain obtenu en traitant plusieurs cellules à la fois de celui obtenu en réduisant le nombre de cellules à visiter.}
+\synthese{À un million de bases par chaîne, la grille dense compte \(10^{12}\) cellules. Le protocole distingue deux sources d’accélération, le traitement simultané des cellules et la réduction de leur nombre.}

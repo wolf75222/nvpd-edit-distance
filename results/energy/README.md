@@ -9,7 +9,9 @@ Les fenêtres du chromosome 21 proviennent des assemblages GRCh38 et CHM13. Les 
 | 839319 | Durée d’intégration du compteur, géométrie des halos | [Énergie](gh200/839319/window.csv), [chemin de calcul](gh200/839319/geometry.csv) |
 | 839323 | Candidats homologues et inter-locus avec les trois solveurs publics | [Entrées](gh200/839323/inputs.csv), [mesures](gh200/839323/loci.csv) |
 
-Chaque configuration énergétique utilise cinq processus. Le premier alignement initialise CUDA. Le deuxième détermine le nombre d'appels à grouper. Le chronomètre et le compteur entourent le même lot. La colonne `joules` donne l’énergie cumulative du périphérique pendant le lot. Diviser par `iterations` pour obtenir l’énergie d’un alignement. Les données inter-locus chronomètrent un appel par processus, initialisation CUDA comprise, avec le bloc zéro comme échauffement.
+Chaque configuration énergétique utilise cinq processus. Le premier alignement initialise CUDA. Le deuxième détermine le nombre d'appels à grouper. Le chronomètre et le compteur couvrent le même lot. La colonne `joules` donne la différence entre deux lectures du compteur d’énergie du GPU. Le quotient `joules / iterations` donne l’énergie moyenne d’un alignement dans le lot. Dans le lot `insertion-524288`, la fenêtre de GRCh38 mesure 524 288 bases et son homologue de CHM13 en mesure 537 308. Sur cinq blocs, l’énergie moyenne passe de 534,0 J par alignement avec lecture directe à 427,7 J avec les indices compactés. [Mesures appariées](gh200/839317/packing.csv)
+
+Les essais inter-locus chronomètrent un appel par processus, initialisation CUDA comprise. Le bloc zéro sert à l’échauffement.
 
 Les scripts attendent le dossier FASTA produit par [inputs.py](../../bench/kokkos/human/inputs.py). Depuis la racine du dépôt sur ROMEO, transmettre ce dossier à `sbatch -A "$ROMEO_PROJECT" bench/gpu/energy/run.sbatch "$inputs"`. Les scripts `packing.sbatch`, `sensor.sbatch` et `loci.sbatch` acceptent le même argument. La commande `python bench/gpu/energy/summarize.py results/energy/gh200/839310` recalcule les moyennes, les écarts-types et les intervalles de Student à 95 %.
 

@@ -1,10 +1,10 @@
 \subsubsection{Alignement par fronts d’onde sur accélérateur}
 Pour la distance à coût unitaire, eWFA-GPU d’Aguado-Puig et coll.~\cite{wfagpu,ewfacode} distribue les paires entre blocs et avance les diagonales d'un même front en parallèle. Sa trace de 128 bits peut coder 64 opérations d’édition, à raison de deux bits par opération. La boucle de cette version s'arrête avant le score 64. L'expérience retient les cas \(d<64\) parmi vingt paires définies avant le calcul. Pour chaque chemin brut, le programme rejoue les opérations jusqu'aux deux extrémités et vérifie
 \[
- N_{\mathrm{sub}}+N_{\mathrm{ins}}+N_{\mathrm{del}}=d_{\rm edlib}.
+ N_{\mathrm{sub}}+N_{\mathrm{ins}}+N_{\mathrm{del}}=d_{\rm Edlib}.
 \]
 Les compteurs \(N_{\mathrm{sub}},N_{\mathrm{ins}},N_{\mathrm{del}}\) dénombrent respectivement substitutions, insertions et délétions dans le chemin.
 \chart{gpu/front_gpu.png}{Sur les paires admissibles, les temps de processus comparent trois méthodes avec reconstruction du chemin sur les mêmes lots.}{fig:ewfa}{bench/gpu/ewfa/ewfa.sbatch}
-La figure~\ref{fig:ewfa} porte sur cinq processus par lot. Pour cinq paires de 5\,000 bases faiblement divergentes, le processus eWFA-GPU prend \(297{,}21\pm0{,}58\)\,ms, dont \(2{,}931\pm0{,}034\)\,ms dans son chronomètre interne. NvPD CUDA prend \(379{,}22\pm5{,}47\)\,ms et edlib sur un cœur Grace \(6{,}24\pm0{,}57\)\,ms, du lancement du processus à sa fin. Sur les quatorze paires admissibles, le score concorde avec edlib et le rejeu du chemin brut consomme les deux chaînes à ce coût. Le formateur de sortie du programme amont produit quatorze CIGAR qui échouent au rejeu.
+La figure~\ref{fig:ewfa} porte sur cinq processus par lot. Pour cinq paires de 5\,000 bases faiblement divergentes, le processus eWFA-GPU prend \(297{,}21\pm0{,}58\)\,ms, dont \(2{,}931\pm0{,}034\)\,ms dans son chronomètre interne. NvPD CUDA prend \(379{,}22\pm5{,}47\)\,ms et Edlib sur un cœur Grace \(6{,}24\pm0{,}57\)\,ms, du lancement du processus à sa fin. Sur les quatorze paires admissibles, le score concorde avec Edlib et le rejeu du chemin brut consomme les deux chaînes à ce coût. Le formateur de sortie du programme amont produit quatorze CIGAR qui échouent au rejeu.
 
 \synthese{Les quatorze chemins bruts admissibles retrouvent les scores attendus. Les cinq paires de 5\,000 bases à 2\,\% coûtent de 97 à 99 éditions et dépassent la capacité de la trace de cette version.}

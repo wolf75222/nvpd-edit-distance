@@ -1,6 +1,6 @@
 # Benchmarks on ROMEO
 
-The report uses warmed calls on fixed inputs. The sampling unit is a process for the CPU, GPU and library timings, and a launch for MPI. The results include means, sample standard deviations and 95% intervals. [Repeated runs](../results/repeated/) · [Alignment libraries](../results/alternatives/) · [MPI scaling](../results/mpi/).
+For the synthetic score comparisons, each replicate starts a fresh process, warms up on the fixed pair and measures the second call. The band comparison averages ten timed calls per process. An MPI replicate starts a new group of ranks. These campaigns report means, sample standard deviations and 95% confidence intervals. The initial coverage study below reports medians. [Repeated runs](../results/repeated/) · [Alignment libraries](../results/alternatives/) · [MPI scaling](../results/mpi/).
 
 ## Initial coverage study
 
@@ -13,7 +13,7 @@ sbatch --account="$ROMEO_PROJECT" bench/campaign/gpu.sbatch
 python3 bench/campaign/summarize.py results/cpu-*.csv results/gpu-*.csv > results/summary.csv
 ```
 
-The default run uses the first pair at each error rate for 5,000 and 20,000 nt. Each configuration runs three times in a fresh process. OpenMP runs on 1, 2, 4 and 8 cores with fixed thread placement. The Slurm log records the CPU, CUDA device and compiler configuration. A CSV row records the job and host, plus SHA-256 digests of the executable and input FASTA. The archived campaign includes the [submission commands](../results/romeo/submissions.tsv) and [kernel source checksums](../results/romeo/sources.sha256).
+The default run uses the first pair at each error rate for 5,000 and 20,000 nt. Each configuration runs three times, with a new process for each measurement. OpenMP runs on 1, 2, 4 and 8 cores with fixed thread placement. The Slurm log records the CPU, CUDA device and compiler configuration. A CSV row records the job and host, plus SHA-256 digests of the executable and input FASTA. The archived campaign includes the [submission commands](../results/romeo/submissions.tsv) and [kernel source checksums](../results/romeo/sources.sha256).
 
 Use `--profile full` to select every pair. Split long jobs by length, rate, replicate or backend. Adjust the Slurm wall time to the measured runtime. At 1,000,000 nt, the sequential DP reference runs once per rate on replicate 1. Pair-specific speedups stay empty for replicates without a sequential measurement. Example of a single shard:
 
@@ -23,7 +23,7 @@ sbatch --account="$ROMEO_PROJECT" --time=02:00:00 bench/campaign/cpu.sbatch \
   --algorithms seq nvpd-omp --threads 1 4 8 --trials 1
 ```
 
-For offline compute nodes, stage the source directories, the two archives in `deps/`, and `data/synthetic/` on ROMEO before submitting. Stage the cohort FASTA as well when requesting a matrix.
+For offline compute nodes, stage the source directories, the two archives in `deps/`, and `data/synthetic/` on ROMEO before submitting. Include the cohort FASTA when computing a matrix.
 
 The Python runner also accepts a prebuilt executable. Use `python3 bench/campaign/run.py --help` for the arguments. It flushes each trial to disk. A failed or timed-out subprocess leaves a diagnostic row. The job exits with an error if any trial fails.
 
