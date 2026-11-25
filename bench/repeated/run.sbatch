@@ -21,20 +21,18 @@ trap 'rm -rf -- "$build"' EXIT
 out=results/repeated/jobs/$SLURM_JOB_ID
 mkdir -p "$out"
 opts=(-DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON "-DCMAKE_PROJECT_INCLUDE=$PWD/bench/repeated/targets.cmake")
-targets=(repeat_kernel check_distances)
 if [[ $platform == epyc ]]; then
     if [[ -n ${CHPS_REPEAT_INITIAL:-} ]]; then cp "$CHPS_REPEAT_INITIAL" "$build/initial.cpp"
     else git show f08b4f6fcdf81de3a6ffcd60a8934cd1aca31c83:src/dp.cpp > "$build/initial.cpp"; fi
     echo "95a75e9e3dc1d1540aafa73ba05313269fdfbcd3740453d169a3c041446d63c6  $build/initial.cpp" | sha256sum -c --status
     opts+=("-DCHPS_REPEAT_INITIAL=$build/initial.cpp" -DCMAKE_CXX_FLAGS=-march=native)
-    targets+=(repeat_initial)
 elif [[ $platform == epyc-* ]]; then
     opts+=(-DCMAKE_CXX_FLAGS=-march=native)
 else
     opts+=(-DCHPS_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=90)
 fi
 cmake -S . -B "$build" "${opts[@]}"
-cmake --build "$build" --parallel "$(( SLURM_CPUS_PER_TASK < 4 ? SLURM_CPUS_PER_TASK : 4 ))" --target "${targets[@]}"
+cmake --build "$build" --parallel "$(( SLURM_CPUS_PER_TASK < 4 ? SLURM_CPUS_PER_TASK : 4 ))"
 export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DYNAMIC=FALSE OMP_WAIT_POLICY=ACTIVE
 if [[ $platform == epyc ]]; then export OMP_NUM_THREADS=8; else export OMP_NUM_THREADS=1; fi
 ctest --test-dir "$build" --output-on-failure | sed "s|$build|build|g" > "$out/tests.txt"

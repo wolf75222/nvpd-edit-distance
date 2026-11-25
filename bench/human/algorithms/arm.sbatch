@@ -19,7 +19,7 @@ here="bench/human/algorithms"
 mkdir -p "$out"
 cmake -S . -B "$build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS=-march=native \
       -DCMAKE_CXX_FLAGS=-march=native -DBUILD_TESTING=ON > "$tmp/config.log"
-cmake --build "$build" --parallel 4 --target editdist check_distances > "$tmp/build.log"
+cmake --build "$build" --parallel 4 > "$tmp/build.log"
 ctest --test-dir "$build" --output-on-failure > "$out/tests.txt"
 g++ -O3 -DNDEBUG -march=native -std=c++20 -fopenmp -Iinclude \
     "$here/trial.cpp" src/io/fasta.cpp "$build/libdistances.a" "$build/libedlib_static.a" \

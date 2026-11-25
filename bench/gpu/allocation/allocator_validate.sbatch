@@ -33,7 +33,7 @@ for label in initial current; do
     if [[ $label == initial ]]; then root=$baseline; fi
     cmake -S "$root" -B "$work/$label-build" -DCMAKE_BUILD_TYPE=Release -DCHPS_CUDA=ON \
         -DCMAKE_CUDA_ARCHITECTURES=90 -DBUILD_TESTING=ON
-    cmake --build "$work/$label-build" --target editdist check_distances --parallel "$SLURM_CPUS_PER_TASK"
+    cmake --build "$work/$label-build" --parallel "$SLURM_CPUS_PER_TASK"
     ctest --test-dir "$work/$label-build" --output-on-failure
     if [[ $label == initial ]]; then sources=(src/cuda.cu src/main.cpp); else sources=(src/cuda/cuda.cu src/cli/main.cpp); fi
     (cd "$root" && sha256sum "${sources[@]}" CMakeLists.txt) > "$out/$label.sha256"

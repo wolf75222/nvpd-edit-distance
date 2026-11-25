@@ -47,7 +47,7 @@ fi
 # Kokkos's CMake launcher selects nvcc_wrapper for dependent targets only.
 # Third-party host code such as edlib must retain its ordinary C++ compiler.
 cmake -S . -B "$tmp/app" -DCMAKE_CXX_COMPILER="$host_compiler" "${opts[@]}"
-cmake --build "$tmp/app" --target editdist measure_kokkos check_distances --parallel "$workers"
+cmake --build "$tmp/app" --target all measure_kokkos --parallel "$workers"
 export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DYNAMIC=FALSE OMP_NUM_THREADS="$workers"
 ctest --test-dir "$tmp/app" --output-on-failure
 {

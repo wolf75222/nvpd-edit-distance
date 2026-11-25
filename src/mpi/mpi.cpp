@@ -37,7 +37,7 @@ struct Options {
     std::string schedule, algorithm;
     chps::mpi::Score score = chps::mpi::dense_score;
     bool kokkos_workers = false, length_bound = false;
-    int grain = 1;
+    int grain = 0;
 };
 
 Options parse(int argc, char** argv) {
@@ -81,7 +81,8 @@ Options parse(int argc, char** argv) {
         else if (key == "--warmups" && n >= 0) o.warmups = n;
         else throw std::invalid_argument("unknown option or invalid value: " + std::string(key));
     }
-    if ((!o.algorithm.empty() || o.length_bound) && o.schedule.empty()) o.schedule = "cyclic";
+    if ((!o.algorithm.empty() || o.length_bound || o.grain) && o.schedule.empty()) o.schedule = "cyclic";
+    if (!o.grain) o.grain = 1;
     if (o.kokkos_workers && o.schedule.empty()) throw std::invalid_argument("Kokkos workers require --schedule");
     if (o.input.empty()) throw std::invalid_argument("--input is required");
     return o;
@@ -404,6 +405,7 @@ int main(int argc, char** argv) {
             }
             else std::cout << "{\"algorithm\":\"" << (o.pipeline_rows ? "nvpd-mpi-pipeline" : "nvpd-mpi")
                            << "\",\"distance\":" << distance << "}\n";
+            if (!std::cout.flush()) throw std::runtime_error("cannot write result to standard output");
         }
     } catch (const std::exception& e) {
         std::cerr << "editdist-mpi rank " << rank << ": " << e.what() << '\n';

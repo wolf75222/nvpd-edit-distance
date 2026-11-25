@@ -45,6 +45,19 @@ def main(binary, mpi=None):
                         raise ValueError(f"MPI {kernel} counted the wrong number of subsequences")
                     if len(timed) != 1 or timed[0]["assigned_workers"] != 1:
                         raise ValueError("one matrix chunk must have one active worker")
+        if mpi:
+            path.write_text(">a\nA\n>b\nG\n>c\nT\n")
+            args = [mpi, "matrix", "--input", path, "--threads", "2", "--grain", "100"]
+            measured = subprocess.run(args, check=True, capture_output=True, text=True)
+            if measured.stdout != run(binary, "matrix", "--input", path, "--algorithm", "edlib"):
+                raise ValueError("default MPI schedule changed the distance matrix")
+            trial = json.loads(measured.stderr.splitlines()[-1])
+            if trial["assigned_workers"] != 1:
+                raise ValueError("an explicit grain must also apply to the default MPI schedule")
+            with path.open("rb") as unwritable:
+                failed = subprocess.run(args, stdout=unwritable, stderr=subprocess.PIPE)
+            if not failed.returncode or b"cannot write result" not in failed.stderr:
+                raise ValueError("MPI did not report its output error")
         path.write_text(f">a\n{dna}\n>b\nN{dna[3:]}T\n")
         for kernel in ("packed-wfa","nvpd-sparse"):
             args = ["pair","--input",path,"--algorithm",kernel]

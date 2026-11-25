@@ -13,11 +13,12 @@ NAMES = ("NvPD", "NvPD indexé", "Edlib", "WFA2")
 def read_trials(root):
     raw = pd.read_csv(root / "results/mpi/chromosome/839322/trials.csv")
     keys = ["records", "nodes", "algorithm", "schedule", "length_bound"]
-    blocks = raw.groupby(keys).trial.agg(set)
-    if len(blocks) != 17 or not all(b == set(range(1, 6)) for b in blocks):
+    blocks = raw.groupby(keys).trial.agg(sorted)
+    if len(raw) != 85 or len(blocks) != 17 or not all(b == [1, 2, 3, 4, 5] for b in blocks):
         raise ValueError("Chaque configuration exige cinq processus MPI distincts.")
-    if (raw.groupby("records").matrix_sha256.nunique() != 1).any():
-        raise ValueError("Les matrices des solveurs diffèrent.")
+    workload = raw.groupby("records")[["matrix_sha256", "equivalent_cells"]].nunique(dropna=False)
+    if not workload.eq(1).all().all() or raw[["matrix_sha256", "equivalent_cells"]].isna().any().any():
+        raise ValueError("La matrice et le nombre de cases doivent être identiques pour tous les solveurs.")
     if not ((raw.pairs == raw.records * (raw.records - 1) // 2) & (raw.cores == 192 * raw.nodes)).all():
         raise ValueError("Nombre de paires ou de cœurs incompatible avec le protocole.")
     return raw

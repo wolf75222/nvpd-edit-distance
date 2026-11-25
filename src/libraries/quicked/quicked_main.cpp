@@ -29,12 +29,14 @@ int main(int argc, char** argv) {
 #ifdef __APPLE__
         usage.ru_maxrss /= 1024;
 #endif
-        std::cout << std::setprecision(12) << "{\"algorithm\":\"quicked\",\"verified_by\":\"edlib\",\"m\":" << a.size()
+        const char* verifier = a.empty() || b.empty() ? "length" : "edlib";
+        std::cout << std::setprecision(12) << "{\"algorithm\":\"quicked\",\"verified_by\":\"" << verifier << "\",\"m\":" << a.size()
                   << ",\"method\":\"quicked-certified\",\"source\":\"" << result.source
                   << "\",\"first_score\":" << result.first_score << ",\"retries\":" << result.retries
                   << ",\"band_percent\":" << result.band_percent
                   << ",\"n\":" << b.size() << ",\"distance\":" << result.distance << ",\"seconds\":" << elapsed.count()
                   << ",\"peak_rss_kib\":" << usage.ru_maxrss << "}\n";
+        if (!std::cout.flush()) throw std::runtime_error("cannot write result to standard output");
     } catch (const std::exception& e) {
         std::cerr << "editdist-quicked: " << e.what() << '\n';
         return 1;

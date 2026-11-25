@@ -62,9 +62,9 @@ static int exact_score(const char *a, int m, const char *b, int n) {
 chps_quicked_result chps_quicked_certified(const char *a, int m, const char *b, int n) {
     if (!valid_input(a, m) || !valid_input(b, n))
         return (chps_quicked_result){-1, -1, 0, 0, "invalid-input"};
+    if (!m || !n) return (chps_quicked_result){m + n, m + n, 0, 0, "empty-input"};
     const int first = run(a, m, b, n, quicked_default_params(), true);
     chps_quicked_result result = {first, first, 0, 0, "quicked-default"};
-    if (m == 0 || n == 0) return result;
     const int exact = exact_score(a, m, b, n);
     if (exact < 0) {
         result.distance = -1;

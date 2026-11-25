@@ -15,7 +15,7 @@ hostname
 lscpu | awk -F: '/^Model name:|^Architecture:/{print}'
 cmake --version | head -n 1
 cmake -S . -B "$build" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON "${cuda_args[@]}"
-cmake --build "$build" --target editdist check_distances --parallel "$SLURM_CPUS_PER_TASK"
+cmake --build "$build" --parallel "$SLURM_CPUS_PER_TASK"
 export OMP_PLACES=cores OMP_PROC_BIND=close OMP_DYNAMIC=FALSE
 step=(srun --ntasks=1 --cpus-per-task="$SLURM_CPUS_PER_TASK" --cpu-bind=cores)
 "${step[@]}" ctest --test-dir "$build" --output-on-failure

@@ -40,7 +40,7 @@ cmake -S "$tmp/ksrc" -B "$tmp/kbuild" -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE
     -DCMAKE_INSTALL_PREFIX="$install" -DCMAKE_CXX_COMPILER="$compiler" "${ko[@]}"
 cmake --build "$tmp/kbuild" --target install --parallel 4
 cmake -S . -B "$tmp/app" "${app[@]}"
-cmake --build "$tmp/app" --target human_kokkos check_distances editdist --parallel 4
+cmake --build "$tmp/app" --parallel 4
 export OMP_PROC_BIND=close OMP_PLACES=cores OMP_DYNAMIC=FALSE OMP_NUM_THREADS=2
 ctest --test-dir "$tmp/app" --output-on-failure | sed "s|$tmp|build|g" > "$out/validation.txt"
 "$tmp/app/human_kokkos" --check

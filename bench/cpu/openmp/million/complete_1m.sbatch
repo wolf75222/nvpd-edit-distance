@@ -27,7 +27,7 @@ mkdir -p "$out/raw"
 root=$PWD
 (cd "$base" && sha256sum -c "$root/results/romeo/sources.sha256") > "$out/source-check.txt"
 cmake -S "$base" -B "$work/build" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DCHPS_CUDA=OFF
-cmake --build "$work/build" --target editdist check_distances --parallel 8
+cmake --build "$work/build" --parallel 8
 ctest --test-dir "$work/build" --output-on-failure
 export binary="$shared/editdist"
 cp "$work/build/editdist" "$binary"
